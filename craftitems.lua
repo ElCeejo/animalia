@@ -58,3 +58,12 @@ minetest.register_craftitem("better_fauna:net", {
 		return itemstack
 	end
 })
+
+minetest.register_craft({
+	output = "better_fauna:net",
+	recipe = {
+		{"farming:string", "", "farming:string"},
+		{"farming:string", "", "farming:string"},
+		{"group:stick", "farming:string", ""}
+	}
+})
