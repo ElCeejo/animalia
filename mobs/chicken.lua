@@ -2,62 +2,9 @@
 -- Chicken --
 -------------
 
-local min = math.min
-local abs = math.abs
+local blend = better_fauna.frame_blend
+
 local random = math.random
-
-
-local function chicken_physics(self)
-	local vel = self.object:get_velocity()
-	if self.isonground and not self.isinliquid then
-		self.object:set_velocity({x= vel.x> 0.2 and vel.x*mobkit.friction or 0,
-								y=vel.y,
-								z=vel.z > 0.2 and vel.z*mobkit.friction or 0})
-	end
-	if self.springiness and self.springiness > 0 then
-		local vnew = vector.new(vel)
-		
-		if not self.collided then
-			for _,k in ipairs({'y','z','x'}) do			
-				if vel[k]==0 and abs(self.lastvelocity[k])> 0.1 then 
-					vnew[k]=-self.lastvelocity[k]*self.springiness 
-				end
-			end
-		end
-		if not vector.equals(vel,vnew) then
-			self.collided = true
-		else
-			if self.collided then
-				vnew = vector.new(self.lastvelocity)
-			end
-			self.collided = false
-		end
-		
-		self.object:set_velocity(vnew)
-	end
-	local surface = nil
-	local surfnodename = nil
-	local spos = mobkit.get_stand_pos(self)
-	spos.y = spos.y+0.01
-	local snodepos = mobkit.get_node_pos(spos)
-	local surfnode = mobkit.nodeatpos(spos)
-	while surfnode and surfnode.drawtype == 'liquid' do
-		surfnodename = surfnode.name
-		surface = snodepos.y+0.5
-		if surface > spos.y+self.height then break end
-		snodepos.y = snodepos.y+1
-		surfnode = mobkit.nodeatpos(snodepos)
-	end
-	self.isinliquid = surfnodename
-	if surface then
-		local submergence = min(surface-spos.y,self.height)/self.height
-		local buoyacc = mobkit.gravity*(self.buoyancy-submergence)
-		mobkit.set_acceleration(self.object,
-			{x=-vel.x*self.water_drag,y=buoyacc-vel.y*abs(vel.y)*0.4,z=-vel.z*self.water_drag})
-	else
-		self.object:set_acceleration({x=0,y=-2.8,z=0})
-	end
-end
 
 local function chicken_logic(self)
 
@@ -120,10 +67,10 @@ minetest.register_entity("better_fauna:chicken",{
 	},
 	child_textures = {"better_fauna_chick.png"},
     animation = {
-		stand = {range = {x = 0, y = 0}, speed = 1, loop = true},
-		walk = {range = {x = 10, y = 30}, speed = 30, loop = true},
-		run = {range = {x = 10, y = 30}, speed = 45, loop = true},
-        fall = {range = {x = 40, y = 60}, speed = 30, loop = true},
+		stand = {range = {x = 0, y = 0}, speed = 1, frame_blend = blend, loop = true},
+		walk = {range = {x = 10, y = 30}, speed = 30, frame_blend = blend, loop = true},
+		run = {range = {x = 10, y = 30}, speed = 45, frame_blend = blend, loop = true},
+        fall = {range = {x = 40, y = 60}, speed = 30, frame_blend = blend, loop = true},
 	},
     sounds = {
         alter_child_pitch = true,
@@ -164,7 +111,7 @@ minetest.register_entity("better_fauna:chicken",{
 	on_step = better_fauna.on_step,
 	on_activate = better_fauna.on_activate,
 	get_staticdata = mobkit.statfunc,
-	phsyics = chicken_physics,
+	phsyics = better_fauna.lightweight_physics,
 	logic = chicken_logic,
     on_rightclick = function(self, clicker)
 		if better_fauna.feed_tame(self, clicker, 1, false, true) then return end
@@ -178,7 +125,7 @@ minetest.register_entity("better_fauna:chicken",{
 	end,
 })
 
-mob_core.register_spawn_egg("better_fauna:chicken", "753b1f", "5f341f")
+mob_core.register_spawn_egg("better_fauna:chicken", "c6c6c6", "d22222")
 
 mob_core.register_spawn({
 	name = "better_fauna:chicken",
@@ -254,7 +201,7 @@ minetest.register_entity("better_fauna:chicken_egg_sprite", {
 				collisiondetection = true,
 				texture = "better_fauna_egg_fragment.png",
 			})
-			if math.random(1, 3) == 1 then
+			if random(1, 3) == 1 then
 				mob_core.spawn_child(pos, "better_fauna:chicken")
 				self.object:remove()
 			else

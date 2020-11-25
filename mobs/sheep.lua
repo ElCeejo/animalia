@@ -2,6 +2,8 @@
 -- Sheep --
 -----------
 
+local blend = better_fauna.frame_blend
+
 local palette  = {
 	{"black",      "Black",      "#000000b0"},
 	{"blue",       "Blue",       "#015dbb70"},
@@ -95,9 +97,9 @@ minetest.register_entity("better_fauna:sheep",{
 	textures = {"better_fauna_sheep.png^better_fauna_sheep_wool.png"},
 	child_textures = {"better_fauna_sheep.png"},
 	animation = {
-		stand = {range = {x = 30, y = 50}, speed = 10, loop = true},
-		walk = {range = {x = 1, y = 20}, speed = 30, loop = true},
-		run = {range = {x = 1, y = 20}, speed = 45, loop = true},
+		stand = {range = {x = 30, y = 50}, speed = 10, frame_blend = blend, loop = true},
+		walk = {range = {x = 1, y = 20}, speed = 30, frame_blend = blend, loop = true},
+		run = {range = {x = 1, y = 20}, speed = 45, frame_blend = blend, loop = true},
 	},
     sounds = {
         alter_child_pitch = true,
@@ -149,11 +151,13 @@ minetest.register_entity("better_fauna:sheep",{
 	logic = sheep_logic,
 	on_step = function(self, dtime, moveresult)
 		better_fauna.on_step(self, dtime, moveresult)
-		if self.object:get_properties().textures[1] == "better_fauna_sheep.png"
-		and not self.gotten then
-			self.object:set_properties({
-				textures = {"better_fauna_sheep.png^better_fauna_sheep_wool.png"},
-			})
+		if mobkit.is_alive(self) then
+			if self.object:get_properties().textures[1] == "better_fauna_sheep.png"
+			and not self.gotten then
+				self.object:set_properties({
+					textures = {"better_fauna_sheep.png^better_fauna_sheep_wool.png"},
+				})
+			end
 		end
 	end,
 	on_activate = function(self, staticdata, dtime_s)

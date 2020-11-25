@@ -2,6 +2,8 @@
 -- Pig --
 ---------
 
+local blend = better_fauna.frame_blend
+
 local function pig_logic(self)
 	
 	if self.hp <= 0 then	
@@ -59,8 +61,8 @@ minetest.register_entity("better_fauna:pig",{
 	armor_groups = {fleshy = 100},
 	physical = true,
 	collide_with_objects = true,
-	collisionbox = {-0.45, -0.55, -0.45, 0.45, 0.4, 0.45},
-	visual_size = {x = 13, y = 13},
+	collisionbox = {-0.35, -0.45, -0.35, 0.35, 0.4, 0.35},
+	visual_size = {x = 11, y = 11},
 	scale_stage1 = 0.5,
     scale_stage2 = 0.65,
     scale_stage3 = 0.80,
@@ -72,9 +74,9 @@ minetest.register_entity("better_fauna:pig",{
 		"better_fauna_pig_3.png"
 	},
 	animation = {
-		stand = {range = {x = 30, y = 50}, speed = 10, loop = true},
-		walk = {range = {x = 1, y = 20}, speed = 30, loop = true},
-		run = {range = {x = 1, y = 20}, speed = 45, loop = true},
+		stand = {range = {x = 30, y = 50}, speed = 10, frame_blend = blend, loop = true},
+		walk = {range = {x = 1, y = 20}, speed = 30, frame_blend = blend, loop = true},
+		run = {range = {x = 1, y = 20}, speed = 45, frame_blend = blend, loop = true},
 	},
     sounds = {
         alter_child_pitch = true,
@@ -147,7 +149,7 @@ minetest.register_craft({
 	output = "better_fauna:porkchop_cooked",
 })
 
-mob_core.register_spawn_egg("better_fauna:pig", "cac3a1" ,"464438")
+mob_core.register_spawn_egg("better_fauna:pig", "e0b1a7" ,"cc9485")
 
 mob_core.register_spawn({
 	name = "better_fauna:pig",

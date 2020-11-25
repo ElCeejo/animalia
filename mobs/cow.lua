@@ -2,6 +2,8 @@
 -- Cow --
 ---------
 
+local blend = better_fauna.frame_blend
+
 local function cow_logic(self)
 	
 	if self.hp <= 0 then
@@ -83,9 +85,9 @@ minetest.register_entity("better_fauna:cow",{
 		"better_fauna_cow_4.png"
 	},
 	animation = {
-		stand = {range = {x = 30, y = 50}, speed = 10, loop = true},
-		walk = {range = {x = 1, y = 20}, speed = 20, loop = true},
-		run = {range = {x = 1, y = 20}, speed = 30, loop = true},
+		stand = {range = {x = 30, y = 50}, speed = 10, frame_blend = blend, loop = true},
+		walk = {range = {x = 1, y = 20}, speed = 20, frame_blend = blend, loop = true},
+		run = {range = {x = 1, y = 20}, speed = 30, frame_blend = blend, loop = true},
 	},
     sounds = {
         alter_child_pitch = true,
