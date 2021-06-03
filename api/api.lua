@@ -417,40 +417,42 @@ function better_fauna.hq_fowl_breed(self, prty)
         if mobkit.is_queue_empty_low(self) then
             local pos = mobkit.get_stand_pos(self)
             local tpos = mate:get_pos()
-            local dist = vec_dist(pos, tpos) - math.abs(hitbox(self)[4])
-            if dist > 1.5 then
-                speed_factor = 0.5
-            else
-                speed_factor = 0.1
-            end
-            mob_core.goto_next_waypoint(self, tpos, speed_factor)
-            if dist < 1.75 then
-                self.breeding_time = self.breeding_time + 1
-            end
-            if self.breeding_time >= 2
-            or mate:get_luaentity().breeding_time >= 2 then
-                if self.gender == "female" then
-                    minetest.add_particlespawner({
-                        amount = 6,
-                        time = 0.25,
-                        minpos = {x = pos.x - 7/16, y = pos.y - 5/16, z = pos.z - 7/16},
-                        maxpos = {x = pos.x + 7/16, y = pos.y - 5/16, z = pos.z + 7/16},
-                        minvel = vector.new(-1, 2, -1),
-                        maxvel = vector.new(1, 5, 1),
-                        minacc = vector.new(0, -9.81, 0),
-                        maxacc = vector.new(0, -9.81, 0),
-                        collisiondetection = true,
-                        texture = "better_fauna_egg_fragment.png",
-                    })
-                    mob_core.spawn_child(pos, self.name)
+            if tpos ~= nil and tpos.x ~= nil and tpos.y ~= nil and tpos.z ~= nil then
+                local dist = vec_dist(pos, tpos) - math.abs(hitbox(self)[4])
+                if dist > 1.5 then
+                    speed_factor = 0.5
+                else
+                    speed_factor = 0.1
                 end
-                self.breeding = false
-                self.breeding_time = 0
-                self.breeding_cooldown = 300
-                mobkit.remember(self, "breeding", self.breeding)
-                mobkit.remember(self, "breeding_time", self.breeding_time)
-                mobkit.remember(self, "breeding_cooldown", self.breeding_cooldown)
-                return true
+                mob_core.goto_next_waypoint(self, tpos, speed_factor)
+                if dist < 1.75 then
+                    self.breeding_time = self.breeding_time + 1
+                end
+                if self.breeding_time >= 2
+                or mate:get_luaentity().breeding_time >= 2 then
+                    if self.gender == "female" then
+                        minetest.add_particlespawner({
+                            amount = 6,
+                            time = 0.25,
+                            minpos = {x = pos.x - 7/16, y = pos.y - 5/16, z = pos.z - 7/16},
+                            maxpos = {x = pos.x + 7/16, y = pos.y - 5/16, z = pos.z + 7/16},
+                            minvel = vector.new(-1, 2, -1),
+                            maxvel = vector.new(1, 5, 1),
+                            minacc = vector.new(0, -9.81, 0),
+                            maxacc = vector.new(0, -9.81, 0),
+                            collisiondetection = true,
+                            texture = "better_fauna_egg_fragment.png",
+                        })
+                        mob_core.spawn_child(pos, self.name)
+                    end
+                    self.breeding = false
+                    self.breeding_time = 0
+                    self.breeding_cooldown = 300
+                    mobkit.remember(self, "breeding", self.breeding)
+                    mobkit.remember(self, "breeding_time", self.breeding_time)
+                    mobkit.remember(self, "breeding_cooldown", self.breeding_cooldown)
+                    return true
+                end
             end
         end
     end
@@ -461,42 +463,44 @@ function better_fauna.hq_eat(self, prty)
     local func = function(self)
         local pos = mobkit.get_stand_pos(self)
         local under = vector.new(pos.x, pos.y - 1, pos.z)
-        for _, node in ipairs(self.consumable_nodes) do
-            if node.name == minetest.get_node(under).name then
-                minetest.set_node(under, {name = node.replacement})
-                local def = minetest.registered_nodes[node.name]
-                local texture = def.tiles[1]
-                texture = texture .. "^[resize:8x8"
-                minetest.add_particlespawner({
-                    amount = 6,
-                    time = 0.1,
-                    minpos = vector.new(
-                        pos.x - 0.5,
-                        pos.y + 0.1,
-                        pos.z - 0.5
-                    ),
-                    maxpos = vector.new(
-                        pos.x + 0.5,
-                        pos.y + 0.1,
-                        pos.z + 0.5
-                    ),
-                    minvel = {x=-1, y=1, z=-1},
-                    maxvel = {x=1, y=2, z=1},
-                    minacc = {x=0, y=-5, z=0},
-                    maxacc = {x=0, y=-9, z=0},
-                    minexptime = 1,
-                    maxexptime = 1,
-                    minsize = 1,
-                    maxsize = 2,
-                    collisiondetection = true,
-                    vertical = false,
-                    texture = texture,
-                })
-                self.gotten = false
-                mobkit.remember(self, "gotten", self.gotten)
-                return true
-            else
-                return true
+        if self.consumable_nodes ~= nil then
+            for _, node in ipairs(self.consumable_nodes) do
+                if node.name == minetest.get_node(under).name then
+                    minetest.set_node(under, {name = node.replacement})
+                    local def = minetest.registered_nodes[node.name]
+                    local texture = def.tiles[1]
+                    texture = texture .. "^[resize:8x8"
+                    minetest.add_particlespawner({
+                        amount = 6,
+                        time = 0.1,
+                        minpos = vector.new(
+                            pos.x - 0.5,
+                            pos.y + 0.1,
+                            pos.z - 0.5
+                        ),
+                        maxpos = vector.new(
+                            pos.x + 0.5,
+                            pos.y + 0.1,
+                            pos.z + 0.5
+                        ),
+                        minvel = {x=-1, y=1, z=-1},
+                        maxvel = {x=1, y=2, z=1},
+                        minacc = {x=0, y=-5, z=0},
+                        maxacc = {x=0, y=-9, z=0},
+                        minexptime = 1,
+                        maxexptime = 1,
+                        minsize = 1,
+                        maxsize = 2,
+                        collisiondetection = true,
+                        vertical = false,
+                        texture = texture,
+                    })
+                    self.gotten = false
+                    mobkit.remember(self, "gotten", self.gotten)
+                    return true
+                else
+                    return true
+                end
             end
         end
     end
