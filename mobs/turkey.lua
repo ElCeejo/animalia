@@ -2,7 +2,9 @@
 -- Turkey --
 ------------
 
-local blend = better_fauna.frame_blend
+local clamp_bone_rot = animalia.clamp_bone_rot
+
+local interp = animalia.interp
 
 local function turkey_logic(self)
 
@@ -10,115 +12,141 @@ local function turkey_logic(self)
 		mob_core.on_die(self)
 		return
 	end
-	local prty = mobkit.get_queue_priority(self)
-	local player = mobkit.get_nearby_player(self)
 
-	if mobkit.timer(self,1) then
+	if self.status ~= "following" then
+		if self.attention_span > 1 then
+			self.attention_span = self.attention_span - self.dtime
+			mobkit.remember(self, "attention_span", self.attention_span)
+		end
+	else
+		self.attention_span = self.attention_span + self.dtime
+		mobkit.remember(self, "attention_span", self.attention_span)
+	end
 
-		mob_core.vitals(self)
-		mob_core.random_sound(self, 12)
+	animalia.head_tracking(self, 0.45, 0.25)
+
+	if mobkit.timer(self, 3) then
+
+		local prty = mobkit.get_queue_priority(self)
+		local player = mobkit.get_nearby_player(self)
+
+		mob_core.random_sound(self, 14)
+
+		if prty < 4
+		and self.isinliquid then
+			animalia.hq_go_to_land(self, 4)
+		end
 
 		if prty < 3
         and self.breeding then
-            better_fauna.hq_fowl_breed(self, 3)
-		end
-		
-        if prty < 2
-        and player then
-            if self.attention_span < 5 then
-                if mob_core.follow_holding(self, player) then
-                    better_fauna.hq_follow_player(self, 2, player)
-                    self.attention_span = self.attention_span + 1
-                end
-            end
+            animalia.hq_fowl_breed(self, 3)
 		end
 
+		if prty == 2
+		and not self.lasso_player
+		and (not player
+		or not mob_core.follow_holding(self, player)) then
+			mobkit.clear_queue_high(self)
+		end
+
+        if prty < 2 then
+			if self.caught_with_lasso
+			and self.lasso_player then
+				animalia.hq_follow_player(self, 2, self.lasso_player, true)
+			elseif player then
+	        	if self.attention_span < 5 then
+				    if mob_core.follow_holding(self, player) then
+            	        animalia.hq_follow_player(self, 2, player)
+            	        self.attention_span = self.attention_span + 3
+            	    end
+            	end
+			end
+        end
+
 		if mobkit.is_queue_empty_high(self) then
-			mob_core.hq_roam(self, 0)
+			animalia.hq_wander_group(self, 0, 8)
 		end
 	end
 end
 
-minetest.register_entity("better_fauna:turkey",{
-	max_hp = 10,
-	view_range = 16,
-	armor_groups = {fleshy = 100},
-	physical = true,
-	collide_with_objects = true,
+animalia.register_mob("turkey", {
+	-- Stats
+	health = 15,
+	fleshy = 100,
+	view_range = 26,
+	lung_capacity = 10,
+	-- Visual
 	collisionbox = {-0.3, -0.2, -0.3, 0.3, 0.4, 0.3},
 	visual_size = {x = 7, y = 7},
-	scale_stage1 = 0.25,
-    scale_stage2 = 0.5,
-    scale_stage3 = 0.75,
-	visual = "mesh",
-	mesh = "better_fauna_turkey.b3d",
-	female_textures = {"better_fauna_turkey_hen.png"},
-	male_textures = {"better_fauna_turkey_tom.png"},
-	child_textures = {"better_fauna_turkey_chick.png"},
-    animation = {
-		stand = {range = {x = 0, y = 0}, speed = 1, frame_blend = blend, loop = true},
-		walk = {range = {x = 10, y = 30}, speed = 30, frame_blend = blend, loop = true},
-		run = {range = {x = 10, y = 30}, speed = 45, frame_blend = blend, loop = true},
-        fall = {range = {x = 40, y = 60}, speed = 30, frame_blend = blend, loop = true},
+	mesh = "animalia_turkey.b3d",
+	female_textures = {"animalia_turkey_hen.png"},
+	male_textures = {"animalia_turkey_tom.png"},
+	child_textures = {"animalia_turkey_chick.png"},
+    animations = {
+		stand = {range = {x = 0, y = 0}, speed = 1, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 10, y = 30}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 40, y = 60}, speed = 45, frame_blend = 0.3, loop = true},
+        fall = {range = {x = 70, y = 90}, speed = 30, frame_blend = 0.3, loop = true},
 	},
+	-- Physics
+	speed = 5,
+	max_fall = 6,
+	-- Attributes
     sounds = {
         alter_child_pitch = true,
         random = {
-            name = "better_fauna_turkey_idle",
+            name = "animalia_turkey_idle",
             gain = 1.0,
             distance = 8
         },
         hurt = {
-            name = "better_fauna_turkey_hurt",
+            name = "animalia_turkey_hurt",
             gain = 1.0,
             distance = 8
         },
         death = {
-            name = "better_fauna_turkey_death",
+            name = "animalia_turkey_death",
             gain = 1.0,
             distance = 8
         }
     },
-	max_speed = 4,
-	stepheight = 1.1,
-	jump_height = 1.1,
-	buoyancy = 0.25,
-	lung_capacity = 10,
-    timeout = 1200,
-    ignore_liquidflag = false,
-    core_growth = false,
-	push_on_collide = true,
-	catch_with_net = true,
+	-- Behavior
+	defend_owner = false,
 	follow = {
 		"farming:seed_cotton",
 		"farming:seed_wheat"
 	},
 	drops = {
-		{name = "better_fauna:feather", chance = 1, min = 1, max = 2},
-		{name = "better_fauna:turkey_raw", chance = 1, min = 3, max = 5}
+		{name = "animalia:feather", chance = 1, min = 1, max = 2},
+		{name = "animalia:poultry_raw", chance = 1, min = 2, max = 5}
 	},
-	on_step = better_fauna.on_step,
-	on_activate = better_fauna.on_activate,
-	get_staticdata = mobkit.statfunc,
-	phsyics = better_fauna.lightweight_physics,
+	-- Functions
+	head_data = {
+		offset = {x = 0, y = 0.15, z = 0},
+		pitch_correction = 45,
+		pivot_h = 0.45,
+		pivot_v = 0.65
+	},
+	physics = animalia.lightweight_physics,
 	logic = turkey_logic,
+	get_staticdata = mobkit.statfunc,
+	on_step = animalia.on_step,
+	on_activate = animalia.on_activate,
     on_rightclick = function(self, clicker)
-		if better_fauna.feed_tame(self, clicker, 1, false, true) then return end
-		mob_core.protect(self, clicker, false)
+		if animalia.feed_tame(self, clicker, 1, false, true) then return end
+		mob_core.protect(self, clicker, true)
 		mob_core.nametag(self, clicker, true)
 	end,
 	on_punch = function(self, puncher, _, tool_capabilities, dir)
-		mobkit.clear_queue_high(self)
 		mob_core.on_punch_basic(self, puncher, tool_capabilities, dir)
-		better_fauna.hq_sporadic_flee(self, 10, puncher)
+		animalia.hq_sporadic_flee(self, 10)
 	end,
 })
 
-mob_core.register_spawn_egg("better_fauna:turkey", "352b22", "2f2721")
+mob_core.register_spawn_egg("animalia:turkey", "352b22", "2f2721")
 
 mob_core.register_spawn({
-	name = "better_fauna:turkey",
-	nodes = {"default:dry_dirt_with_dry_grass", "default:dirt_with_grass"},
+	name = "animalia:turkey",
 	min_light = 0,
 	max_light = 15,
 	min_height = -31000,
@@ -127,30 +155,6 @@ mob_core.register_spawn({
 	max_rad = 256,
 	group = 6,
 	optional = {
-		biomes = {
-			"deciduous_forest",
-			"taiga"
-		}
+		biomes = animalia.temperate_biomes
 	}
-}, 16, 6)
-
-
-minetest.register_craftitem("better_fauna:turkey_raw", {
-	description = "Raw Turkey",
-	inventory_image = "better_fauna_turkey_raw.png",
-	on_use = minetest.item_eat(1),
-	groups = {flammable = 2},
-})
-
-minetest.register_craftitem("better_fauna:turkey_cooked", {
-	description = "Cooked Turkey",
-	inventory_image = "better_fauna_turkey_cooked.png",
-	on_use = minetest.item_eat(6),
-	groups = {flammable = 2},
-})
-
-minetest.register_craft({
-	type  =  "cooking",
-	recipe  = "better_fauna:turkey_raw",
-	output = "better_fauna:turkey_cooked",
-})
+}, animalia.spawn_interval, 6)
