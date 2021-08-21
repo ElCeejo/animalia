@@ -261,20 +261,6 @@ animalia.register_mob("sheep", {
 
 mob_core.register_spawn_egg("animalia:sheep", "f4e6cf", "e1ca9b")
 
-mob_core.register_spawn({
-	name = "animalia:sheep",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	min_rad = 24,
-	max_rad = 256,
-	group = 6,
-	optional = {
-		biomes = animalia.grassland_biomes
-	}
-}, animalia.spawn_interval, 4)
-
 minetest.register_craftitem("animalia:mutton_raw", {
 	description = "Raw Mutton",
 	inventory_image = "animalia_mutton_raw.png",

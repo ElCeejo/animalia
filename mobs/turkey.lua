@@ -144,17 +144,3 @@ animalia.register_mob("turkey", {
 })
 
 mob_core.register_spawn_egg("animalia:turkey", "352b22", "2f2721")
-
-mob_core.register_spawn({
-	name = "animalia:turkey",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	min_rad = 24,
-	max_rad = 256,
-	group = 6,
-	optional = {
-		biomes = animalia.temperate_biomes
-	}
-}, animalia.spawn_interval, 6)

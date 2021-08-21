@@ -223,15 +223,3 @@ animalia.register_mob("wolf", {
 })
 
 mob_core.register_spawn_egg("animalia:wolf", "a19678" ,"231b13")
-
-mob_core.register_spawn({
-	name = "animalia:wolf",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	group = 4,
-	optional = {
-		biomes = animalia.temperate_biomes
-	}
-}, animalia.spawn_interval, 4)

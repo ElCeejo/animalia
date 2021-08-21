@@ -245,15 +245,3 @@ minetest.register_craft({
 
 
 mob_core.register_spawn_egg("animalia:cow", "cac3a1" ,"464438")
-
-mob_core.register_spawn({
-	name = "animalia:cow",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	group = 3,
-	optional = {
-		biomes = animalia.grassland_biomes
-	}
-}, animalia.spawn_interval, 2)

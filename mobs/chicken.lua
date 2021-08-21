@@ -135,7 +135,7 @@ animalia.register_mob("chicken", {
 	},
 	drops = {
 		{name = "animalia:feather", chance = 1, min = 1, max = 2},
-		{name = "animalia:chicken_raw", chance = 1, min = 1, max = 4}
+		{name = "animalia:poultry_raw", chance = 1, min = 1, max = 4}
 	},
 	-- Functions
 	head_data = {
@@ -160,23 +160,6 @@ animalia.register_mob("chicken", {
 })
 
 mob_core.register_spawn_egg("animalia:chicken", "c6c6c6", "d22222")
-
-mob_core.register_spawn({
-	name = "animalia:chicken",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	min_rad = 24,
-	max_rad = 256,
-	group = 6,
-	optional = {
-		biomes = {
-			unpack(animalia.grassland_biomes),
-			unpack(animalia.tropical_biomes)
-		}
-	}
-}, animalia.spawn_interval, 4)
 
 minetest.register_craftitem("animalia:poultry_raw", {
 	description = "Raw Poultry",

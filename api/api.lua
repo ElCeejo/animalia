@@ -583,7 +583,7 @@ end
 local function is_under_solid(pos)
     local pos2 = vector.new(pos.x, pos.y + 1, pos.z)
     local def = minetest.registered_nodes[minetest.get_node(pos2).name]
-    return (def.walkable or mobkit.get_node_height(pos2) < 1.5)
+    return (def.walkable or ((mobkit.get_node_height(pos2) or 0) < 1.5))
 end
 
 local function vec_center(vec)

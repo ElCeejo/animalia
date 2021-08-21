@@ -304,26 +304,3 @@ animalia.register_mob("cat", {
 })
 
 mob_core.register_spawn_egg("animalia:cat", "db9764" ,"cf8d5a")
-
-local house_nodes = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_nodes) do
-        if minetest.get_item_group(name, "stairs") > 0
-		or minetest.get_item_group(name, "wood") > 0 then
-			table.insert(house_nodes, name)
-		end
-	end
-end)
-
-mob_core.register_spawn({
-	name = "animalia:cat",
-	nodes = house_nodes,
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	min_rad = 24,
-	max_rad = 256,
-	group = 0,
-}, animalia.spawn_interval, 1)

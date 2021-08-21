@@ -281,15 +281,3 @@ animalia.register_mob("horse", {
 })
 
 mob_core.register_spawn_egg("animalia:horse", "ebdfd8" ,"653818")
-
-mob_core.register_spawn({
-	name = "animalia:horse",
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	group = 6,
-	optional = {
-		biomes = animalia.grassland_biomes
-	}
-}, animalia.spawn_interval, 8)

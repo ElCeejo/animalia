@@ -162,20 +162,3 @@ minetest.register_craft({
 })
 
 mob_core.register_spawn_egg("animalia:pig", "e0b1a7" ,"cc9485")
-
-mob_core.register_spawn({
-	name = "animalia:pig",
-	nodes = {"default:dirt_with_grass"},
-	min_light = 0,
-	max_light = 15,
-	min_height = -31000,
-	max_height = 31000,
-	group = 3,
-	optional = {
-		biomes = {
-			unpack(animalia.grassland_biomes),
-			unpack(animalia.temperate_biomes),
-			unpack(animalia.boreal_biomes)
-		}
-	}
-}, animalia.spawn_interval, 4)

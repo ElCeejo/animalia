@@ -22,61 +22,6 @@ minetest.register_on_mods_loaded(function()
 	end
 end)
 
-animalia.grassland_biomes = {}
-
-animalia.temperate_biomes = {}
-
-animalia.boreal_biomes = {}
-
-animalia.tropical_biomes = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_biomes) do
-        local biome = minetest.registered_biomes[name]
-        if name:find("forest") then
-			local turf = biome.node_top
-			local heat = biome.heat_point or 0
-			local humidity = biome.humidity_point or 50
-			if turf then
-				if turf:find("dirt") then
-					if heat >= 40
-					and humidity >= 60 then
-						table.insert(animalia.tropical_biomes, name)
-					else
-						table.insert(animalia.boreal_biomes, name)
-					end
-				elseif turf:find("grass") then
-					if heat >= 40 then
-						table.insert(animalia.boreal_biomes, name)
-					else
-						table.insert(animalia.temperate_biomes, name)
-					end
-				elseif turf:find("litter") then
-					if heat >= 40
-					and humidity >= 60 then
-						table.insert(animalia.tropical_biomes, name)
-					else
-						table.insert(animalia.temperate_biomes, name)
-					end
-				elseif turf:find("snow") then
-					table.insert(animalia.temperate_biomes, name)
-				end
-			end
-		else
-			local turf = biome.node_top
-			local heat = biome.heat_point or 0
-			--local humidity = biome.humidity_point or 50
-			if turf then
-				if turf:find("grass")
-				or (turf:find("dirt")
-				and heat < 60) then
-					table.insert(animalia.grassland_biomes, name)
-				end
-			end
-		end
-	end
-end)
-
 animalia.frame_blend = 0
 
 if minetest.has_feature("object_step_has_moveresult") then
@@ -155,7 +100,12 @@ end
 
 local path = minetest.get_modpath("animalia")
 
+local spawn_mobs = minetest.settings:get_bool("spawn_mobs") or true
+
 dofile(path.."/api/api.lua")
+if spawn_mobs then
+	dofile(path.."/api/spawn.lua")
+end
 dofile(path.."/craftitems.lua")
 dofile(path.."/mobs/cat.lua")
 dofile(path.."/mobs/chicken.lua")
@@ -167,63 +117,25 @@ dofile(path.."/mobs/turkey.lua")
 dofile(path.."/mobs/wolf.lua")
 dofile(path.."/api/legacy_convert.lua")
 
-animalia.chunks_since_last_spawn = 0
+local convert_redo_items = minetest.settings:get_bool("convert_redo_items") or false
 
-local chunk_spawn_add_int = tonumber(minetest.settings:get("chunk_spawn_add_int")) or 32
-
-animalia.spawn_queue = {}
-
-minetest.register_on_generated(function(minp, maxp)
-	animalia.chunks_since_last_spawn = animalia.chunks_since_last_spawn + 1
-	local heightmap = minetest.get_mapgen_object("heightmap")
-	if not heightmap then return end
-	local pos = {
-		x = minp.x + math.floor((maxp.x - minp.x) / 2),
-		y = minp.y,
-		z = minp.z + math.floor((maxp.z - minp.z) / 2)
-	}
-	local hm_i = (pos.x - minp.x + 1) + (((pos.z - minp.z)) * 80)
-	pos.y = heightmap[hm_i]
-	if animalia.chunks_since_last_spawn > chunk_spawn_add_int
-	and pos.y > 0 then
-		local heightmap = minetest.get_mapgen_object("heightmap")
-		if not heightmap then return end
-		local center = {
-			x = math.floor(minp.x + ((maxp.x - minp.x) * 0.5) + 0.5),
-			y = minp.y,
-			z = math.floor(minp.z + ((maxp.z - minp.z) * 0.5) + 0.5),
-		}
-		local light = minetest.get_natural_light(center)
-		while center.y < maxp.y
-		and light < 10 do
-			center.y = center.y + 1
-			light = minetest.get_natural_light(center)
-		end
-		table.insert(animalia.spawn_queue, {pos = center, mob = animalia.mobs[math.random(#animalia.mobs)]})
-		animalia.chunks_since_last_spawn = 0
-	end
-end)
-
-local chunk_spawn_queue_int  = tonumber(minetest.settings:get("chunk_spawn_queue_int")) or 10
-
-local function spawn_queued()
-	local queue = animalia.spawn_queue
-	if #queue > 0 then
-		for i = #queue, 1, -1 do
-			local def = mob_core.registered_spawns[queue[i].mob].def
-			mob_core.spawn_at_pos(
-				queue[i].pos,
-				def.name,
-				def.nodes or nil,
-				def.group or 1,
-				def.optional or nil
-			)
-			table.remove(animalia.spawn_queue, i)
-		end
-	end
-	minetest.after(chunk_spawn_queue_int, spawn_queued)
+if convert_redo_items then
+	minetest.register_alias_force("mobs:lasso","animalia:lasso")
+	minetest.register_alias_force("mobs:saddle","animalia:saddle")
+	minetest.register_alias_force("mobs:shears","animalia:shears")
+	minetest.register_alias_force("mobs_animal:chicken_raw","animalia:poultry_raw")
+	minetest.register_alias_force("mobs_animal:chicken_feather","animalia:feather")
+	minetest.register_alias_force("mobs:meat_raw" ,"animalia:beef_raw")
+	minetest.register_alias_force("mobs:meat","animalia:beef_cooked")
+	minetest.register_alias_force("mobs_animal:mutton_raw","animalia:mutton_raw")
+	minetest.register_alias_force("mobs_animal:mutton_cooked","animalia:mutton_cooked")
+	minetest.register_alias_force("mobs:leather" ,"animalia:leather")
+	minetest.register_alias_force("mobs_animal:egg","animalia:chicken_egg")
+	minetest.register_alias_force("mobs_animal:chicken_egg_fried" ,"animalia:chicken_egg_fried")
+	minetest.register_alias_force("mobs_animal:milk_bucket","animalia:bucket_milk")
+	minetest.register_alias_force("mobs_animal:chicken_cooked" ,"animalia:poultry_cooked")
+	minetest.register_alias_force("mobs_animal:pork_raw" ,"animalia:porkchop_raw")
+	minetest.register_alias_force("mobs_animal:pork_cooked","animalia:porkchop_cooked")
 end
-minetest.after(chunk_spawn_queue_int, spawn_queued)
-
 
 minetest.log("action", "[MOD] Animalia [0.2] loaded")
