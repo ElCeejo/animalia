@@ -227,14 +227,14 @@ minetest.register_craftitem("animalia:beef_raw", {
 	description = "Raw Beef",
 	inventory_image = "animalia_beef_raw.png",
 	on_use = minetest.item_eat(1),
-	groups = {flammable = 2},
+	groups = {flammable = 2, meat = 1},
 })
 
 minetest.register_craftitem("animalia:beef_cooked", {
 	description = "Steak",
 	inventory_image = "animalia_beef_cooked.png",
 	on_use = minetest.item_eat(8),
-	groups = {flammable = 2},
+	groups = {flammable = 2, meat = 1},
 })
 
 minetest.register_craft({

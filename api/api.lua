@@ -1,11 +1,13 @@
 -------------
 ---- API ----
 -------------
--- Ver 0.1 --
+-- Ver 0.2 --
 
 local hitbox = mob_core.get_hitbox
 
 local find_string = mob_core.find_val
+
+local creative = minetest.settings:get_bool("creative_mode")
 
 ----------
 -- Math --
@@ -23,13 +25,13 @@ end
 local function round(x) -- Round to nearest multiple of 0.5
 	return x + 0.5 - (x + 0.5) % 1
 end
+
 local function clamp(num, min, max)
 	if num < min then
 		num = min
 	elseif num > max then
 		num = max    
 	end
-	
 	return num
 end
 
@@ -85,6 +87,10 @@ local function get_random_offset(pos, range)
 end
 
 local is_movable = mob_core.is_moveable
+
+local function walkable(pos)
+    return minetest.registered_nodes[minetest.get_node(pos).name].walkable
+end
 
 -------------------
 -- API Functions --
@@ -199,7 +205,7 @@ function animalia.feed_tame(self, clicker, feed_count, tame, breed)
 	local pos = self.object:get_pos()
 	local mob_name = mob_core.get_name_proper(self.name)
 	if mob_core.follow_holding(self, clicker) then
-		if creative == false then
+		if not creative then
 			item:take_item()
 			clicker:set_wielded_item(item)
 		end
@@ -582,8 +588,7 @@ end
 
 local function is_under_solid(pos)
     local pos2 = vector.new(pos.x, pos.y + 1, pos.z)
-    local def = minetest.registered_nodes[minetest.get_node(pos2).name]
-    return (def.walkable or ((mobkit.get_node_height(pos2) or 0) < 1.5))
+    return (walkable(pos2) or ((mobkit.get_node_height(pos2) or 0) < 1.5))
 end
 
 local function vec_center(vec)
@@ -598,21 +603,28 @@ local function do_step(self, moveresult)
     local width = hitbox(self)[4] - 0.1
     if not self._step then
         for _, data in ipairs(moveresult.collisions) do
-            if data.type == "node"
-            and data.node_pos.y + 0.5 > pos.y
-            and not is_under_solid(data.node_pos)
-            and not vector.equals(vec_center(pos), vec_center(data.node_pos)) then
-                local vel_yaw = self.object:get_yaw()
-                local dir_yaw = minetest.dir_to_yaw(vector.direction(pos, data.node_pos))
-                if diff(vel_yaw, dir_yaw) < 1.6 then
-                    self._step = data.node_pos
-                    break
+            if data.type == "node" then
+                local step_pos = data.node_pos
+                local halfway = vector.add(pos, vector.multiply(vector.direction(pos, step_pos), 0.5))
+                if step_pos.y + 0.5 > pos.y
+                and is_movable({x = halfway.x, y = data.node_pos.y + 1, z = halfway.z}, width, self.height)
+                and not is_under_solid(data.node_pos)
+                and walkable({x = pos.x, y = pos.y - 1, z = pos.z})
+                and not vector.equals(vec_center(pos), vec_center(data.node_pos)) then
+                    local vel_yaw = self.object:get_yaw()
+                    local dir_yaw = minetest.dir_to_yaw(vector.direction(pos, data.node_pos))
+                    if diff(vel_yaw, dir_yaw) < width * 2 then
+                        self._step = data.node_pos
+                        break
+                    end
+                else
+                    self._step = nil
                 end
             end
         end
     else
         local vel = self.object:get_velocity()
-        self.object:set_velocity(vector.new(vel.x, 4, vel.z))
+        self.object:set_velocity(vector.new(vel.x, 7, vel.z))
         if self._step.y < pos.y - 0.5 then
             self.object:set_velocity(vector.new(vel.x, 0.5, vel.z))
             self._step = nil
@@ -1304,8 +1316,12 @@ function animalia.hq_mount_logic(self, prty)
             if self.isinliquid then
 			    tvel = tvel * 0.4
                 vel.y = vel.y * 0.4
-            elseif jumping then
-                tvel = tvel * 0.4
+            else
+                if jumping then
+                    tvel = tvel * 0.4
+                else
+                    tvel = tvel * 0.6
+                end
             end
 		end
         if tvel > 0 then

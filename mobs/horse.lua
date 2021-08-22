@@ -245,6 +245,10 @@ animalia.register_mob("horse", {
 			self.object:set_properties({
 				textures = {texture .. "^animalia_horse_saddle.png"}
 			})
+			self.drops = {
+				{name = "animalia:leather", chance = 2, min = 1, max = 4},
+				{name = "animalia:saddle", chance = 1, min = 1, max = 1}
+			}
 		end
 	end,
 	on_rightclick = function(self, clicker)
