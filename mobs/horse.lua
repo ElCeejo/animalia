@@ -67,7 +67,7 @@ local function horse_logic(self)
 		local player = mobkit.get_nearby_player(self)
 		local pos = self.object:get_pos()
 
-		mob_core.random_sound(self, 14)
+		mob_core.random_sound(self, 24)
 		mob_core.growth(self)
 
 		if self.breaking then

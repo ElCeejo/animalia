@@ -165,14 +165,14 @@ minetest.register_craftitem("animalia:poultry_raw", {
 	description = "Raw Poultry",
 	inventory_image = "animalia_poultry_raw.png",
 	on_use = minetest.item_eat(1),
-	groups = {flammable = 2, meat = 1},
+	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:poultry_cooked", {
 	description = "Cooked Poultry",
 	inventory_image = "animalia_poultry_cooked.png",
 	on_use = minetest.item_eat(6),
-	groups = {flammable = 2, meat = 1},
+	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craft({
@@ -274,14 +274,14 @@ minetest.register_craftitem("animalia:chicken_egg", {
 	description = "Chicken Egg",
 	inventory_image = "animalia_egg.png",
 	on_use = mobs_shoot_egg,
-	groups = {flammable = 2},
+	groups = {food_egg = 1, flammable = 2},
 })
 
 minetest.register_craftitem("animalia:chicken_egg_fried", {
 	description = "Fried Chicken Egg",
 	inventory_image = "animalia_egg_fried.png",
 	on_use = minetest.item_eat(4),
-	groups = {flammable = 2},
+	groups = {food_egg = 1, flammable = 2},
 })
 
 minetest.register_craft({

@@ -497,7 +497,7 @@ function animalia.go_to_pos_lite(self, tpos, speed_factor)
     if mobkit.is_queue_empty_low(self) then
         local _, pos2 = mob_core.get_next_waypoint(self, tpos)
         if pos2 then
-            mob_core.lq_dumbwalk(self, tpos, speed_factor)
+            mob_core.lq_dumbwalk(self, pos2, speed_factor)
             return true
         else
             local box = hitbox(self)
@@ -592,10 +592,7 @@ local function is_under_solid(pos)
 end
 
 local function vec_center(vec)
-    for _, v in pairs(vec) do
-        v = floor(v + 0.5)
-    end
-    return vec
+    return {x = floor(vec.x + 0.5), y = floor(vec.y + 0.5), z = floor(vec.z + 0.5)}
 end
 
 local function do_step(self, moveresult)
@@ -607,10 +604,11 @@ local function do_step(self, moveresult)
                 local step_pos = data.node_pos
                 local halfway = vector.add(pos, vector.multiply(vector.direction(pos, step_pos), 0.5))
                 if step_pos.y + 0.5 > pos.y
-                and is_movable({x = halfway.x, y = data.node_pos.y + 1, z = halfway.z}, width, self.height)
-                and not is_under_solid(data.node_pos)
-                and walkable({x = pos.x, y = pos.y - 1, z = pos.z})
-                and not vector.equals(vec_center(pos), vec_center(data.node_pos)) then
+                and (walkable({x = pos.x, y = pos.y - 1, z = pos.z})
+                or self.isinliquid)
+                and not vector.equals(vec_center(pos), step_pos)
+                and not is_under_solid(step_pos)
+                and is_movable({x = halfway.x, y = step_pos.y + 1, z = halfway.z}, width, self.height) then
                     local vel_yaw = self.object:get_yaw()
                     local dir_yaw = minetest.dir_to_yaw(vector.direction(pos, data.node_pos))
                     if diff(vel_yaw, dir_yaw) < width * 2 then
@@ -1101,13 +1099,14 @@ function animalia.hq_sporadic_flee(self, prty)
                 if self.animation["run"] then
                     anim = "run"
                 end
-                mob_core.lq_dumbwalk(self, random_goal, 1, anim)
+                animalia.go_to_pos_lite(self, random_goal, 1)
             else
                 animalia.lq_idle(self, 0.1)
             end
         end
         timer = timer - self.dtime
         if timer <= 0 then
+            animalia.lq_idle(self, 0.1, "stand")
             return true
         end
     end

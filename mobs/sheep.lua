@@ -265,14 +265,14 @@ minetest.register_craftitem("animalia:mutton_raw", {
 	description = "Raw Mutton",
 	inventory_image = "animalia_mutton_raw.png",
 	on_use = minetest.item_eat(1),
-	groups = {flammable = 2, meat = 1},
+	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:mutton_cooked", {
 	description = "Cooked Mutton",
 	inventory_image = "animalia_mutton_cooked.png",
 	on_use = minetest.item_eat(6),
-	groups = {flammable = 2, meat = 1},
+	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craft({
