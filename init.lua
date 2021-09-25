@@ -3,7 +3,7 @@ better_fauna = animalia
 
 animalia.mobkit_mobs = {}
 animalia.walkable_nodes = {}
-animalia.spawn_interval = 60
+animalia.spawn_interval = tonumber(minetest.settings:get("animalia_spawn_int")) or 60
 animalia.mobs = {}
 
 minetest.register_on_mods_loaded(function()
@@ -26,6 +26,14 @@ animalia.frame_blend = 0
 
 if minetest.has_feature("object_step_has_moveresult") then
 	animalia.frame_blend = 0.3
+end
+
+local fancy_step = minetest.settings:get_bool("animalia_fancy_step")
+
+local stepheight = 1.1
+
+if fancy_step then
+	stepheight = 0.1
 end
 
 function animalia.register_mob(name, def)
@@ -59,7 +67,7 @@ function animalia.register_mob(name, def)
 		buoyancy = def.buoyancy or 0.25,
 		max_speed = def.speed,
 		jump_height = def.jump_height or 1.1,
-		stepheight = def.stepheight or 0,
+		stepheight = stepheight,
 		max_fall = def.max_fall or 2,
 		-- Attributes
 		sounds = def.sounds,

@@ -9,6 +9,8 @@ local find_string = mob_core.find_val
 
 local creative = minetest.settings:get_bool("creative_mode")
 
+local fancy_step = minetest.settings:get_bool("animalia_fancy_step")
+
 ----------
 -- Math --
 ----------
@@ -596,6 +598,7 @@ local function vec_center(vec)
 end
 
 local function do_step(self, moveresult)
+    if not fancy_step then return end
     local pos = mobkit.get_stand_pos(self)
     local width = hitbox(self)[4] - 0.1
     if not self._step then
@@ -644,9 +647,9 @@ function animalia.on_step(self, dtime, moveresult)
         table.remove(self.target_blacklist, 1)
     end
     if self.caught_with_lasso then
-        if self.lasso_player
+        if self.point_to
         and mobkit.is_alive(self) then
-            local player = self.lasso_player
+            local player = self.point_to
             local pos = mobkit.get_stand_pos(self)
             pos.y = pos.y + (self.height * 0.5)
             local ppos = player:get_pos()
@@ -672,7 +675,7 @@ function animalia.on_step(self, dtime, moveresult)
             if player:get_wielded_item():get_name() ~= "animalia:lasso"
             or vector.distance(pos, ppos) > 20 then
                 self.caught_with_lasso = nil
-                self.lasso_player = nil
+                self.point_to = nil
                 if self.lasso_visual then
                     self.lasso_visual:remove()
                     self.lasso_visual = nil

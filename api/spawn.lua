@@ -41,7 +41,7 @@ minetest.register_on_mods_loaded(function()
 					end
 				elseif turf:find("litter") then
 					if heat >= 40
-					and humidity >= 60 then
+					and humidity >= 80 then
 						table.insert(animalia.tropical_biomes, name)
 					else
 						table.insert(animalia.temperate_biomes, name)
