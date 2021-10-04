@@ -50,7 +50,7 @@ local function cat_logic(self)
 		local player = mobkit.get_nearby_player(self)
 		local trust = 0
 
-		mob_core.random_sound(self, 30)
+		mob_core.random_sound(self, 64)
 		mob_core.growth(self)
 
 		if player then
