@@ -914,7 +914,8 @@ function animalia.hq_wander_ranged(self, prty)
                 pos.z + random(-1, 1)
             )
             local node = minetest.get_node(random_goal)
-            if node.name
+            if node
+	    and node.name
             and (minetest.registered_nodes[node.name].drawtype == "liquid"
             or minetest.registered_nodes[node.name].walkable) then
                 random_goal = nil
