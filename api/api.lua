@@ -914,9 +914,11 @@ function animalia.hq_wander_ranged(self, prty)
                 pos.z + random(-1, 1)
             )
             local node = minetest.get_node(random_goal)
-            if node
-	    and node.name
-            and (minetest.registered_nodes[node.name].drawtype == "liquid"
+            local def = minetest.registered_nodes[node.name]
+            if node.name
+            and def
+            and ((def.drawtype
+            and def.drawtype == "liquid")
             or minetest.registered_nodes[node.name].walkable) then
                 random_goal = nil
             end
@@ -975,8 +977,12 @@ function animalia.hq_wander_group(self, prty, group_range)
                 group_tick = 3
             end
             local node = minetest.get_node(random_goal)
-            if minetest.registered_nodes[node.name].drawtype == "liquid"
-            or minetest.registered_nodes[node.name].walkable then
+            local def = minetest.registered_nodes[node.name]
+            if node.name
+            and def
+            and ((def.drawtype
+            and def.drawtype == "liquid")
+            or minetest.registered_nodes[node.name].walkable) then
                 random_goal = nil
             end
             if self.lasso_pos
