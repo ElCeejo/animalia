@@ -576,6 +576,7 @@ function animalia.on_activate(self, staticdata, dtime_s)
 			end
 		end
 	end
+	self._tyaw = self.object:get_yaw() or 0
 end
 
 local function lasso_effect(self, pos2)
