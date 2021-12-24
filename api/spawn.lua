@@ -154,6 +154,20 @@ mob_core.register_spawn({
 	}
 }, animalia.spawn_interval, 4)
 
+-- Reindeer --
+
+mob_core.register_spawn({
+	name = "animalia:reindeer",
+	min_light = 0,
+	max_light = 15,
+	min_height = -31000,
+	max_height = 31000,
+	group = 6,
+	optional = {
+		biomes = animalia.temperate_biomes
+	}
+}, animalia.spawn_interval, 4)
+
 -- Sheep --
 
 mob_core.register_spawn({
