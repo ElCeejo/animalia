@@ -2,10 +2,6 @@
 -- Cat --
 ---------
 
-local clamp_bone_rot = animalia.clamp_bone_rot
-
-local interp = animalia.interp
-
 local follow = {
 	"animalia:poultry_raw"
 }
@@ -17,146 +13,23 @@ if minetest.registered_items["ethereal:fish_raw"] then
 	}
 end
 
-local function cat_logic(self)
-	
-	if self.hp <= 0 then	
-		mob_core.on_die(self)
-		return
-	end
-
-	if self._anim == "run" then
-		local pos = self.object:get_pos()
-		minetest.add_particlespawner({
-			amount = 1,
-			time = 0.25,
-			minpos = pos,
-			maxpos = pos,
-			minvel = vector.new(-1, 1, -1),
-			maxvel = vector.new(1, 2, 1),
-			minacc = vector.new(0, -9.81, 0),
-			maxacc = vector.new(0, -9.81, 0),
-			minsize = 0.25,
-			maxsize = 0.5,
-			collisiondetection = true,
-			texture = "default_dirt.png",
-		})
-	end
-
-	animalia.head_tracking(self, 0.25, 0.25)
-
-	if mobkit.timer(self, 1) then
-
-		local prty = mobkit.get_queue_priority(self)
-		local player = mobkit.get_nearby_player(self)
-		local trust = 0
-
-		mob_core.random_sound(self, 64)
-		mob_core.growth(self)
-
-		if player then
-			if not self.trust[player:get_player_name()] then
-				self.trust[player:get_player_name()] = 0
-				mobkit.remember(self, "trust", self.trust)
-			else
-				trust = self.trust[player:get_player_name()]
-			end
-		end
-
-		if self.trust_cooldown > 0 then
-			self.trust_cooldown = mobkit.remember(self, "trust_cooldown", self.trust_cooldown - 1)
-		end
-
-		if self.interact_sound_cooldown > 0 then
-			self.interact_sound_cooldown = self.interact_sound_cooldown - 1
-		end
-
-		if self.owner
-		and self.trust[self.owner] > 7 then
-			if prty < 22
-			and self.order == "sit" then
-				if not mobkit.is_queue_empty_high(self) then
-					mobkit.clear_queue_high(self)
-				end
-				mobkit.animate(self, "sit")
-				return
-			end
-	
-			if prty < 21
-			and self.owner_target then
-				if not mob_core.shared_owner(self, self.owner_target) then
-					animalia.hq_attack(self, 21, self.owner_target)
-				end
-			end
-	
-			if prty < 20
-			and self.order == "follow"
-			and minetest.get_player_by_name(self.owner) then
-				local owner = minetest.get_player_by_name(self.owner)
-				animalia.hq_follow_player(self, 20, owner, true)
-			end
-
-			if prty < 4
-			and self.breeding then
-				animalia.hq_breed(self, 3)
-			end
-		end
-
-		if prty < 5
-		and self.isinliquid then
-			animalia.hq_go_to_land(self, 5)
-		end
-
-		if prty < 3
-		and player then
-			if player:get_velocity()
-			and vector.length(player:get_velocity()) < 2 then
-				if mob_core.follow_holding(self, player)
-				and trust >= 4 then
-					animalia.hq_follow_player(self, 3, player)
-				end
-			elseif player:get_wielded_item():get_name() == "animalia:cat_toy" then
-				animalia.hq_follow_player(self, 3, player, true)
-				return
-			end
-		end
-		
-		if player
-		and prty == 3
-		and not mob_core.follow_holding(self, player)
-		and player:get_wielded_item():get_name() ~= "animalia:cat_toy" then
-			mobkit.clear_queue_high(self)
-		end
-
-		if prty < 2
-		and player
-		and trust > 4 then
-			local r = math.random(48)
-			if r < 2 then
-				animalia.hq_walk_in_front_of_player(self, 2, player)
-			elseif r < 3 then
-				animalia.hq_find_and_break_glass(self, 2)
-			end
-		end
-
-		if mobkit.is_queue_empty_high(self) then
-			animalia.hq_wander_ranged(self, 0)
-		end
-	end
-end
-
-animalia.register_mob("cat", {
+creatura.register_mob("animalia:cat", {
     -- Stats
-    health = 10,
-    fleshy = 100,
-    view_range = 32,
-    lung_capacity = 10,
-    -- Visual
-	collisionbox = {-0.2, 0, -0.2, 0.2, 0.4, 0.2},
+    max_health = 10,
+    armor_groups = {fleshy = 200},
+    damage = 1,
+    speed = 5,
+	tracking_range = 24,
+    despawn_after = 2000,
+	-- Entity Physics
+	stepheight = 1.1,
+    -- Visuals
+    mesh = "animalia_cat.b3d",
+	hitbox = {
+		width = 0.2,
+		height = 0.4
+	},
 	visual_size = {x = 6, y = 6},
-	scale_stage1 = 0.5,
-    scale_stage2 = 0.65,
-    scale_stage3 = 0.80,
-	mesh = "animalia_cat.b3d",
 	textures = {
 		"animalia_cat_1.png",
 		"animalia_cat_2.png",
@@ -170,12 +43,9 @@ animalia.register_mob("cat", {
 		sit = {range = {x = 140, y = 180}, speed = 10, frame_blend = 0.3, loop = true},
 		smack = {range = {x = 190, y = 210}, speed = 40, frame_blend = 0.1, loop = true},
 	},
-    -- Physics
-    speed = 8,
-    max_fall = 4,
-    -- Attributes
-    sounds = {
-        alter_child_pitch = true,
+    -- Misc
+	catch_with_net = true,
+	sounds = {
         random = {
             name = "animalia_cat_idle",
             gain = 0.25,
@@ -197,97 +67,244 @@ animalia.register_mob("cat", {
             distance = 8
         }
 	},
-	reach = 2,
-    damage = 3,
-    knockback = 2,
-    punch_cooldown = 1,
-    -- Behavior
-    defend_owner = true,
-	follow = follow,
-    -- Functions
+    follow = follow,
 	head_data = {
-		offset = {x = 0, y = 0.17, z = 0},
+		offset = {x = 0, y = 0.22, z = 0},
 		pitch_correction = -20,
-		pivot_h = 0.35,
-		pivot_v = 0.2
+		pivot_h = 0.65,
+		pivot_v = 0.65
 	},
-    logic = cat_logic,
-    get_staticdata = mobkit.statfunc,
-	on_step = animalia.on_step,
-	on_activate = function(self, staticdata, dtime_s)
-		animalia.on_activate(self, staticdata, dtime_s)
-		self.trust = mobkit.recall(self, "trust") or {}
-		self.trust_cooldown = mobkit.recall(self, "trust_cooldown") or 0
+    -- Function
+    activate_func = function(self)
+		animalia.initialize_api(self)
+		animalia.initialize_lasso(self)
+        self._path = {}
 		self.interact_sound_cooldown = 0
-	end,
-	on_rightclick = function(self, clicker)
-		local item = clicker:get_wielded_item():get_name()
-		if item == "animalia:net" then return end
-		if not self.trust[clicker:get_player_name()] then
-			self.trust[clicker:get_player_name()] = 0
-			mobkit.remember(self, "trust", self.trust)
+		self.trust_cooldown = self:recall("trust_cooldown") or 0
+		self.order = self:recall("order") or "wander"
+		self.owner = self:recall("owner") or nil
+		self.trust = self:recall("trust") or {}
+		if self.owner
+		and minetest.get_player_by_name(self.owner) then
+			if not animalia.pets[self.owner][self.object] then
+				table.insert(animalia.pets[self.owner], self.object)
+			end
 		end
-		local trust = self.trust[clicker:get_player_name()]
-		local pos = self.object:get_pos()
-		local prt_pos = vector.new(pos.x, pos.y + 0.5, pos.z)
-		local minppos = vector.add(prt_pos, 1)
-		local maxppos = vector.subtract(prt_pos, 1)
-		if animalia.feed_tame(self, clicker, math.random(3, 5), trust >= 10, trust >= 10) then
+    end,
+	utility_stack = {
+		[1] = {
+			utility = "animalia:wander",
+			get_score = function(self)
+				return 0.1, {self, true}
+			end
+		},
+		[2] = {
+			utility = "animalia:swim_to_land",
+			get_score = function(self)
+				if self.in_liquid then
+					return 0.9, {self}
+				end
+				return 0
+			end
+		},
+		[3] = {
+			utility = "animalia:find_and_break_glass_vessels",
+			get_score = function(self)
+				return math.random(10) * 0.01, {self}
+			end
+		},
+		[4] = {
+			utility = "animalia:walk_ahead_of_player",
+			get_score = function(self)
+				local player = creatura.get_nearby_player(self)
+				if player then
+					local trust = 0
+					if not self.trust[player:get_player_name()] then
+						self.trust[player:get_player_name()] = 0
+						self:memorize("trust", self.trust)
+					else
+						trust = self.trust[player:get_player_name()]
+					end
+					self._nearby_player = player
+					if trust > 3 then
+						return math.random(10) * 0.01, {self, player}
+					else
+						return 0
+					end
+				end
+				return 0
+			end
+		},
+		[5] = {
+			utility = "animalia:flee_from_player",
+			get_score = function(self)
+				local player = self._nearby_player
+				if player then
+					local trust = self.trust[player:get_player_name()] or 0
+					if trust < 1 then
+						if self.owner
+						and minetest.get_player_by_name(self.owner) then
+							local pos = self.object:get_pos()
+							local owner = minetest.get_player_by_name(self.owner)
+							local owner_pos = owner:get_pos()
+							if owner ~= player
+							and vector.distance(pos, owner_pos) < vector.distance(pos, player:get_pos()) then
+								return 0 
+							end
+						end
+						return 0.5, {self, player}
+					end
+				end
+				return 0
+			end
+		},
+		[6] = {
+			utility = "animalia:sit",
+			get_score = function(self)
+				if self.order == "sit"
+				and self.trust[self.owner] > 7 then
+					return 0.8, {self}
+				end
+				return 0
+			end
+		},
+		[7] = {
+			utility = "animalia:follow_player",
+			get_score = function(self)
+				if self.order == "follow"
+				and minetest.get_player_by_name(self.owner)
+				and self.trust[self.owner] > 7 then
+					return 1, {self, minetest.get_player_by_name(self.owner)}
+				end
+				local trust = 0
+				local player = self._nearby_player
+				if player then
+					if not self.trust[player:get_player_name()] then
+						self.trust[player:get_player_name()] = 0
+						self:memorize("trust", self.trust)
+					else
+						trust = self.trust[player:get_player_name()]
+					end
+				else
+					return 0
+				end
+				if player:get_velocity()
+				and vector.length(player:get_velocity()) < 2
+				and self:follow_wielded_item(player)
+				and trust >= 4 then
+					return 0.6, {self, player}
+				elseif player:get_wielded_item():get_name() == "animalia:cat_toy" then
+					return 0.6, {self, player, true}
+				end
+				return 0
+			end
+		},
+		[8] = {
+			utility = "animalia:mammal_breed",
+			get_score = function(self)
+				if self.breeding then
+					return 0.7, {self}
+				end
+				return 0
+			end
+		}
+	},
+    step_func = function(self)
+		animalia.step_timers(self)
+		animalia.head_tracking(self, 0.75, 0.75)
+		animalia.do_growth(self, 60)
+		animalia.update_lasso_effects(self)
+		if self:timer(1) then
+			if self.trust_cooldown > 0 then
+				self.trust_cooldown = self:memorize("trust_cooldown", self.trust_cooldown - 1)
+			end
+			if self.interact_sound_cooldown > 0 then
+				self.interact_sound_cooldown = self.interact_sound_cooldown - 1
+			end
+		end
+    end,
+    death_func = function(self)
+		if self:get_utility() ~= "animalia:die" then
+			self:initiate_utility("animalia:die", self)
+		end
+    end,
+	on_rightclick = function(self, clicker)
+		local item_name = clicker:get_wielded_item():get_name()
+		if item_name == "animalia:net" then return end
+		local trust = self.trust[clicker:get_player_name()] or 0
+		local pos = self:get_center_pos()
+		local minppos = vector.add(pos, 1)
+		local maxppos = vector.subtract(pos, 1)
+		if animalia.feed(self, clicker, true, true) then
 			if self.trust_cooldown <= 0
 			and trust < 10 then
 				self.trust[clicker:get_player_name()] = trust + 1
-				self.trust_cooldown = mobkit.remember(self, "trust_cooldown", 60)
-				mobkit.remember(self, "trust", self.trust)
-				animalia.particle_spawner(prt_pos, "mob_core_green_particle.png", "float", minppos, maxppos)
+				self.trust_cooldown = self:memorize("trust_cooldown", 60)
+				self:memorize("trust", self.trust)
+				animalia.particle_spawner(pos, "creatura_particle_green.png", "float", minppos, maxppos)
 			end
 			return
 		end
-		mob_core.protect(self, clicker, true)
-		mob_core.nametag(self, clicker, true)
-		if mobkit.get_queue_priority(self) == 3
-		and clicker:get_wielded_item():get_name() == "animalia:cat_toy" then
+		-- Initiate trust
+		if not self.trust[clicker:get_player_name()] then
+			self.trust[clicker:get_player_name()] = 0
+			self:memorize("trust", self.trust)
+		end
+		-- Increase trust by playing
+		if item_name == "animalia:cat_toy"
+		and self:get_utility() == "animalia:follow_player" then
 			if trust < 10 then
 				self.trust[clicker:get_player_name()] = trust + 1
-				mobkit.remember(self, "trust", self.trust)
-				animalia.particle_spawner(prt_pos, "mob_core_green_particle.png", "float", minppos, maxppos)
+				self:memorize("trust", self.trust)
+				animalia.particle_spawner(pos, "creatura_particle_green.png", "float", minppos, maxppos)
 				if self.interact_sound_cooldown <= 0 then
 					self.sounds["purr"].gain = 1
 					self.interact_sound_cooldown = 3
-					mobkit.make_sound(self, "purr")
+					self:play_sound("purr")
 				end
 			end
 		end
-
+		-- Purr to indicate trust level (louder = more trust)
+		if clicker:get_player_control().sneak then
+			if self.interact_sound_cooldown <= 0 then
+				self.sounds["purr"].gain = 0.15 * trust
+				self.interact_sound_cooldown = 3
+				self:play_sound("purr")
+			end
+		end
+		animalia.add_libri_page(self, clicker, {name = "cat", form = "pg_cat;Cats"})
 		if not self.owner
 		or clicker:get_player_name() ~= self.owner then
+			return
+		end
+		if trust <= 7 then
+			if self.interact_sound_cooldown <= 0 then
+				self.interact_sound_cooldown = 3
+				self:play_sound("random")
+			end
 			return
 		end
 		if clicker:get_player_control().sneak then
 			if self.interact_sound_cooldown <= 0 then
 				self.sounds["purr"].gain = 0.15 * self.trust[self.owner]
 				self.interact_sound_cooldown = 3
-				mobkit.make_sound(self, "purr")
+				self:play_sound("purr")
 			end
-		end
-		if trust <= 7 then
-			if self.interact_sound_cooldown <= 0 then
-				self.interact_sound_cooldown = 3
-				mobkit.make_sound(self, "random")
+			local order = self.order
+			if order == "wander" then
+				self.order = "follow"
+			elseif order == "follow" then
+				self.order = "sit"
+			else
+				self.order = "wander"
 			end
-			return
+			self:memorize("order", self.order)
 		end
-		if self.order == "wander" then
-			self.order = "follow"
-		elseif self.order == "follow" then
-			self.order = "sit"
-		else
-			self.order = "wander"
-		end
-		mobkit.remember(self, "order", self.order)
 	end,
-	on_punch = function(self, puncher, _, tool_capabilities, dir)
-		mob_core.on_punch_basic(self, puncher, tool_capabilities, dir)
-		animalia.hq_sporadic_flee(self, 10)
+	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		self:initiate_utility("animalia:flee_from_player", self, puncher)
+		self:set_utility_score(1)
 		if not self.trust[puncher:get_player_name()] then
 			self.trust[puncher:get_player_name()] = 0
 		else
@@ -295,12 +312,18 @@ animalia.register_mob("cat", {
 			self.trust[puncher:get_player_name()] = trust - 1
 		end
 		local pos = self.object:get_pos()
-		local prt_pos = vector.new(pos.x, pos.y + 0.5, pos.z)
-		local minppos = vector.add(prt_pos, 1)
-		local maxppos = vector.subtract(prt_pos, 1)
-		animalia.particle_spawner(prt_pos, "mob_core_red_particle.png", "float", minppos, maxppos)
-		mobkit.remember(self, "trust", self.trust)
+		pos = vector.new(pos.x, pos.y + 0.5, pos.z)
+		local minppos = vector.add(pos, 1)
+		local maxppos = vector.subtract(pos, 1)
+		animalia.particle_spawner(pos, "creatura_particle_red.png", "float", minppos, maxppos)
+		self:memorize("trust", self.trust)
+	end,
+	deactivate_func = function(self)
+		if self.owner
+		and animalia.pets[self.owner][self.object] then
+			animalia.pets[self.owner][self.object] = nil
+		end
 	end
 })
 
-mob_core.register_spawn_egg("animalia:cat", "db9764" ,"cf8d5a")
+creatura.register_spawn_egg("animalia:cat", "db9764" ,"cf8d5a")

@@ -1,17 +1,17 @@
 #    How many chunks can generate before adding another to spawn queue
-chunk_spawn_add_int (Chunk Spawning Addition Interval) float 64
+chunk_spawn_add_int (Chunk Spawning Addition Interval) float 6
 
 #    How often (in seconds) the spawn queue is executed and cleared
 chunk_spawn_queue_int (Chunk Spawning Queue Execution Interval) float 16
-
-#    How often (in seconds) mob spawns are attempted (higher number means less spawning)
-animalia_spawn_int (Spawn Interval) float 60
 
 #    If true, mobs will spawn in the wild
 spawn_mobs (Spawn Mobs) bool true
 
 #    If true, items from mobs_redo and mobs_animal will be converted to Animalia items
-convert_redo_items (Convert Mobs Redo Items) bool false
+convert_redo_items(Convert Mobs Redo Items) bool false
 
-#    If true, mobs will do a small hop to step up blocks
-animalia_fancy_step (Fancy Stepping) bool true
+#    If true, Guano will accumulate under resting bats
+guano_accumulation (Guano Accumulation) bool true
+
+#    If true, Guano can be used as fertilizer
+guano_fertilization (Guano Fertilization) bool true

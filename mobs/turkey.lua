@@ -2,83 +2,35 @@
 -- Turkey --
 ------------
 
-local clamp_bone_rot = animalia.clamp_bone_rot
+local follows = {}
 
-local interp = animalia.interp
-
-local function turkey_logic(self)
-
-	if self.hp <= 0 then
-		mob_core.on_die(self)
-		return
-	end
-
-	if self.status ~= "following" then
-		if self.attention_span > 1 then
-			self.attention_span = self.attention_span - self.dtime
-			mobkit.remember(self, "attention_span", self.attention_span)
-		end
-	else
-		self.attention_span = self.attention_span + self.dtime
-		mobkit.remember(self, "attention_span", self.attention_span)
-	end
-
-	animalia.head_tracking(self, 0.45, 0.25)
-
-	if mobkit.timer(self, 3) then
-
-		local prty = mobkit.get_queue_priority(self)
-		local player = mobkit.get_nearby_player(self)
-
-		mob_core.random_sound(self, 14)
-
-		if prty < 4
-		and self.isinliquid then
-			animalia.hq_go_to_land(self, 4)
-		end
-
-		if prty < 3
-        and self.breeding then
-            animalia.hq_fowl_breed(self, 3)
-		end
-
-		if prty == 2
-		and not self.lasso_player
-		and (not player
-		or not mob_core.follow_holding(self, player)) then
-			mobkit.clear_queue_high(self)
-		end
-
-        if prty < 2 then
-			if self.caught_with_lasso
-			and self.lasso_player then
-				animalia.hq_follow_player(self, 2, self.lasso_player, true)
-			elseif player then
-	        	if self.attention_span < 5 then
-				    if mob_core.follow_holding(self, player) then
-            	        animalia.hq_follow_player(self, 2, player)
-            	        self.attention_span = self.attention_span + 3
-            	    end
-            	end
-			end
+minetest.register_on_mods_loaded(function()
+    for name, def in pairs(minetest.registered_items) do
+        if name:match(":seed_")
+		or name:match("_seed") then
+			table.insert(follows, name)
         end
+    end
+end)
 
-		if mobkit.is_queue_empty_high(self) then
-			animalia.hq_wander_group(self, 0, 8)
-		end
-	end
-end
-
-animalia.register_mob("turkey", {
-	-- Stats
-	health = 15,
-	fleshy = 100,
-	view_range = 26,
-	lung_capacity = 10,
-	-- Visual
-	collisionbox = {-0.3, -0.2, -0.3, 0.3, 0.4, 0.3},
-	visual_size = {x = 7, y = 7},
-	mesh = "animalia_turkey.b3d",
+creatura.register_mob("animalia:turkey", {
+    -- Stats
+    max_health = 10,
+    armor_groups = {fleshy = 150},
+    damage = 0,
+    speed = 4,
+	tracking_range = 16,
+    despawn_after = 1500,
+	-- Entity Physics
+	stepheight = 1.1,
+	max_fall = 8,
+    -- Visuals
+    mesh = "animalia_turkey.b3d",
+	hitbox = {
+		width = 0.3,
+		height = 0.6
+	},
+    visual_size = {x = 7, y = 7},
 	female_textures = {"animalia_turkey_hen.png"},
 	male_textures = {"animalia_turkey_tom.png"},
 	child_textures = {"animalia_turkey_chick.png"},
@@ -88,12 +40,9 @@ animalia.register_mob("turkey", {
 		run = {range = {x = 40, y = 60}, speed = 45, frame_blend = 0.3, loop = true},
         fall = {range = {x = 70, y = 90}, speed = 30, frame_blend = 0.3, loop = true},
 	},
-	-- Physics
-	speed = 5,
-	max_fall = 6,
-	-- Attributes
+    -- Misc
+	catch_with_net = true,
     sounds = {
-        alter_child_pitch = true,
         random = {
             name = "animalia_turkey_idle",
             gain = 1.0,
@@ -110,37 +59,96 @@ animalia.register_mob("turkey", {
             distance = 8
         }
     },
-	-- Behavior
-	defend_owner = false,
-	follow = {
-		"farming:seed_cotton",
-		"farming:seed_wheat"
-	},
-	drops = {
-		{name = "animalia:feather", chance = 1, min = 1, max = 2},
-		{name = "animalia:poultry_raw", chance = 1, min = 2, max = 5}
-	},
-	-- Functions
+    drops = {
+        {name = "animalia:poultry_raw", min = 2, max = 4, chance = 1},
+		{name = "animalia:feather", min = 2, max = 4, chance = 2}
+    },
+    follow = follows,
 	head_data = {
 		offset = {x = 0, y = 0.15, z = 0},
 		pitch_correction = 45,
 		pivot_h = 0.45,
 		pivot_v = 0.65
 	},
-	physics = animalia.lightweight_physics,
-	logic = turkey_logic,
-	get_staticdata = mobkit.statfunc,
-	on_step = animalia.on_step,
-	on_activate = animalia.on_activate,
-    on_rightclick = function(self, clicker)
-		if animalia.feed_tame(self, clicker, 1, false, true) then return end
-		mob_core.protect(self, clicker, true)
-		mob_core.nametag(self, clicker, true)
+    -- Function
+	utility_stack = {
+		[1] = {
+			utility = "animalia:wander",
+			get_score = function(self)
+				return 0.1, {self, true}
+			end
+		},
+		[2] = {
+			utility = "animalia:resist_fall",
+			get_score = function(self)
+				if not self.touching_ground then
+					return 0.11, {self}
+				end
+				return 0
+			end
+		},
+		[3] = {
+			utility = "animalia:swim_to_land",
+			get_score = function(self)
+				if self.in_liquid then
+					return 1, {self}
+				end
+				return 0
+			end
+		},
+		[4] = {
+			utility = "animalia:follow_player",
+			get_score = function(self)
+				if self.lasso_origin
+				and type(self.lasso_origin) == "userdata" then
+					return 0.8, {self, self.lasso_origin, true}
+				end
+				local player = creatura.get_nearby_player(self)
+				if player
+				and self:follow_wielded_item(player) then
+					return 0.8, {self, player}
+				end
+				return 0
+			end
+		},
+		[5] = {
+			utility = "animalia:bird_breed",
+			get_score = function(self)
+				if self.breeding then
+					return 0.9, {self}
+				end
+				return 0
+			end
+		}
+	},
+    activate_func = function(self)
+		animalia.initialize_api(self)
+		animalia.initialize_lasso(self)
+        self.attention_span = 8
+        self._path = {}
+    end,
+    step_func = function(self)
+		animalia.step_timers(self)
+		animalia.head_tracking(self, 0.75, 0.75)
+		animalia.do_growth(self, 60)
+		animalia.update_lasso_effects(self)
+    end,
+    death_func = function(self)
+		if self:get_utility() ~= "animalia:die" then
+			self:initiate_utility("animalia:die", self)
+		end
+    end,
+	on_rightclick = function(self, clicker)
+		if animalia.feed(self, clicker, false, true) then
+			return
+		end
+		animalia.add_libri_page(self, clicker, {name = "turkey", form = "pg_turkey;Turkeys"})
 	end,
-	on_punch = function(self, puncher, _, tool_capabilities, dir)
-		mob_core.on_punch_basic(self, puncher, tool_capabilities, dir)
-		animalia.hq_sporadic_flee(self, 10)
-	end,
+	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		self:initiate_utility("animalia:flee_from_player", self, puncher)
+		self:set_utility_score(1)
+	end
 })
 
-mob_core.register_spawn_egg("animalia:turkey", "352b22", "2f2721")
+creatura.register_spawn_egg("animalia:turkey", "352b22", "2f2721")

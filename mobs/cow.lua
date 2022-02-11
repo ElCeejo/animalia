@@ -2,97 +2,36 @@
 -- Cow --
 ---------
 
-local clamp_bone_rot = animalia.clamp_bone_rot
+local follows = {}
 
-local interp = animalia.interp
-
-local random = math.random
-local blend = animalia.frame_blend
-
-local function cow_logic(self)
-	
-	if self.hp <= 0 then
-		mob_core.on_die(self)
-		return
-	end
-
-	if self.status ~= "following" then
-		if self.attention_span > 1 then
-			self.attention_span = self.attention_span - self.dtime
-			mobkit.remember(self, "attention_span", self.attention_span)
-		end
-	else
-		self.attention_span = self.attention_span + self.dtime
-		mobkit.remember(self, "attention_span", self.attention_span)
-	end
-
-	animalia.head_tracking(self, 0.75, 0.75)
-
-	if mobkit.timer(self, 3) then
-
-		local prty = mobkit.get_queue_priority(self)
-		local player = mobkit.get_nearby_player(self)
-
-		mob_core.random_sound(self, 14)
-		mob_core.growth(self)
-
-		if random(1, 64) < 2 then
-			self.gotten = mobkit.remember(self, "gotten", false)
-		end
-
-		if prty < 5
-		and self.isinliquid then
-			animalia.hq_go_to_land(self, 5)
-		end
-
-		if prty < 4
-        and self.breeding then
-            animalia.hq_breed(self, 4)
-		end
-
-		if prty < 3
-		and self.gotten
-		and random(1, 16) < 2 then
-			animalia.hq_eat(self, 3)
-		end
-
-		if prty == 2
-		and not self.lasso_player
-		and (not player
-		or not mob_core.follow_holding(self, player)) then
-			mobkit.clear_queue_high(self)
-		end
-
-        if prty < 2 then
-			if self.caught_with_lasso
-			and self.lasso_player then
-				animalia.hq_follow_player(self, 2, self.lasso_player, true)
-			elseif player then
-				if self.attention_span < 5 then
-					if mob_core.follow_holding(self, player) then
-						animalia.hq_follow_player(self, 2, player)
-						self.attention_span = self.attention_span + 1
-					end
-				end
-			end
+minetest.register_on_mods_loaded(function()
+    for name, def in pairs(minetest.registered_items) do
+        if (name:match(":wheat")
+		or minetest.get_item_group(name, "food_wheat") > 0)
+		and not name:find("seed") then
+			table.insert(follows, name)
         end
+    end
+end)
 
-		if mobkit.is_queue_empty_high(self) then
-			animalia.hq_wander_group(self, 0, 10)
-		end
-	end
-end
-
-animalia.register_mob("cow", {
+creatura.register_mob("animalia:cow", {
     -- Stats
-    health = 20,
-    fleshy = 100,
-    view_range = 32,
-    lung_capacity = 10,
-    -- Visual
-	collisionbox = {-0.45, 0, -0.45, 0.45, 0.9, 0.45},
-	visual_size = {x = 10, y = 10},
-	mesh = "animalia_cow.b3d",
+    max_health = 20,
+    armor_groups = {fleshy = 150},
+    damage = 0,
+    speed = 3,
+	tracking_range = 16,
+    despawn_after = 1500,
+	-- Entity Physics
+	stepheight = 1.1,
+	turn_rate = 6,
+    -- Visuals
+    mesh = "animalia_cow.b3d",
+	hitbox = {
+		width = 0.45,
+		height = 0.9
+	},
+    visual_size = {x = 10, y = 10},
 	female_textures = {
 		"animalia_cow_1.png^animalia_cow_udder.png",
 		"animalia_cow_2.png^animalia_cow_udder.png",
@@ -114,35 +53,33 @@ animalia.register_mob("cow", {
 	animations = {
 		stand = {range = {x = 1, y = 60}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 70, y = 110}, speed = 40, frame_blend = 0.3, loop = true},
-		run = {range = {x = 70, y = 110}, speed = 50, frame_blend = 0.3, loop = true},
+		run = {range = {x = 70, y = 110}, speed = 60, frame_blend = 0.3, loop = true},
 	},
-    -- Physics
-    speed = 4,
-    max_fall = 3,
-    -- Attributes
-    sounds = {
-        alter_child_pitch = true,
+    -- Misc
+	catch_with_net = true,
+	sounds = {
         random = {
-            name = "animalia_cow_idle",
-            gain = 1.0,
-            distance = 8
+            name = "animalia_cow_random",
+            gain = 0.4,
+            distance = 8,
+			variations = 3
         },
         hurt = {
             name = "animalia_cow_hurt",
-            gain = 1.0,
+            gain = 0.4,
             distance = 8
         },
         death = {
             name = "animalia_cow_death",
-            gain = 1.0,
+            gain = 0.4,
             distance = 8
         }
     },
-    -- Behavior
-    defend_owner = false,
-	follow = {
-		"farming:wheat",
-	},
+    drops = {
+        {name = "animalia:beef_raw", min = 1, max = 3, chance = 1},
+		{name = "animalia:leather", min = 1, max = 3, chance = 2}
+    },
+    follow = follows,
 	consumable_nodes = {
 		{
 			name = "default:dirt_with_grass",
@@ -153,36 +90,95 @@ animalia.register_mob("cow", {
 			replacement = "default:dry_dirt"
 		}
 	},
-	drops = {
-		{name = "animalia:leather", chance = 2, min = 1, max = 2},
-		{name = "animalia:beef_raw", chance = 1, min = 1, max = 4}
-	},
-    -- Functions
 	head_data = {
 		offset = {x = 0, y = 0.5, z = 0},
 		pitch_correction = -45,
 		pivot_h = 0.75,
 		pivot_v = 1
 	},
-    logic = cow_logic,
-    get_staticdata = mobkit.statfunc,
-	on_step = animalia.on_step,
-	on_activate = animalia.on_activate,
+    -- Function
+	utility_stack = {
+		[1] = {
+			utility = "animalia:wander",
+			get_score = function(self)
+				return 0.1, {self, true}
+			end
+		},
+		[2] = {
+			utility = "animalia:eat_from_turf",
+			get_score = function(self)
+				if math.random(25) < 2 then
+					return 0.1, {self}
+				end
+				return 0
+			end
+		},
+		[3] = {
+			utility = "animalia:swim_to_land",
+			get_score = function(self)
+				if self.in_liquid then
+					return 1, {self}
+				end
+				return 0
+			end
+		},
+		[4] = {
+			utility = "animalia:follow_player",
+			get_score = function(self)
+				if self.lasso_origin
+				and type(self.lasso_origin) == "userdata" then
+					return 0.8, {self, self.lasso_origin, true}
+				end
+				local player = creatura.get_nearby_player(self)
+				if player
+				and self:follow_wielded_item(player) then
+					return 0.8, {self, player}
+				end
+				return 0
+			end
+		},
+		[5] = {
+			utility = "animalia:mammal_breed",
+			get_score = function(self)
+				if self.breeding then
+					return 0.9, {self}
+				end
+				return 0
+			end
+		}
+	},
+    activate_func = function(self)
+		animalia.initialize_api(self)
+		animalia.initialize_lasso(self)
+        self.gotten = self:recall("gotten") or false
+        self.attention_span = 8
+        self._path = {}
+    end,
+    step_func = function(self)
+		animalia.step_timers(self)
+		animalia.head_tracking(self, 0.75, 0.75)
+		animalia.do_growth(self, 60)
+		animalia.update_lasso_effects(self)
+    end,
+    death_func = function(self)
+		if self:get_utility() ~= "animalia:die" then
+			self:initiate_utility("animalia:die", self)
+		end
+    end,
 	on_rightclick = function(self, clicker)
-		if animalia.feed_tame(self, clicker, 1, false, true) then return end
-		mob_core.protect(self, clicker, true)
-		mob_core.nametag(self, clicker, true)
-
+		if animalia.feed(self, clicker, false, true) then
+			return
+		end
 		local tool = clicker:get_wielded_item()
 		local name = clicker:get_player_name()
 
 		if tool:get_name() == "bucket:bucket_empty" then
 
-			if self.child == true then
+			if self.growth_scale < 1 then
 				return
 			end
 
-			if self.gotten == true then
+			if self.gotten then
 				minetest.chat_send_player(name, "This Cow has already been milked.")
 				return
 			end
@@ -195,53 +191,21 @@ animalia.register_mob("cow", {
 			if inv:room_for_item("main", {name = "animalia:bucket_milk"}) then
 				clicker:get_inventory():add_item("main", "animalia:bucket_milk")
 			else
-				local pos = self.object:get_pos()
+				local pos = self:get_pos("floor")
 				pos.y = pos.y + 0.5
 				minetest.add_item(pos, {name = "animalia:bucket_milk"})
 			end
 
-			self.gotten = mobkit.remember(self, "gotten", true)
+			self.gotten = self:memorize("gotten", true)
 			return
 		end
+		animalia.add_libri_page(self, clicker, {name = "cow", form = "pg_cow;Cows"})
 	end,
-	on_punch = function(self, puncher, _, tool_capabilities, dir)
-		mob_core.on_punch_basic(self, puncher, tool_capabilities, dir)
-		animalia.hq_sporadic_flee(self, 10)
+	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		self:initiate_utility("animalia:flee_from_player", self, puncher)
+		self:set_utility_score(1)
 	end
 })
 
-minetest.register_craftitem("animalia:leather", {
-    description = "Leather",
-    inventory_image = "animalia_leather.png"
-})
-
-minetest.register_craftitem("animalia:bucket_milk", {
-	description = "Bucket of Milk",
-	inventory_image = "animalia_milk_bucket.png",
-	stack_max = 1,
-	on_use = minetest.item_eat(8, "bucket:bucket_empty"),
-	groups = {food_milk = 1, flammable = 3},
-})
-
-minetest.register_craftitem("animalia:beef_raw", {
-	description = "Raw Beef",
-	inventory_image = "animalia_beef_raw.png",
-	on_use = minetest.item_eat(1),
-	groups = {flammable = 2, meat = 1, food_meat = 1},
-})
-
-minetest.register_craftitem("animalia:beef_cooked", {
-	description = "Steak",
-	inventory_image = "animalia_beef_cooked.png",
-	on_use = minetest.item_eat(8),
-	groups = {flammable = 2, meat = 1, food_meat = 1},
-})
-
-minetest.register_craft({
-	type  =  "cooking",
-	recipe  = "animalia:beef_raw",
-	output = "animalia:beef_cooked",
-})
-
-
-mob_core.register_spawn_egg("animalia:cow", "cac3a1" ,"464438")
+creatura.register_spawn_egg("animalia:cow", "cac3a1" ,"464438")
