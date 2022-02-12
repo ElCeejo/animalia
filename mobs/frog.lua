@@ -73,7 +73,7 @@ creatura.register_mob("animalia:frog", {
 			utility = "animalia:wander_water_surface",
 			get_score = function(self)
 				if self.in_liquid then
-					return 0.11, {self}
+					return 0.11, {self, 0.1, -0.22}
 				end
 				return 0
 			end
