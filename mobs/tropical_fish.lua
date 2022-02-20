@@ -34,6 +34,7 @@ creatura.register_mob("animalia:tropical_fish", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = false,
 	makes_footstep_sound = false,
     -- Function
 	utility_stack = {

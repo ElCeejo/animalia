@@ -2,6 +2,17 @@
 -- Song Bird --
 ---------------
 
+local follows = {}
+
+minetest.register_on_mods_loaded(function()
+    for name, def in pairs(minetest.registered_items) do
+        if name:match(":seed_")
+		or name:match("_seed") then
+			table.insert(follows, name)
+        end
+    end
+end)
+
 local random = math.random
 
 local function clamp(val, min, max)
@@ -45,6 +56,7 @@ creatura.register_mob("animalia:bird", {
 		},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = false,
 	sounds = {
 		cardinal = {
             name = "animalia_cardinal",
@@ -87,7 +99,8 @@ creatura.register_mob("animalia:bird", {
 						return 0.15, {self, 1}
 					end
 					local player = creatura.get_nearby_player(self)
-					if player then
+					if player
+					and player:get_pos() then
 						local dist = vector.distance(pos, player:get_pos())
 						self.is_landed = false
 						return (16 - dist) * 0.1, {self, 1}
@@ -112,7 +125,7 @@ creatura.register_mob("animalia:bird", {
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.trust = self:recall("trust") or {}
-		self.is_landed = self:recall("is_landed") or true
+		self.is_landed = self:recall("is_landed") or false
 		self.stamina = self:recall("stamina") or 0.1
         self._path = {}
     end,

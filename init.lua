@@ -56,8 +56,8 @@ minetest.register_on_mods_loaded(function()
             if not old_punch then
                 old_punch = function() end
             end
-            local on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
-                old_punch(self, puncher, time_from_last_punch, tool_capabilities, dir)
+            local on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
+                old_punch(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
                 local pos = self.object:get_pos()
                 if not pos then
                     return

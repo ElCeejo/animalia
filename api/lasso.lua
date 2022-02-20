@@ -323,6 +323,7 @@ minetest.register_craftitem("animalia:lasso", {
         if pointed_thing.type == "object" then
             if pointed_thing.ref:is_player() then return end
             local ent = pointed_thing.ref:get_luaentity()
+            if not ent.catch_with_lasso then return end
             if not ent.caught_with_lasso
             and not is_lasso_in_use(placer) then
                 ent.caught_with_lasso = true

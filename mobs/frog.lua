@@ -42,6 +42,7 @@ creatura.register_mob("animalia:frog", {
     -- Misc
 	makes_footstep_sound = true,
 	catch_with_net = true,
+	catch_with_lasso = true,
 	sounds = {
 		random = {
             name = "animalia_frog",
@@ -116,7 +117,8 @@ creatura.register_mob("animalia:frog", {
 			get_score = function(self)
 				if self.in_liquid then return 0 end
 				local player = creatura.get_nearby_player(self)
-				if player then
+				if player
+				and player:get_player_name() then
 					local trust = self.trust[player:get_player_name()] or 0
 					self._nearby_player = player -- stored to memory to avoid calling get_nearby_player again
 					return (10 - (vec_dist(self.object:get_pos(), player:get_pos()) + trust)) * 0.1, {self, player}
@@ -132,7 +134,8 @@ creatura.register_mob("animalia:frog", {
 				local water = minetest.find_nodes_in_area(vector.subtract(pos, 1.5), vector.add(pos, 1.5), {"default:water_source"})
 				if not water[1] then return 0 end
 				local player = self._nearby_player
-				if player then
+				if player
+				and player:get_player_name() then
 					local trust = self.trust[player:get_player_name()] or 0
 					return (10 - (vec_dist(self.object:get_pos(), player:get_pos()) + trust)) * 0.1, {self, player}
 				end

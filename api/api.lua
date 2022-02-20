@@ -1135,10 +1135,10 @@ local function get_libri_page(mob_name, player_name)
         "label[3.25,9;x" .. def.max_health / 2 .. "]",
         -- Net
         "item_image[4.25,8.15;1,1;animalia:lasso]",
-        "image[4.75,8.75;0.5,0.5;animalia_libri_true_icon.png]",
+        "image[4.75,8.75;0.5,0.5;animalia_libri_" .. tostring(def.catch_with_lasso or false) .. "_icon.png]",
         -- Lasso
         "item_image[6,8.15;1,1;animalia:net]",
-        "image[6.5,8.75;0.5,0.5;animalia_libri_true_icon.png]",
+        "image[6.5,8.75;0.5,0.5;animalia_libri_" .. tostring(def.catch_with_net or false) .. "_icon.png]",
         -- Labels
         "label[9.5,7.25;" .. minetest.colorize("#383329", "Drops:") .. "]",
         "label[14,7.25;" .. minetest.colorize("#383329", "Eats:") .. "]",

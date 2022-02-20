@@ -96,6 +96,7 @@ creatura.register_mob("animalia:bat", {
         },
     },
 	catch_with_net = true,
+	catch_with_lasso = false,
     follow = {
 		"butterflies:butterfly_red",
 		"butterflies:butterfly_white",
@@ -120,6 +121,7 @@ creatura.register_mob("animalia:bat", {
 					local pos = self.object:get_pos()
 					local player = creatura.get_nearby_player(self)
 					if player
+					and player:get_pos()
 					and not player:get_player_control().sneak then
 						local dist = vector.distance(pos, player:get_pos())
 						self._nearby_player = player
@@ -149,7 +151,8 @@ creatura.register_mob("animalia:bat", {
 			get_score = function(self)
 				if not self.home_position then return 0 end
 				local player = self._nearby_player
-				if player then
+				if player
+				and player:get_pos() then
 					local pos = self.object:get_pos()
 					local dist = vector.distance(pos, player:get_pos())
 					if dist < 9 then

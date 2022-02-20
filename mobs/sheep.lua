@@ -71,6 +71,7 @@ creatura.register_mob("animalia:sheep", {
 	use_texture_alpha = true,
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
 	sounds = {
         random = {
             name = "animalia_sheep_idle",

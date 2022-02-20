@@ -67,6 +67,7 @@ creatura.register_mob("animalia:pig", {
 	consumable_nodes = destroyable_crops,
 	birth_count = 2,
 	catch_with_net = true,
+	catch_with_lasso = true,
 	sounds = {
         random = {
             name = "animalia_pig_idle",

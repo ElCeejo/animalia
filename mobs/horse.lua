@@ -83,13 +83,15 @@ creatura.register_mob("animalia:horse", {
 	},
 	animations = {
 		stand = {range = {x = 1, y = 60}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 70, y = 110}, speed = 25, frame_blend = 0.3, loop = true},
-		run = {range = {x = 70, y = 110}, speed = 45, frame_blend = 0.3, loop = true},
-		rear = {range = {x = 120, y = 150}, speed = 27, frame_blend = 0.2, loop = false},
-		rear_constant = {range = {x = 130, y = 140}, speed = 20, frame_blend = 0.3, loop = true}
+		walk = {range = {x = 70, y = 110}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 120, y = 140}, speed = 30, frame_blend = 0.3, loop = true},
+		rear = {range = {x = 150, y = 180}, speed = 27, frame_blend = 0.2, loop = false},
+		rear_constant = {range = {x = 160, y = 170}, speed = 20, frame_blend = 0.3, loop = true},
+		eat = {range = {x = 190, y = 220}, speed = 20, frame_blend = 0.3, loop = false}
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
     sounds = {
         alter_child_pitch = true,
         random = {
@@ -125,8 +127,8 @@ creatura.register_mob("animalia:horse", {
 	},
 	head_data = {
 		bone = "Neck.CTRL",
-		offset = {x = 0, y = 2, z = 0},
-		pitch_correction = 35,
+		offset = {x = 0, y = 1.2, z = 0.15},
+		pitch_correction = 45,
 		pivot_h = 1,
 		pivot_v = 1.5
 	},
@@ -237,7 +239,7 @@ creatura.register_mob("animalia:horse", {
 				else
 					self.breaking_progress = self.breaking_progress - 1
 				end
-				self:initiate_utility("animalia:sporadic_flee", self, puncher, true)
+				self:initiate_utility("animalia:horse_breaking", self)
 				if self.breaking_progress < -5
 				or minetest.get_player_by_name(self.breaker):get_player_control().sneak then
 					animalia.mount(self, minetest.get_player_by_name(self.breaker))
@@ -256,7 +258,6 @@ creatura.register_mob("animalia:horse", {
 					local minppos = vector.add(prt_pos, 1)
 					local maxppos = vector.subtract(prt_pos, 1)
 					animalia.particle_spawner(prt_pos, "creatura_particle_green.png", "float", minppos, maxppos)
-					self:clear_behavior()
 				end
 			end
 		end

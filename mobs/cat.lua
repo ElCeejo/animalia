@@ -45,6 +45,7 @@ creatura.register_mob("animalia:cat", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
 	sounds = {
         random = {
             name = "animalia_cat_idle",
@@ -93,9 +94,9 @@ creatura.register_mob("animalia:cat", {
     end,
 	utility_stack = {
 		[1] = {
-			utility = "animalia:wander",
+			utility = "animalia:skittish_wander",
 			get_score = function(self)
-				return 0.1, {self, true}
+				return 0.1, {self}
 			end
 		},
 		[2] = {
@@ -117,7 +118,8 @@ creatura.register_mob("animalia:cat", {
 			utility = "animalia:walk_ahead_of_player",
 			get_score = function(self)
 				local player = creatura.get_nearby_player(self)
-				if player then
+				if player
+				and player:get_player_name() then
 					local trust = 0
 					if not self.trust[player:get_player_name()] then
 						self.trust[player:get_player_name()] = 0
@@ -136,29 +138,6 @@ creatura.register_mob("animalia:cat", {
 			end
 		},
 		[5] = {
-			utility = "animalia:flee_from_player",
-			get_score = function(self)
-				local player = self._nearby_player
-				if player then
-					local trust = self.trust[player:get_player_name()] or 0
-					if trust < 1 then
-						if self.owner
-						and minetest.get_player_by_name(self.owner) then
-							local pos = self.object:get_pos()
-							local owner = minetest.get_player_by_name(self.owner)
-							local owner_pos = owner:get_pos()
-							if owner ~= player
-							and vector.distance(pos, owner_pos) < vector.distance(pos, player:get_pos()) then
-								return 0 
-							end
-						end
-						return 0.5, {self, player}
-					end
-				end
-				return 0
-			end
-		},
-		[6] = {
 			utility = "animalia:sit",
 			get_score = function(self)
 				if self.order == "sit"
@@ -168,7 +147,7 @@ creatura.register_mob("animalia:cat", {
 				return 0
 			end
 		},
-		[7] = {
+		[6] = {
 			utility = "animalia:follow_player",
 			get_score = function(self)
 				if self.order == "follow"
@@ -178,7 +157,8 @@ creatura.register_mob("animalia:cat", {
 				end
 				local trust = 0
 				local player = self._nearby_player
-				if player then
+				if player
+				and player:get_player_name() then
 					if not self.trust[player:get_player_name()] then
 						self.trust[player:get_player_name()] = 0
 						self:memorize("trust", self.trust)
@@ -199,7 +179,7 @@ creatura.register_mob("animalia:cat", {
 				return 0
 			end
 		},
-		[8] = {
+		[7] = {
 			utility = "animalia:mammal_breed",
 			get_score = function(self)
 				if self.breeding then

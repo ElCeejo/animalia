@@ -27,6 +27,7 @@ creatura.register_mob("animalia:reindeer", {
     despawn_after = 1500,
 	-- Entity Physics
 	stepheight = 1.1,
+	turn_rate = 4,
     -- Visuals
     mesh = "animalia_reindeer.b3d",
 	hitbox = {
@@ -43,6 +44,7 @@ creatura.register_mob("animalia:reindeer", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
     drops = {
         {name = "animalia:venison_raw", min = 1, max = 3, chance = 1},
 		{name = "animalia:leather", min = 1, max = 3, chance = 2}

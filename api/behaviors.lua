@@ -233,7 +233,7 @@ local function movement_fly(self, pos2)
         self._path = creatura.find_path(self, pos, pos2, self.width, self.height, 300, false, true)
     end
     -- Apply Movement
-    self:turn_to(boid_angle or tyaw, turn_rate)
+    self:turn_to(tyaw, turn_rate)
     self:set_forward_velocity(speed)
     local v_speed = speed * dir.y
     local vel = self.object:get_velocity()
@@ -480,7 +480,7 @@ function animalia.action_boid_move(self, pos2, timeout, method)
     self:set_action(func)
 end
 
-function animalia.action_boid_walk(self, pos2, timeout, method, speed_factor)
+function animalia.action_boid_walk(self, pos2, timeout, method, speed_factor, anim)
     local boids = creatura.get_boid_members(self.object:get_pos(), 12, self.name)
     local timer = timeout
     local move_init = false
@@ -509,7 +509,7 @@ function animalia.action_boid_walk(self, pos2, timeout, method, speed_factor)
             self:halt()
             return true
         end
-        self:move(pos2, method or "creatura:obstacle_avoidance", speed_factor or 1)
+        self:move(pos2, method or "creatura:obstacle_avoidance", speed_factor or 1, anim or "walk")
         move_init = true
     end
     self:set_action(func)
@@ -531,6 +531,20 @@ function animalia.action_swim(self, pos, timeout, method, speed_factor, anim)
     self:set_action(func)
 end
 
+function animalia.action_horse_spin(self, speed, anim)
+    local tyaw = random(math.pi * 2)
+    local function func(self)
+        self:set_gravity(-9.8)
+        self:halt()
+        self:animate(anim or "stand")
+        self:turn_to(tyaw, speed)
+        if abs(tyaw - self.object:get_yaw()) < 0.1 then
+            return true
+        end
+    end
+    self:set_action(func)
+end
+
 ---------------
 -- Behaviors --
 ---------------
@@ -543,50 +557,96 @@ end
 
 creatura.register_utility("animalia:wander", function(self, group)
     local idle_time = 3
-    local move_probability = 3
-    local group_tick = 0
+    local move_probability = 5
     local far_from_group = false
+    local group_tick = 1
     local function func(self)
         local pos = self.object:get_pos()
-        local random_goal = vector.new(
-            pos.x + random(-4, 4),
-            pos.y,
-            pos.z + random(-4, 4)
-        )
-        if group
-        and self:timer(3) then
-            local range = self.tracking_range * 0.5
-            local group_positions = animalia.get_group_positions(self.name, pos, range + 1)
-            if #group_positions > 2 then
-                local center = animalia.get_average_pos(group_positions)
-                if center
-                and (vec_dist(random_goal, center) > range
-                or vec_dist(pos, center) > range) then
-                    random_goal = center
-                    far_from_group = true
-                else
-                    far_from_group = false
-                end
-            end
-            group_tick = 2
-        end
         if not self:get_action() then
-            local node = minetest.get_node(random_goal)
-            if minetest.registered_nodes[node.name].drawtype == "liquid"
-            or minetest.registered_nodes[node.name].walkable then
-                random_goal = nil
-            end
+            local goal
+            local move = random(move_probability) < 2
             if self.lasso_pos
             and vec_dist(pos, self.lasso_pos) > 10 then
-                random_goal = self.lasso_pos
+                goal = self.lasso_pos
             end
-            if (random(move_probability) < 2
-            and random_goal)
+            if not goal
+            and move then
+                goal = self:get_wander_pos(1, 2)
+            end
+            if group
+            and goal
+            and group_tick > 3 then
+                local range = self.tracking_range * 0.5
+                local group_positions = animalia.get_group_positions(self.name, pos, range + 1)
+                if #group_positions > 2 then
+                    local center = animalia.get_average_pos(group_positions)
+                    if center
+                    and vec_dist(pos, center) > range * 0.33
+                    or vec_dist(goal, center) > range * 0.33 then
+                        goal = center
+                        far_from_group = true
+                    else
+                        far_from_group = false
+                    end
+                end
+                group_tick = 0
+            end
+            if (move
+            and goal)
             or far_from_group then
-                creatura.action_walk(self, random_goal)
+                creatura.action_walk(self, goal, 2, "creatura:neighbors")
             else
                 creatura.action_idle(self, idle_time)
             end
+            if group then
+                group_tick = group_tick + 1
+            end
+        end
+    end
+    self:set_utility(func)
+end)
+
+creatura.register_utility("animalia:skittish_wander", function(self)
+    local idle_time = 3
+    local move_probability = 3
+    local force_move = false
+    local avoid_tick = 1
+    local function func(self)
+        local pos = self.object:get_pos()
+        if not self:get_action() then
+            local goal
+            local move = random(move_probability) < 2
+            if avoid_tick > 3
+            and move then
+                local range = self.tracking_range * 0.5
+                local player = creatura.get_nearby_player(self)
+                if player then
+                    local target_alive, line_of_sight, player_pos = self:get_target(player)
+                    if target_alive
+                    and line_of_sight
+                    and vec_dist(pos, player_pos) < 8 then
+                        force_move = true
+                        local dir = vec_dir(player_pos, pos)
+                        goal = self:get_wander_pos(2, 3, dir)
+                    end
+                end
+                avoid_tick = 0
+            end
+            if self.lasso_pos
+            and vec_dist(pos, self.lasso_pos) > 10 then
+                goal = self.lasso_pos
+            end
+            if not goal
+            and move then
+                goal = self:get_wander_pos(4, 4)
+            end
+            if move
+            and goal then
+                creatura.action_walk(self, goal, 3, "creatura:neighbors", 0.35)
+            else
+                creatura.action_idle(self, idle_time)
+            end
+            avoid_tick = avoid_tick + 1
         end
     end
     self:set_utility(func)
@@ -599,20 +659,15 @@ creatura.register_utility("animalia:skittish_boid_wander", function(self)
     local force_move = false
     local function func(self)
         local pos = self.object:get_pos()
-        local random_goal = vector.new(
-            pos.x + random(-4, 4),
-            pos.y,
-            pos.z + random(-4, 4)
-        )
+        local goal
         if self:timer(3) then
             local range = self.tracking_range * 0.5
             local group_positions = animalia.get_group_positions(self.name, pos, range + 1)
             if #group_positions > 2 then
                 local center = animalia.get_average_pos(group_positions)
                 if center
-                and (vec_dist(random_goal, center) > range
-                or vec_dist(pos, center) > range) then
-                    random_goal = center
+                and vec_dist(pos, center) > range then
+                    goal = center
                     force_move = true
                 else
                     force_move = false
@@ -628,27 +683,24 @@ creatura.register_utility("animalia:skittish_boid_wander", function(self)
                 and line_of_sight
                 and vec_dist(pos, player_pos) < 8 then
                     force_move = true
-                    local dir = vec_dir(pos, player_pos)
-                    random_goal = vec_add(pos, vec_multi(vec_add(dir, {x = random(-10, 10) * 0.1, y = 0, z = random(-10, 10) * 0.1}), -3))
+                    local dir = vec_dir(player_pos, pos)
+                    goal = self:get_wander_pos(2, 3, dir)
                 end
             end
         end
         if not self:get_action() then
-            local node = minetest.get_node(random_goal)
-            if minetest.registered_nodes[node.name].drawtype == "liquid"
-            or minetest.registered_nodes[node.name].walkable then
-                random_goal = nil
-                force_move = false
-            end
+            local move = random(move_probability) < 2
             if self.lasso_pos
             and vec_dist(pos, self.lasso_pos) > 10 then
-                random_goal = self.lasso_pos
+                goal = self.lasso_pos
             end
-            if (random(move_probability) < 2
-            and random_goal)
-            or force_move then
-                get_ground_level(random_goal, 1)
-                animalia.action_boid_walk(self, random_goal, 6, "creatura:obstacle_avoidance", 0.5)
+            if not goal
+            and move then
+                goal = self:get_wander_pos(4, 4)
+            end
+            if move
+            and goal then
+                animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
             else
                 creatura.action_idle(self, idle_time)
             end
@@ -657,18 +709,13 @@ creatura.register_utility("animalia:skittish_boid_wander", function(self)
     self:set_utility(func)
 end)
 
-
 creatura.register_utility("animalia:boid_wander", function(self, group)
     local idle_time = 3
     local move_probability = 5
     local group_tick = 0
     local function func(self)
         local pos = self.object:get_pos()
-        local random_goal = vector.new(
-            pos.x + random(-4, 4),
-            pos.y,
-            pos.z + random(-4, 4)
-        )
+        local goal
         if group
         and self:timer(3) then
             local range = self.tracking_range * 0.5
@@ -676,26 +723,25 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
             if #group_positions > 2 then
                 local center = animalia.get_average_pos(group_positions)
                 if center
-                and (vec_dist(random_goal, center) > range
-                or vec_dist(pos, center) > range) then
-                    random_goal = center
+                and vec_dist(pos, center) > range then
+                    goal = center
                 end
             end
             group_tick = 2
         end
         if not self:get_action() then
-            local node = minetest.get_node(random_goal)
-            if minetest.registered_nodes[node.name].drawtype == "liquid"
-            or minetest.registered_nodes[node.name].walkable then
-                random_goal = nil
-            end
+            local move = random(move_probability) < 2
             if self.lasso_pos
             and vec_dist(pos, self.lasso_pos) > 10 then
-                random_goal = self.lasso_pos
+                goal = self.lasso_pos
             end
-            if random(move_probability) < 2
-            and random_goal then
-                animalia.action_boid_walk(self, random_goal, 6, "creatura:neighbors", 0.25)
+            if not goal
+            and move then
+                goal = self:get_wander_pos(1, 3)
+            end
+            if move
+            and goal then
+                animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
             else
                 creatura.action_idle(self, idle_time)
             end
@@ -731,46 +777,57 @@ end)
 -- "Eat" nodes
 
 creatura.register_utility("animalia:eat_from_turf", function(self)
+    local action_init = false
     local function func(self)
         local pos = self.object:get_pos()
-        local under = vector.new(pos.x, pos.y - 1, pos.z)
-        for _, node in ipairs(self.consumable_nodes) do
-            if node.name == minetest.get_node(under).name then
-                minetest.set_node(under, {name = node.replacement})
-                local def = minetest.registered_nodes[node.name]
-                local texture = def.tiles[1]
-                texture = texture .. "^[resize:8x8"
-                minetest.add_particlespawner({
-                    amount = 6,
-                    time = 0.1,
-                    minpos = vector.new(
-                        pos.x - 0.5,
-                        pos.y + 0.1,
-                        pos.z - 0.5
-                    ),
-                    maxpos = vector.new(
-                        pos.x + 0.5,
-                        pos.y + 0.1,
-                        pos.z + 0.5
-                    ),
-                    minvel = {x=-1, y=1, z=-1},
-                    maxvel = {x=1, y=2, z=1},
-                    minacc = {x=0, y=-5, z=0},
-                    maxacc = {x=0, y=-9, z=0},
-                    minexptime = 1,
-                    maxexptime = 1,
-                    minsize = 1,
-                    maxsize = 2,
-                    collisiondetection = true,
-                    vertical = false,
-                    texture = texture,
-                })
-                self.gotten = false
-                self:memorize("gotten", self.gotten)
-                return true
-            else
-                return true
+        local look_dir = yaw2dir(self.object:get_yaw())
+        local under = vec_add(pos, vec_multi(look_dir, self.width))
+        under.y = pos.y - 0.5
+        if not action_init then
+            for i, node in ipairs(self.consumable_nodes) do
+                if node.name == minetest.get_node(under).name then
+                    minetest.set_node(under, {name = node.replacement})
+                    local def = minetest.registered_nodes[node.name]
+                    local texture = def.tiles[1]
+                    texture = texture .. "^[resize:8x8"
+                    minetest.add_particlespawner({
+                        amount = 6,
+                        time = 0.1,
+                        minpos = vector.new(
+                            pos.x - 0.5,
+                            pos.y + 0.1,
+                            pos.z - 0.5
+                        ),
+                        maxpos = vector.new(
+                            pos.x + 0.5,
+                            pos.y + 0.1,
+                            pos.z + 0.5
+                        ),
+                        minvel = {x=-1, y=1, z=-1},
+                        maxvel = {x=1, y=2, z=1},
+                        minacc = {x=0, y=-5, z=0},
+                        maxacc = {x=0, y=-9, z=0},
+                        minexptime = 1,
+                        maxexptime = 1,
+                        minsize = 1,
+                        maxsize = 2,
+                        collisiondetection = true,
+                        vertical = false,
+                        texture = texture,
+                    })
+                    self.gotten = false
+                    self:memorize("gotten", self.gotten)
+                    if not self:get_action() then
+                        creatura.action_idle(self, 1, "eat")
+                        action_init = true
+                    end
+                    break
+                elseif i == #self.consumable_nodes then
+                    return true
+                end
             end
+        elseif not self:get_action() then
+            return true
         end
     end
     self:set_utility(func)
@@ -915,7 +972,7 @@ creatura.register_utility("animalia:boid_flee_from_player", function(self, playe
             and vec_dist(pos, self.lasso_pos) > 10 then
                 escape_pos = self.lasso_pos
             end
-            animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1)
+            animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1, "run")
         end
         if vec_dist(pos, tpos) > self.tracking_range + (#mobs_in_group or 0) then
             return true
@@ -1220,7 +1277,7 @@ creatura.register_utility("animalia:aerial_flock", function(self, scale)
         or (dist2floor < 2
         or dist2ceil < 2) then
             local pos = self.object:get_pos()
-            local pos2 = self:get_wander_pos_3d(2, range)
+            local pos2 = self:get_wander_pos_3d(1, range)
             if dist2ceil < 2 then
                 pos2.y = pos.y - 1
             end
@@ -1518,6 +1575,23 @@ creatura.register_utility("animalia:find_home", function(self)
     self:set_utility(func)
 end)
 
+-- Horse Exclusive Behaviors
+
+creatura.register_utility("animalia:horse_breaking", function(self)
+    local timer = 18
+    self:clear_action()
+    local function func(self)
+        if not self:get_action() then
+            animalia.action_horse_spin(self, random(4, 6), "stand")
+        end
+        timer = timer - self.dtime
+        if timer <= 0 then
+            return true
+        end
+    end
+    self:set_utility(func)
+end)
+
 -- Tamed Animal Orders
 
 creatura.register_utility("animalia:sit", function(self)
@@ -1558,9 +1632,9 @@ creatura.register_utility("animalia:mount", function(self, player)
             speed_factor = speed_factor * 0.5
         end
         local total_speed = vector.length(vel)
-        if total_speed > 0.2 then
+        if total_speed > 0.1 then
             anim = "walk"
-            if total_speed > self.speed then
+            if control.aux1 then
                 anim = "run"
             end
             if not self.touching_ground

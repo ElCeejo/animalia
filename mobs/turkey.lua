@@ -42,6 +42,7 @@ creatura.register_mob("animalia:turkey", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
     sounds = {
         random = {
             name = "animalia_turkey_idle",

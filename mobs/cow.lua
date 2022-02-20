@@ -57,6 +57,7 @@ creatura.register_mob("animalia:cow", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
 	sounds = {
         random = {
             name = "animalia_cow_random",

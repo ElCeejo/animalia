@@ -36,7 +36,7 @@ creatura.register_mob("animalia:wolf", {
     armor_groups = {fleshy = 100},
     damage = 4,
     speed = 5,
-	tracking_range = 32,
+	tracking_range = 24,
     despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
@@ -57,6 +57,7 @@ creatura.register_mob("animalia:wolf", {
 	},
     -- Misc
 	catch_with_net = true,
+	catch_with_lasso = true,
 	assist_owner = true,
     follow = follow,
 	head_data = {
@@ -68,7 +69,7 @@ creatura.register_mob("animalia:wolf", {
     -- Function
 	utility_stack = {
 		[1] = {
-			utility = "animalia:wander",
+			utility = "animalia:skittish_boid_wander",
 			get_score = function(self)
 				return 0.1, {self, true}
 			end
@@ -88,7 +89,8 @@ creatura.register_mob("animalia:wolf", {
 				local target = creatura.get_nearby_entity(self, "animalia:sheep")
 				local player = self._nearby_player
 				local is_attacking = self:get_utility() == "animalia:attack"
-				if player then
+				if player
+				and player:get_player_name() then
 					if is_value_in_table(self.enemies, player:get_player_name()) then
 						local nearby_players = creatura.get_nearby_players(self)
 						local nearby_allies = creatura.get_nearby_entities(self, self.name)
@@ -111,7 +113,8 @@ creatura.register_mob("animalia:wolf", {
 			utility = "animalia:flee_from_player",
 			get_score = function(self)
 				local player = self._nearby_player
-				if player then
+				if player
+				and player:get_player_name() then
 					if is_value_in_table(self.enemies, player:get_player_name()) then
 						local nearby_players = creatura.get_nearby_players(self)
 						local nearby_allies =  creatura.get_nearby_entities(self, self.name)
