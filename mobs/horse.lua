@@ -162,11 +162,6 @@ creatura.register_mob("animalia:horse", {
 				and type(self.lasso_origin) == "userdata" then
 					return 0.8, {self, self.lasso_origin, true}
 				end
-				local player = creatura.get_nearby_player(self)
-				if player
-				and self:follow_wielded_item(player) then
-					return 0.8, {self, player}
-				end
 				return 0
 			end
 		},

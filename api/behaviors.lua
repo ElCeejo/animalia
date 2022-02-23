@@ -712,24 +712,11 @@ end)
 creatura.register_utility("animalia:boid_wander", function(self, group)
     local idle_time = 3
     local move_probability = 5
-    local group_tick = 0
+    local group_tick = 1
     local function func(self)
         local pos = self.object:get_pos()
-        local goal
-        if group
-        and self:timer(3) then
-            local range = self.tracking_range * 0.5
-            local group_positions = animalia.get_group_positions(self.name, pos, range + 1)
-            if #group_positions > 2 then
-                local center = animalia.get_average_pos(group_positions)
-                if center
-                and vec_dist(pos, center) > range then
-                    goal = center
-                end
-            end
-            group_tick = 2
-        end
         if not self:get_action() then
+            local goal
             local move = random(move_probability) < 2
             if self.lasso_pos
             and vec_dist(pos, self.lasso_pos) > 10 then
@@ -737,14 +724,34 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
             end
             if not goal
             and move then
-                goal = self:get_wander_pos(1, 3)
+                goal = self:get_wander_pos(1, 2)
             end
-            if move
-            and goal then
+            if group
+            and goal
+            and group_tick > 3 then
+                local range = self.tracking_range * 0.5
+                local group_positions = animalia.get_group_positions(self.name, pos, range + 1)
+                if #group_positions > 2 then
+                    local center = animalia.get_average_pos(group_positions)
+                    if center
+                    and vec_dist(pos, center) > range * 0.33
+                    or vec_dist(goal, center) > range * 0.33 then
+                        goal = center
+                        far_from_group = true
+                    else
+                        far_from_group = false
+                    end
+                end
+                group_tick = 0
+            end
+            if (move
+            and goal)
+            or far_from_group then
                 animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
             else
                 creatura.action_idle(self, idle_time)
             end
+            group_tick = group_tick + 1
         end
     end
     self:set_utility(func)
@@ -1632,7 +1639,7 @@ creatura.register_utility("animalia:mount", function(self, player)
             speed_factor = speed_factor * 0.5
         end
         local total_speed = vector.length(vel)
-        if total_speed > 0.1 then
+        if total_speed > 0.2 then
             anim = "walk"
             if control.aux1 then
                 anim = "run"

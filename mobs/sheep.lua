@@ -68,7 +68,6 @@ creatura.register_mob("animalia:sheep", {
 		walk = {range = {x = 70, y = 110}, speed = 40, frame_blend = 0.3, loop = true},
 		run = {range = {x = 70, y = 110}, speed = 50, frame_blend = 0.3, loop = true},
 	},
-	use_texture_alpha = true,
     -- Misc
 	catch_with_net = true,
 	catch_with_lasso = true,

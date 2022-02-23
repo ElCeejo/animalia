@@ -214,40 +214,58 @@ local chunk_spawn_add_int = tonumber(minetest.settings:get("chunk_spawn_add_int"
 
 animalia.spawn_queue = {}
 
+local c_air = minetest.get_content_id("air")
+
 minetest.register_on_generated(function(minp, maxp)
     if not mapgen_spawning then return end
 	animalia.chunks_since_last_spawn = animalia.chunks_since_last_spawn + 1
-	local heightmap = minetest.get_mapgen_object("heightmap")
-	if not heightmap then return end
-	local pos = {
-		x = minp.x + math.floor((maxp.x - minp.x) / 2),
-		y = minp.y,
-		z = minp.z + math.floor((maxp.z - minp.z) / 2)
-	}
-	local hm_i = (pos.x - minp.x + 1) + (((pos.z - minp.z)) * 80)
-	pos.y = heightmap[hm_i]
-	if animalia.chunks_since_last_spawn > chunk_spawn_add_int
-	and pos.y > 0 then
-		local heightmap = minetest.get_mapgen_object("heightmap")
-		if not heightmap then return end
-		local center = {
-			x = math.floor(minp.x + ((maxp.x - minp.x) * 0.5) + 0.5),
-			y = minp.y,
-			z = math.floor(minp.z + ((maxp.z - minp.z) * 0.5) + 0.5),
-		}
-		local light = minetest.get_natural_light(center)
-		while center.y < maxp.y
-		and light < 10 do
-			center.y = center.y + 1
-			light = minetest.get_natural_light(center)
-		end
-        local spawnable_mobs = get_spawnable_mobs(center)
-        if spawnable_mobs then
-            local mob = spawnable_mobs[random(#spawnable_mobs)]
-            table.insert(animalia.spawn_queue, {pos = center, mob = mob, group = random(3, 4)})
-            table.insert(animalia.spawn_points, center)
+    local max_y = maxp.y
+    local min_x = minp.x
+    local max_x = maxp.x
+    local min_z = minp.z
+    local max_z = maxp.z
+	
+	local vm, emin, emax = minetest.get_mapgen_object("voxelmanip")
+	local area = VoxelArea:new{MinEdge=emin, MaxEdge=emax}
+	local data = vm:get_data()
+
+    local spawn_added = false
+
+	for xcen = min_x + 8, max_x - 7, 8 do
+        if spawn_added then break end
+        for zcen = min_z + 8, max_z - 7, 8 do
+            local surface = false -- y of above surface node
+            for y = max_y, 2, -1 do
+                local vi = area:index(xcen, y, zcen)
+                local c_node = data[vi]
+                local c_name = minetest.get_name_from_content_id(c_node)
+                local c_def = minetest.registered_nodes[c_name]
+                if y == max_y and c_node ~= c_air then -- if top node solid
+                    break
+                elseif minetest.get_item_group(c_name, "leaves") > 0 then
+                    break
+                elseif c_def.walkable then
+                    surface = y + 1
+                    break
+                end
+            end
+            if animalia.chunks_since_last_spawn > chunk_spawn_add_int
+            and surface then
+                local center = {
+                    x = xcen,
+                    y = surface,
+                    z = zcen,
+                }
+                local spawnable_mobs = get_spawnable_mobs(center)
+                if spawnable_mobs then
+                    local mob = spawnable_mobs[random(#spawnable_mobs)]
+                    table.insert(animalia.spawn_queue, {pos = center, mob = mob, group = random(3, 4)})
+                    table.insert(animalia.spawn_points, center)
+                end
+                spawn_added = true
+                animalia.chunks_since_last_spawn = 0
+            end
         end
-		animalia.chunks_since_last_spawn = 0
 	end
 end)
 
