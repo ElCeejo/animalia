@@ -153,7 +153,8 @@ creatura.register_mob("animalia:sheep", {
 		[5] = {
 			utility = "animalia:mammal_breed",
 			get_score = function(self)
-				if self.breeding then
+				if self.breeding
+				and animalia.get_nearby_mate(self, self.name) then
 					return 0.9, {self}
 				end
 				return 0

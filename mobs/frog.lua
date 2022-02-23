@@ -106,6 +106,7 @@ creatura.register_mob("animalia:frog", {
 			utility = "animalia:breed_water_surface",
 			get_score = function(self)
 				if self.breeding
+				and animalia.get_nearby_mate(self, self.name)
 				and self.in_liquid then
 					return 1
 				end
