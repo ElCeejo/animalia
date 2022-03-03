@@ -101,6 +101,7 @@ creatura.register_mob("animalia:wolf", {
 				end
 				if target then
 					if is_attacking
+					and self._utility_data.args[2]
 					and self._utility_data.args[2] == target then
 						return 0
 					end

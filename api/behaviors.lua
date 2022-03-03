@@ -745,8 +745,8 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
                 group_tick = 0
             end
             if (move
-            and goal)
-            or far_from_group then
+            or far_from_group)
+            and goal then
                 animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
             else
                 creatura.action_idle(self, idle_time)
@@ -979,7 +979,9 @@ creatura.register_utility("animalia:boid_flee_from_player", function(self, playe
             and vec_dist(pos, self.lasso_pos) > 10 then
                 escape_pos = self.lasso_pos
             end
-            animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1, "run")
+            if escape_pos then
+                animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1, "run")
+            end
         end
         if vec_dist(pos, tpos) > self.tracking_range + (#mobs_in_group or 0) then
             return true

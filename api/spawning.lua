@@ -257,7 +257,8 @@ minetest.register_on_generated(function(minp, maxp)
                     z = zcen,
                 }
                 local spawnable_mobs = get_spawnable_mobs(center)
-                if spawnable_mobs then
+                if spawnable_mobs
+                and #spawnable_mobs > 0 then
                     local mob = spawnable_mobs[random(#spawnable_mobs)]
                     table.insert(animalia.spawn_queue, {pos = center, mob = mob, group = random(3, 4)})
                     table.insert(animalia.spawn_points, center)
@@ -280,7 +281,8 @@ minetest.register_globalstep(function(dtime)
                 if dist_to_nearest_player(point) < 48
                 and minetest.get_node_or_nil(point) then
                     local spawnable_mobs = get_spawnable_mobs(point)
-                    if spawnable_mobs then
+                    if spawnable_mobs
+                    and #spawnable_mobs > 0 then
                         local mob = spawnable_mobs[random(#spawnable_mobs)]
                         local objects = minetest.get_objects_inside_radius(point, 32)
                         local spawn = true
