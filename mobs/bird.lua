@@ -124,16 +124,6 @@ creatura.register_mob("animalia:bird", {
 			utility = "animalia:return_to_nest",
 			get_score = function(self)
 				if not self.home_position then
-					local pos = self.object:get_pos()
-					local node = minetest.get_node({x = pos.x, y = pos.y - 1, z = pos.z})
-					if minetest.get_item_group(node, "leaves") > 0 then
-						self.home_position = self:memorize({
-							x = math.floor(pos.x + 0.5),
-							y = math.floor(pos.y + 0.5),
-							z = math.floor(pos.z + 0.5)
-						})
-						minetest.set_node(self.home_position, {name = "animalia:nest_song_bird"})
-					end
 					return 0
 				end
 				local player = self._nearby_player
