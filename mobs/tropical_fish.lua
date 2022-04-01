@@ -58,7 +58,6 @@ creatura.register_mob("animalia:tropical_fish", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self.attention_span = 8
 		if self.texture_no == 3 then
 			self.object:set_properties({
 				mesh = "animalia_angelfish.b3d",
@@ -76,6 +75,9 @@ creatura.register_mob("animalia:tropical_fish", {
 		end
     end,
 	on_rightclick = function(self, clicker)
+		if animalia.set_nametag(self, clicker) then
+			return
+		end
 		animalia.add_libri_page(self, clicker, {name = "tropical_fish", form = "pg_tropical_fish;Tropical Fish"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

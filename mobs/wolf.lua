@@ -201,6 +201,9 @@ creatura.register_mob("animalia:wolf", {
 		if animalia.feed(self, clicker, passive, passive) then
 			return
 		end
+		if animalia.set_nametag(self, clicker) then
+			return
+		end
 		if self.owner
 		and clicker:get_player_name() == self.owner
 		and clicker:get_player_control().sneak then

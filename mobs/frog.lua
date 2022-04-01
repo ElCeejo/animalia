@@ -187,6 +187,9 @@ creatura.register_mob("animalia:frog", {
 			self:memorize("trust", self.trust)
 			return
 		end
+		if animalia.set_nametag(self, clicker) then
+			return
+		end
 		animalia.add_libri_page(self, clicker, {name = "frog", form = "pg_frog;Frogs"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

@@ -189,7 +189,6 @@ creatura.register_mob("animalia:horse", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self._path = {}
 		set_pattern(self)
 		self.owner = self:recall("owner") or nil
 		if self.owner then
@@ -265,6 +264,9 @@ creatura.register_mob("animalia:horse", {
     end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
+			return
+		end
+		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		local tool = clicker:get_wielded_item()

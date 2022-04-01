@@ -77,6 +77,7 @@ end)
 
 local moveable = creatura.is_pos_moveable
 local fast_ray_sight = creatura.fast_ray_sight
+local get_node_def = creatura.get_node_def
 
 local function get_ground_level(pos2, max_height)
     local node = minetest.get_node(pos2)
@@ -458,24 +459,25 @@ function animalia.action_boid_move(self, pos2, timeout, method)
         if #boids > 2 then
             local boid_angle, boid_lift = creatura.get_boid_angle(self, boids, 6)
             if boid_angle then
-                local dir2goal = vec_dir(pos, pos2)
+                local dir2goal = vec_dir(pos, goal)
                 local yaw2goal = minetest.dir_to_yaw(dir2goal)
-                boid_angle = boid_angle + (yaw2goal - boid_angle) * 0.15
+                boid_angle = boid_angle + (yaw2goal - boid_angle) * 0.25
                 local boid_dir = minetest.yaw_to_dir(boid_angle)
                 if boid_lift then
-                    boid_dir.y = boid_lift + (vec_dir(pos, goal).y - boid_lift) * 0.5
+                    boid_dir.y = boid_lift + (vec_dir(pos, goal).y - boid_lift) * 0.25
                 else
                     boid_dir.y = vec_dir(pos, goal).y
                 end
-                pos2 = vec_add(pos, vec_multi(boid_dir, 4))
+                boid_dir = vector.normalize(boid_dir)
+                goal = vec_add(pos, vec_multi(boid_dir, vec_dist(pos, goal)))
             end
         end
         if timer <= 0
-        or self:pos_in_box(pos2, 0.25) then
+        or self:pos_in_box(goal, 0.5) then
             self:halt()
             return true
         end
-        self:move(pos2, method or "animalia:fly_obstacle_avoidance", 1)
+        self:move(goal, method or "animalia:fly_obstacle_avoidance", 1)
     end
     self:set_action(func)
 end
@@ -1261,7 +1263,7 @@ creatura.register_utility("animalia:aerial_flock", function(self, scale)
     local function func(self)
         if self:timer(2)
         and self.stamina <= 0 then
-            local boids = creatura.get_boid_members(self.object:get_pos(), 6, self.name)
+            local boids = get_boid_members(self.object:get_pos(), 6, self.name, self.texture_no)
             if #boids > 1 then
                 for i = 1, #boids do
                     local boid = boids[i]
@@ -1340,30 +1342,44 @@ creatura.register_utility("animalia:aerial_swarm", function(self, scale)
 end)
 
 creatura.register_utility("animalia:land", function(self, scale)
+    scale = scale or 1
     local function func(self)
         if self.touching_ground then return true end
         local _, node = creatura.sensor_floor(self, 3, true)
-        if node and is_liquid[node.name] then self.is_landed = false return true end
-        scale = scale or 1
-        local width = self.width
-        local pos = self.object:get_pos()
-        local pos2
-        if self:timer(1) then
+        if node and get_node_def(node.name).drawtype == "liquid" then self.is_landed = false return true end
+        if not self:get_action() then
+            local pos = self.object:get_pos()
             local offset = random(2 * scale, 3 * scale)
             if random(2) < 2 then
                 offset = offset * -1
             end
-            pos2 = {
+            local pos2 = {
                 x = pos.x + offset,
                 y = pos.y,
                 z = pos.z + offset
             }
             pos2.y = pos2.y - (3 * scale)
-        end
-        if not self:get_action()
-        and pos2 then
             self:animate("fly")
-            creatura.action_walk(self, pos2, 2, "animalia:fly_path", 1)
+            animalia.action_boid_move(self, pos2, 2, "animalia:fly_path", 1)
+        end
+    end
+    self:set_utility(func)
+end)
+
+creatura.register_utility("animalia:return_to_nest", function(self)
+    local function func(self)
+        if not self.home_position then return true end
+        local pos = self.object:get_pos()
+        local pos2 = self.home_position
+        local dist = vec_dist(pos, {x = pos2.x, y = pos.y, z = pos2.z})
+        if dist < 4
+        and abs(pos.y - pos2.y) < 2 then
+            if self.touching_ground then
+                creatura.action_idle(self, 1)
+            end
+        end
+        if not self:get_action() then
+            creatura.action_walk(self, pos2, 6, "animalia:fly_path", 1)
         end
     end
     self:set_utility(func)
@@ -1522,9 +1538,6 @@ creatura.register_utility("animalia:return_to_home", function(self)
         if not self.home_position then return true end
         local pos = self.object:get_pos()
         local pos2 = self.home_position
-        if not self:get_action() then
-            creatura.action_walk(self, vec_raise(pos2, -1), 6, "animalia:fly_path", 1)
-        end
         local dist = vec_dist(pos, pos2)
         if dist < 2 then
             if is_solid[minetest.get_node(vec_raise(pos, 1)).name] then
@@ -1532,6 +1545,9 @@ creatura.register_utility("animalia:return_to_home", function(self)
                 self:set_gravity(9.8)
                 self.object:set_velocity({x = 0, y = 0, z = 0})
             end
+        end
+        if not self:get_action() then
+            creatura.action_walk(self, vec_raise(pos2, -1), 6, "animalia:fly_path", 1)
         end
     end
     self:set_utility(func)

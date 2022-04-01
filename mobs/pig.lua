@@ -144,8 +144,6 @@ creatura.register_mob("animalia:pig", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self.attention_span = 8
-        self._path = {}
     end,
     step_func = function(self)
 		animalia.step_timers(self)
@@ -159,6 +157,9 @@ creatura.register_mob("animalia:pig", {
     end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
+			return
+		end
+		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		animalia.add_libri_page(self, clicker, {name = "pig", form = "pg_pig;Pigs"})

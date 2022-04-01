@@ -36,7 +36,7 @@ creatura.register_mob("animalia:bird", {
 	stepheight = 1.1,
 	max_fall = 100,
 	turn_rate = 6,
-	boid_seperation = 1,
+	boid_seperation = 0.4,
     -- Visuals
     mesh = "animalia_bird.b3d",
     hitbox = {
@@ -53,7 +53,7 @@ creatura.register_mob("animalia:bird", {
 		stand = {range = {x = 1, y = 40}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 50, y = 70}, speed = 30, frame_blend = 0.3, loop = true},
         fly = {range = {x = 120, y = 140}, speed = 80, frame_blend = 0.3, loop = true}
-		},
+	},
     -- Misc
 	catch_with_net = true,
 	catch_with_lasso = false,
@@ -96,14 +96,14 @@ creatura.register_mob("animalia:bird", {
 					if self.in_liquid then
 						self.stamina = self:memorize("stamina", 30)
 						self.is_landed = false
-						return 0.15, {self, 1}
+						return 0.15, {self, 0.5}
 					end
 					local player = creatura.get_nearby_player(self)
 					if player
 					and player:get_pos() then
 						local dist = vector.distance(pos, player:get_pos())
 						self.is_landed = false
-						return (16 - dist) * 0.1, {self, 1}
+						return (16 - dist) * 0.1, {self, 0.5}
 					end
 				end
 				return 0
@@ -112,10 +112,41 @@ creatura.register_mob("animalia:bird", {
 		{
 			utility = "animalia:land",
 			get_score = function(self)
-				if not self.is_landed
+				if self.is_landed
 				and not self.touching_ground
 				and not self.in_liquid then
 					return 0.12, {self}
+				end
+				return 0
+			end
+		},
+		{
+			utility = "animalia:return_to_nest",
+			get_score = function(self)
+				if not self.home_position then
+					local pos = self.object:get_pos()
+					local node = minetest.get_node({x = pos.x, y = pos.y - 1, z = pos.z})
+					if minetest.get_item_group(node, "leaves") > 0 then
+						self.home_position = self:memorize({
+							x = math.floor(pos.x + 0.5),
+							y = math.floor(pos.y + 0.5),
+							z = math.floor(pos.z + 0.5)
+						})
+						minetest.set_node(self.home_position, {name = "animalia:nest_song_bird"})
+					end
+					return 0
+				end
+				local player = self._nearby_player
+				if player
+				and player:get_pos() then
+					local pos = self.object:get_pos()
+					local dist = vector.distance(pos, player:get_pos())
+					if dist < 3 then
+						return 0
+					end
+				end
+				if not animalia.is_day then
+					return 0.6, {self}
 				end
 				return 0
 			end
@@ -124,16 +155,29 @@ creatura.register_mob("animalia:bird", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-		self.trust = self:recall("trust") or {}
+		self._tp2home = self:recall("_tp2home") or nil
+		self.home_position = self:recall("home_position") or nil
+		if self._tp2home
+		and self.home_position then
+			self.object:set_pos(self.home_position)
+		end
 		self.is_landed = self:recall("is_landed") or false
-		self.stamina = self:recall("stamina") or 0.1
-        self._path = {}
+		self.stamina = self:recall("stamina") or 40
+		if not self.home_position then
+			local pos = self.object:get_pos()
+			local nests = minetest.find_nodes_in_area_under_air(vector.add(pos, 4), vector.subtract(pos, 4), {"animalia:nest_song_bird"})
+			if nests[1]
+			and minetest.get_natural_light(nests[1]) > 0 then
+				self.home_position = self:memorize("home_position", nests[1])
+			end
+		end
     end,
     step_func = function(self)
 		animalia.step_timers(self)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-		if self:timer(random(10,15)) then
+		if animalia.is_day
+		and self:timer(random(10,15)) then
 			if self.texture_no == 1 then
 				self:play_sound("cardinal")
 			elseif self.texture_no == 2 then
@@ -177,18 +221,29 @@ creatura.register_mob("animalia:bird", {
 			self:initiate_utility("animalia:die", self)
 		end
     end,
+	deactivate_func = function(self)
+		if self:get_utility()
+		and self:get_utility() == "animalia:return_to_nest" then
+			local pos = self.home_position
+			local node = minetest.get_node_or_nil(pos)
+			if node
+			and node.name == "animalia:nest_song_bird"
+			and minetest.get_natural_light(pos) > 0 then
+				self:memorize("_tp2home", true)
+			end
+		end
+	end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
-			self.trust[clicker:get_player_name()] = 1
-			self:memorize("trust", self.trust)
+			return
+		end
+		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		animalia.add_libri_page(self, clicker, {name = "bird", form = "pg_bird;Birds"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self.trust[puncher:get_player_name()] = 0
-		self:memorize("trust", self.trust)
 	end
 })
 

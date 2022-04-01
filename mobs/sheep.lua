@@ -196,6 +196,9 @@ creatura.register_mob("animalia:sheep", {
 		if animalia.feed(self, clicker, false, true) then
 			return
 		end
+		if animalia.set_nametag(self, clicker) then
+			return
+		end
 		local tool = clicker:get_wielded_item()
 		local tool_name = tool:get_name()
 		if tool_name == "animalia:shears"

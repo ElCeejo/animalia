@@ -76,7 +76,6 @@ creatura.register_mob_spawn("animalia:frog", {
     spawn_cluster = true,
     spawn_in_nodes = true,
     nodes = {"default:water_source"},
-    send_debug = true
 })
 
 creatura.register_mob_spawn("animalia:horse", {
@@ -122,15 +121,32 @@ creatura.register_mob_spawn("animalia:wolf", {
 })
 
 creatura.register_mob_spawn("animalia:bird", {
-    chance = 4,
+    chance = 1,
     min_light = 0,
     min_group = 12,
     max_group = 16,
     biomes = animalia.registered_biome_groups["common"].biomes,
     spawn_cluster = true,
-    spawn_in_nodes = true,
-    nodes = {"air", "ignore"}
+    nodes = {"group:leaves"}
+
 })
+
+creatura.register_on_spawn("animalia:bird", function(self, pos)
+    local node = minetest.get_node(pos)
+    if node.name == "air" then
+        minetest.set_node(pos, {name = "animalia:nest_song_bird"})
+        self.home_position = self:memorize("home_position", pos)
+        self.despawn_after = self:memorize("despawn_after", nil)
+    else
+        local nodes = minetest.find_nodes_in_area_under_air({x = pos.x - 3, y = pos.y - 3, z = pos.z - 3}, {x = pos.x + 3, y = pos.y + 7, z = pos.z + 3}, "group:leaves")
+        if nodes[1] then
+            pos = nodes[1]
+            minetest.set_node({x = pos.x, y = pos.y + 1, z = pos.z}, {name = "animalia:nest_song_bird"})
+            self.home_position = self:memorize("home_position", nodes[1])
+            self.despawn_after = self:memorize("despawn_after", nil)
+        end
+    end
+end)
 
 creatura.register_mob_spawn("animalia:tropical_fish", {
     chance = 3,
@@ -260,7 +276,8 @@ minetest.register_on_generated(function(minp, maxp)
                 if spawnable_mobs
                 and #spawnable_mobs > 0 then
                     local mob = spawnable_mobs[random(#spawnable_mobs)]
-                    table.insert(animalia.spawn_queue, {pos = center, mob = mob, group = random(3, 4)})
+                    local spawn_def = creatura.registered_mob_spawns[mob]
+                    table.insert(animalia.spawn_queue, {pos = center, mob = mob, group = random(spawn_def.min_group, spawn_def.max_group)})
                     table.insert(animalia.spawn_points, center)
                 end
                 spawn_added = true
@@ -297,7 +314,8 @@ minetest.register_globalstep(function(dtime)
                             end
                         end
                         if spawn then
-                            table.insert(animalia.spawn_queue, {pos = point, mob = mob, group = random(3, 4)})
+                            local spawn_def = creatura.registered_mob_spawns[mob]
+                            table.insert(animalia.spawn_queue, {pos = point, mob = mob, group = random(spawn_def.min_group, spawn_def.max_group)})
                         end
                     end
                 end
@@ -316,16 +334,25 @@ local function spawn_queued()
 		for i = #queue, 1, -1 do
             if queue[i].mob then
                 local pos = queue[i].pos
-                for _ = 1, queue[i].group do
-                    pos = {
-                        x = pos.x + random(-3, 3),
-                        y = pos.y,
-                        z = pos.z + random(-3, 3)
-                    }
+                if queue[i].group > 4
+                or creatura.registered_mob_spawns[queue[i].mob].spawn_cluster then
                     pos = get_ground_level(pos)
                     minetest.add_node(pos, {name = "creatura:spawn_node"})
                     local meta = minetest.get_meta(pos)
                     meta:set_string("mob", queue[i].mob)
+                    meta:set_string("cluster", queue[i].group)
+                else
+                    for _ = 1, queue[i].group do
+                        pos = {
+                            x = pos.x + random(-3, 3),
+                            y = pos.y,
+                            z = pos.z + random(-3, 3)
+                        }
+                        pos = get_ground_level(pos)
+                        minetest.add_node(pos, {name = "creatura:spawn_node"})
+                        local meta = minetest.get_meta(pos)
+                        meta:set_string("mob", queue[i].mob)
+                    end
                 end
             end
 			table.remove(animalia.spawn_queue, i)

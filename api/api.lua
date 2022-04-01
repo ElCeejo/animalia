@@ -160,6 +160,15 @@ end
 -- Mob Functions --
 -------------------
 
+local function activate_nametag(self)
+    self.nametag = self:recall("nametag") or nil
+    if not self.nametag then return end
+    self.object:set_properties({
+        nametag = self.nametag,
+        nametag_color = "#FFFFFF"
+    })
+end
+
 function animalia.initialize_api(self)
     self.gender = self:recall("gender") or nil
     if not self.gender then
@@ -170,6 +179,7 @@ function animalia.initialize_api(self)
     self.gotten = self:recall("gotten") or false
     self.breeding = false
     self.breeding_cooldown = self:recall("breeding_cooldown") or 0
+    activate_nametag(self)
     if self.growth_scale then
         self:memorize("growth_scale", self.growth_scale) -- This is for spawning children
     end
@@ -194,7 +204,7 @@ function animalia.initialize_api(self)
 end
 
 function animalia.step_timers(self)
-    self.breeding_cooldown = self.breeding_cooldown - self.dtime
+    self.breeding_cooldown = (self.breeding_cooldown or 30) - self.dtime
     if self.breeding
     and self.breeding_cooldown <= 30 then
         self.breeding = false
@@ -232,6 +242,27 @@ function animalia.do_growth(self, interval)
             self:memorize("growth_scale", self.growth_scale)
         end
     end
+end
+
+function animalia.set_nametag(self, clicker)
+    local item = clicker:get_wielded_item()
+    if item
+    and item:get_name() ~= "animalia:nametag" then
+        return
+    end
+    local name = item:get_meta():get_string("name")
+    if not name
+    or name == "" then
+        return
+    end
+    self.nametag = self:memorize("nametag", name)
+    self.despawn_after = self:memorize("despawn_after", nil)
+    activate_nametag(self)
+    if not creative then
+        item:take_item()
+        clicker:set_wielded_item(item)
+    end
+    return true
 end
 
 -----------------------
@@ -815,7 +846,8 @@ local libri_animal_info = {
                 "deserts or tundras. They fly in ",
                 "flocks that vary in size from 4 ",
                 "or 5 individuals to large flocks ",
-                "exceeding a dozen individuals. Their calls vary between ",
+                "exceeding a dozen individuals. ",
+                "Their calls vary between ",
                 "species, making it easy to tell ",
                 "what kind of birds are around."
             }
@@ -1123,7 +1155,7 @@ local function get_libri_page(mob_name, player_name)
         -- Background
         "formspec_version[3]",
         "size[16,10]",
-        "background[-0.7,-0.5;17.5,11.5;animalia_libri_bg_v2.png]",
+        "background[-0.7,-0.5;17.5,11.5;animalia_libri_bg.png]",
         "image[-0.7,-0.5;17.5,11.5;animalia_libri_info_fg.png]",
         -- Mesh
         "model[1.5,1.5;5,5;libri_mesh;" .. mesh .. ";" .. texture .. ";-30,225;false;false;0,0;0]",

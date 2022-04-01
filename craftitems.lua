@@ -355,6 +355,26 @@ minetest.register_craftitem("animalia:bucket_guano", {
     end
 })
 
+minetest.register_node("animalia:nest_song_bird", {
+	description = "Song Bird Nest",
+	paramtype = "light",
+	drawtype = "mesh",
+	mesh = "animalia_nest.obj",
+	tiles = {"animalia_nest.png"},
+	sunlight_propagates = true,
+	stack_max = 1,
+	groups = {snappy = 3, flammable = 3},
+	selection_box = {
+        type = "fixed",
+        fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
+    },
+	node_box = {
+        type = "fixed",
+        fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
+    },
+	drops = "default:stick"
+})
+
 -----------
 -- Tools --
 -----------
@@ -363,6 +383,56 @@ minetest.register_craftitem("animalia:cat_toy", {
     description = "Cat Toy",
     inventory_image = "animalia_cat_toy.png",
     wield_image = "animalia_cat_toy.png^[transformFYR90",
+})
+
+local nametag = {}
+
+local function get_rename_formspec(meta)
+    local tag = meta:get_string("name") or ""
+    local form = {
+        "size[8,4]",
+        "field[0.5,1;7.5,0;name;" .. minetest.formspec_escape("Enter name:") .. ";" .. tag .. "]",
+        "button_exit[2.5,3.5;3,1;set_name;" .. minetest.formspec_escape("Set Name") .. "]"
+    }
+    return table.concat(form, "")
+end
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+    if formname == "animalia:set_name" and fields.name then
+        local name = player:get_player_name()
+        if not nametag[name] then
+            return
+        end
+        local itemstack = nametag[name]
+        if string.len(fields.name) > 64 then
+            fields.name = string.sub(fields.name, 1, 64)
+        end
+		local meta = itemstack:get_meta()
+		meta:set_string("name", fields.name)
+		meta:set_string("description", fields.name)
+		player:set_wielded_item(itemstack)
+        if fields.quit or fields.key_enter then
+            nametag[name] = nil
+        end
+    end
+end)
+
+local function nametag_rightclick(itemstack, player, pointed_thing)
+	if pointed_thing
+	and pointed_thing.type == "object" then
+		return
+	end
+	local name = player:get_player_name()
+	nametag[name] = itemstack
+	local meta = itemstack:get_meta()
+	minetest.show_formspec(name, "animalia:set_name", get_rename_formspec(meta))
+end
+
+minetest.register_craftitem("animalia:nametag", {
+    description = "Nametag",
+    inventory_image = "animalia_nametag.png",
+	on_rightclick = nametag_rightclick,
+	on_secondary_use = nametag_rightclick
 })
 
 minetest.register_craftitem("animalia:saddle", {
@@ -493,7 +563,7 @@ function animalia.show_libri_main_form(player, pages, group)
     local basic_form = table.concat({
         "formspec_version[3]",
         "size[16,10]",
-        "background[-0.7,-0.5;17.5,11.5;animalia_libri_bg_v2.png]"
+        "background[-0.7,-0.5;17.5,11.5;animalia_libri_bg.png]"
 	}, "")
 	if group == 1 then
 		if pages[1] then

@@ -13,8 +13,19 @@ minetest.register_on_leaveplayer(function(player)
     animalia.pets[name] = nil
 end)
 
-local path = minetest.get_modpath("animalia")
+-- Daytime Tracking
 
+animalia.is_day = true
+
+local function is_day()
+    local time = (minetest.get_timeofday() or 0) * 24000
+    animalia.is_day = time < 19500 and time > 4500
+    minetest.after(10, is_day)
+end
+
+is_day()
+
+local path = minetest.get_modpath("animalia")
 
 dofile(path.."/api/api.lua")
 dofile(path.."/api/behaviors.lua")

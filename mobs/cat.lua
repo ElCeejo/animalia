@@ -226,6 +226,9 @@ creatura.register_mob("animalia:cat", {
 			end
 			return
 		end
+		if animalia.set_nametag(self, clicker) then
+			return
+		end
 		-- Initiate trust
 		if not self.trust[clicker:get_player_name()] then
 			self.trust[clicker:get_player_name()] = 0

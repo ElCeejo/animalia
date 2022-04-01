@@ -182,7 +182,6 @@ creatura.register_mob("animalia:bat", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-		self.trust = self:recall("trust") or {}
 		self.home_position = self:recall("home_position") or nil
 		self.is_landed = self:recall("is_landed") or false
 		self.stamina = self:recall("stamina") or 30
@@ -261,16 +260,15 @@ creatura.register_mob("animalia:bat", {
     end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
-			self.trust[clicker:get_player_name()] = 1
-			self:memorize("trust", self.trust)
+			return
+		end
+		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		animalia.add_libri_page(self, clicker, {name = "bat", form = "pg_bat;Bats"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self.trust[puncher:get_player_name()] = 0
-		self:memorize("trust", self.trust)
 	end
 })
 

@@ -153,8 +153,6 @@ creatura.register_mob("animalia:cow", {
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
         self.gotten = self:recall("gotten") or false
-        self.attention_span = 8
-        self._path = {}
     end,
     step_func = function(self)
 		animalia.step_timers(self)
@@ -169,6 +167,9 @@ creatura.register_mob("animalia:cow", {
     end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
+			return
+		end
+		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		local tool = clicker:get_wielded_item()
