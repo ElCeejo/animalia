@@ -14,7 +14,7 @@ minetest.register_on_mods_loaded(function()
     end
 end)
 
-local wool_block = "wool:wool"
+local wool_block = "wool:white"
 
 if not minetest.get_modpath("wool") then
 	wool_block = nil
