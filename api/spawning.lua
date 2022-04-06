@@ -254,6 +254,7 @@ minetest.register_on_generated(function(minp, maxp)
             for y = max_y, 2, -1 do
                 local vi = area:index(xcen, y, zcen)
                 local c_node = data[vi]
+                if not c_node then break end
                 local c_name = minetest.get_name_from_content_id(c_node)
                 local c_def = minetest.registered_nodes[c_name]
                 if y == max_y and c_node ~= c_air then -- if top node solid
