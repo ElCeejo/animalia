@@ -759,22 +759,34 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
     self:set_utility(func)
 end)
 
-creatura.register_utility("animalia:wander_water_surface", function(self)
+creatura.register_utility("animalia:wander_water_surface", function(self, float_speed, float_end)
     local idle_time = 3
     local move_probability = 3
+    local floating_up = false
     local function func(self)
         if not self.in_liquid then return true end
         local pos = self.object:get_pos()
-        local random_goal = get_wander_pos_3d(self, 2)
+        if floating_up then
+            local float_check_pos = vector.round(vector.offset(pos, 0, -float_end, 0))
+            if minetest.get_item_group(minetest.get_node(float_check_pos).name, "liquid") > 0 then
+                self:set_vertical_velocity(float_speed)
+            else
+                self:set_vertical_velocity(0)
+                floating_up = false
+            end
+        end
         if not self:get_action() then
+            local random_goal = get_wander_pos_3d(self, 2)
             if self.lasso_pos
             and vec_dist(pos, self.lasso_pos) > 10 then
                 random_goal = self.lasso_pos
             end
             if random(move_probability) < 2
             and random_goal then
+                floating_up = false
                 animalia.action_swim(self, random_goal)
             else
+                floating_up = float_speed ~= nil and float_end ~= nil
                 creatura.action_idle(self, idle_time, "float")
             end
         end
