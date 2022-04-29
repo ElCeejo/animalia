@@ -72,15 +72,18 @@ creatura.register_mob("animalia:tropical_fish", {
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
+			self:set_utility_score(2)
 		end
     end,
 	on_rightclick = function(self, clicker)
+		if self:get_utility() == "animalia:die" then return end
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
 		animalia.add_libri_page(self, clicker, {name = "tropical_fish", form = "pg_tropical_fish;Tropical Fish"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		if self:get_utility() == "animalia:die" then return end
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 	end
 })

@@ -173,9 +173,11 @@ creatura.register_mob("animalia:frog", {
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
+			self:set_utility_score(2)
 		end
     end,
 	on_rightclick = function(self, clicker)
+		if self:get_utility() == "animalia:die" then return end
 		if animalia.feed(self, clicker, false, true) then
 			local name = clicker:get_player_name()
 			if self.trust[name] then
@@ -193,6 +195,7 @@ creatura.register_mob("animalia:frog", {
 		animalia.add_libri_page(self, clicker, {name = "frog", form = "pg_frog;Frogs"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		if self:get_utility() == "animalia:die" then return end
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		self.trust[puncher:get_player_name()] = 0
 		self:memorize("trust", self.trust)

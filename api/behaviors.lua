@@ -964,8 +964,7 @@ creatura.register_utility("animalia:boid_flee_from_player", function(self, playe
         if #mobs_in_group > 0 then
             for i = 1, #mobs_in_group do
                 local mob = mobs_in_group[i]
-                mob:get_luaentity():initiate_utility("animalia:boid_flee_from_player", mob:get_luaentity(), player)
-                mob:get_luaentity():set_utility_score(1)
+                mob:get_luaentity():try_initiate_utility("animalia:boid_flee_from_player", 1, mob:get_luaentity(), player)
             end
         end
     end

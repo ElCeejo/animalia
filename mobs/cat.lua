@@ -207,9 +207,11 @@ creatura.register_mob("animalia:cat", {
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
+			self:set_utility_score(2)
 		end
     end,
 	on_rightclick = function(self, clicker)
+		if self:get_utility() == "animalia:die" then return end
 		local item_name = clicker:get_wielded_item():get_name()
 		if item_name == "animalia:net" then return end
 		local trust = self.trust[clicker:get_player_name()] or 0
@@ -286,6 +288,7 @@ creatura.register_mob("animalia:cat", {
 		end
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		if self:get_utility() == "animalia:die" then return end
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		self:initiate_utility("animalia:flee_from_player", self, puncher)
 		self:set_utility_score(1)

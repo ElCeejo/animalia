@@ -190,10 +190,11 @@ creatura.register_mob("animalia:wolf", {
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
+			self:set_utility_score(2)
 		end
     end,
 	on_rightclick = function(self, clicker)
-		if not clicker:is_player() then return end
+		if self:get_utility() == "animalia:die" or not clicker:is_player() then return end
 		local passive = true
 		if is_value_in_table(self.enemies, clicker:get_player_name()) then
 			passive = false
@@ -228,6 +229,7 @@ creatura.register_mob("animalia:wolf", {
 		animalia.add_libri_page(self, clicker, {name = "wolf", form = "pg_wolf;Wolves"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		if self:get_utility() == "animalia:die" then return end
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		if puncher:is_player() then
 			if self.owner

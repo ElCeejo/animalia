@@ -153,9 +153,11 @@ creatura.register_mob("animalia:pig", {
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
+			self:set_utility_score(2)
 		end
     end,
 	on_rightclick = function(self, clicker)
+		if self:get_utility() == "animalia:die" then return end
 		if animalia.feed(self, clicker, false, true) then
 			return
 		end
@@ -165,6 +167,7 @@ creatura.register_mob("animalia:pig", {
 		animalia.add_libri_page(self, clicker, {name = "pig", form = "pg_pig;Pigs"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
+		if self:get_utility() == "animalia:die" then return end
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		self:initiate_utility("animalia:flee_from_player", self, puncher)
 		self:set_utility_score(1)
