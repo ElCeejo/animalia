@@ -636,6 +636,7 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
 	local idle_time = 3
 	local move_probability = 5
 	local group_tick = 1
+	local far_from_group = false
 	local function func(self)
 		local pos = self.object:get_pos()
 		if not pos then return end
