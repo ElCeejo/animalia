@@ -9,6 +9,9 @@ local random = math.random
 local ceil = math.ceil
 local floor = math.floor
 local rad = math.rad
+local cos = math.cos
+local sin = math.sin
+local vec_center = creatura.vec_center
 
 local function average(t)
 	local sum = 0
