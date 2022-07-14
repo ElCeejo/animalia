@@ -41,32 +41,6 @@ end
 local yaw2dir = minetest.yaw_to_dir
 local dir2yaw = minetest.dir_to_yaw
 
---------------
--- Settings --
---------------
-
-------------
--- Tables --
-------------
-
-local is_solid = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_nodes) do
-		if name ~= "air" and name ~= "ignore" then
-			if minetest.registered_nodes[name].walkable
-			or minetest.registered_nodes[name].drawtype == "liquid" then
-				is_flyable[name] = true
-				if minetest.registered_nodes[name].walkable then
-					is_solid[name] = true
-				else
-					is_liquid[name] = true
-				end
-			end
-		end
-	end
-end)
-
 ---------------------
 -- Local Utilities --
 ---------------------
