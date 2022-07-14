@@ -8,15 +8,9 @@ local abs = math.abs
 local random = math.random
 local ceil = math.ceil
 local floor = math.floor
+local sin = math.sin
+local cos = math.cos
 local rad = math.rad
-
-local function average(t)
-	local sum = 0
-	for _,v in pairs(t) do -- Get the sum of all numbers in t
-	  sum = sum + v
-	end
-	return sum / #t
-end
 
 local function clamp(val, min, max)
 	if val < min then
@@ -36,6 +30,10 @@ local vec_add = vector.add
 local vec_multi = vector.multiply
 local vec_normal = vector.normalize
 
+local function vec_center(v)
+	return {x = floor(v.x + 0.5), y = floor(v.y + 0.5), z = floor(v.z + 0.5)}
+end
+
 local function vec_raise(v, n)
 	return {x = v.x, y = v.y + n, z = v.z}
 end
@@ -51,8 +49,6 @@ local dir2yaw = minetest.dir_to_yaw
 -- Tables --
 ------------
 
-local is_flyable = {}
-local is_liquid = {}
 local is_solid = {}
 
 minetest.register_on_mods_loaded(function()
@@ -97,7 +93,7 @@ local function get_ceiling_positions(pos, range)
 			z = i_pos.z
 		}
 		if minetest.get_node(under).name == "air"
-		and is_solid[minetest.get_node(i_pos).name] then
+		and creatura.get_node_def(i_pos).walkable then
 			table.insert(output, i_pos)
 		end
 	end
@@ -378,7 +374,7 @@ function animalia.action_latch_to_ceil(self, time, anim)
 	self:set_action(func)
 end
 
-function animalia.action_boid_move(self, pos2, timeout, method)
+function animalia.action_boid_move(self, pos2, timeout, method, speed_factor, anim)
 	local boids = get_boid_members(self.object:get_pos(), 6, self.name, self.texture_no)
 	local timer = timeout
 	local goal = pos2
@@ -402,10 +398,11 @@ function animalia.action_boid_move(self, pos2, timeout, method)
 			end
 		end
 		if timer <= 0
-		or self:move_to(goal, method or "animalia:fly_obstacle_avoidance", 1)then
+		or self:move_to(goal, method or "animalia:fly_obstacle_avoidance", speed_factor or 1) then
 			self:halt()
 			return true
 		end
+		self:animate(anim or "fly")
 	end
 	self:set_action(func)
 end
@@ -428,10 +425,13 @@ function animalia.action_boid_walk(self, pos2, timeout, method, speed_factor, an
 			end
 		end
 		if timer <= 0
-		or self:move_to(pos2, method or "creatura:obstacle_avoidance", speed_factor or 1, anim or "walk") then
+		or not self:is_pos_safe(pos2)
+		or self:move_to(pos2, method or "creatura:obstacle_avoidance", speed_factor or 1) then
 			self:halt()
 			return true
 		end
+		self:animate(anim or "walk")
+
 	end
 	self:set_action(func)
 end
@@ -465,6 +465,35 @@ function animalia.action_horse_spin(self, speed, anim)
 	end
 	self:set_action(func)
 end
+
+function animalia.action_pursue(self, target, timeout, method, speed_factor, anim)
+	local timer = timeout or 4
+	local goal
+	local function func(self)
+		local target_alive, line_of_sight, tgt_pos = self:get_target(target)
+		if not target_alive then
+			return true
+		end
+		local pos = self.object:get_pos()
+		if not pos then return end
+		timer = timer - self.dtime
+		if timer <= 0 then return true end
+		if not goal
+		or (line_of_sight
+		and vec_dist(goal, tgt_pos) > 3) then
+			goal = tgt_pos
+		end
+		goal.y = creatura.get_ground_level(pos, 3).y
+		if timer <= 0
+		or self:move_to(goal, method or "creatura:obstacle_avoidance", speed_factor or 0.5) then
+			self:halt()
+			return true
+		end
+		self:animate(anim or "walk")
+	end
+	self:set_action(func)
+end
+
 
 ------------------------
 -- Register Utilities --
@@ -512,7 +541,7 @@ creatura.register_utility("animalia:wander", function(self, group)
 			if (move
 			and goal)
 			or far_from_group then
-				creatura.action_walk(self, goal, 2, "creatura:neighbors")
+				creatura.action_walk(self, goal, 2, "creatura:obstacle_avoidance")
 			else
 				creatura.action_idle(self, idle_time)
 			end
@@ -561,7 +590,7 @@ creatura.register_utility("animalia:skittish_wander", function(self)
 			end
 			if move
 			and goal then
-				creatura.action_walk(self, goal, 3, "creatura:neighbors", 0.35)
+				creatura.action_walk(self, goal, 3, "creatura:obstacle_avoidance", 0.35)
 			else
 				creatura.action_idle(self, idle_time)
 			end
@@ -620,7 +649,7 @@ creatura.register_utility("animalia:skittish_boid_wander", function(self)
 			end
 			if move
 			and goal then
-				animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
+				animalia.action_boid_walk(self, goal, 6, "creatura:obstacle_avoidance", 0.35)
 			else
 				creatura.action_idle(self, idle_time)
 			end
@@ -668,7 +697,7 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
 			if (move
 			or far_from_group)
 			and goal then
-				animalia.action_boid_walk(self, goal, 6, "creatura:neighbors", 0.35)
+				animalia.action_boid_walk(self, goal, 2, "creatura:obstacle_avoidance", 0.35)
 			else
 				creatura.action_idle(self, idle_time)
 			end
@@ -907,7 +936,7 @@ creatura.register_utility("animalia:boid_flee_from_player", function(self, playe
 				escape_pos = self.lasso_pos
 			end
 			if escape_pos then
-				animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1, "run")
+				animalia.action_boid_walk(self, escape_pos, 6, "creatura:obstacle_avoidance", 1)
 			end
 		end
 		if vec_dist(pos, tpos) > self.tracking_range + (#mobs_in_group or 0) then
@@ -953,7 +982,7 @@ creatura.register_utility("animalia:follow_player", function(self, player, force
 		end
 		if not self:get_action() then
 			if dist > self:get_hitbox(self)[4] + 1.5 then
-				creatura.action_walk(self, tpos, 6, "creatura:pathfind")
+				animalia.action_pursue(self, player, 6, "creatura:pathfind", 1, "walk")
 			else
 				creatura.action_idle(self, 0.1, "stand")
 			end
@@ -1231,7 +1260,7 @@ creatura.register_utility("animalia:aerial_flock", function(self, scale)
 			if self.in_liquid then
 				pos2.y = pos.y + 2
 			end
-			animalia.action_boid_move(self, pos2, 2)
+			animalia.action_boid_move(self, pos2, 2, "animalia:fly_obstacle_avoidance", 1)
 		end
 	end
 	self:set_utility(func)
@@ -1269,7 +1298,7 @@ creatura.register_utility("animalia:aerial_swarm", function(self, scale)
 			if dist2ceil < 2 then
 				pos2.y = pos.y - 1
 			end
-			animalia.action_boid_move(self, pos2, 2)
+			animalia.action_boid_move(self, pos2, 2, "animalia:fly_obstacle_avoidance", 1)
 		end
 	end
 	self:set_utility(func)
@@ -1295,7 +1324,7 @@ creatura.register_utility("animalia:land", function(self, scale)
 			}
 			pos2.y = pos2.y - (3 * scale)
 			self:animate("fly")
-			animalia.action_boid_move(self, pos2, 2, "animalia:fly_path", 1)
+			animalia.action_boid_move(self, pos2, 2, "creatura:fly_path", 1)
 		end
 	end
 	self:set_utility(func)
@@ -1333,7 +1362,7 @@ creatura.register_utility("animalia:schooling", function(self)
 			local iter = random(#water)
 			local pos2 = water[iter]
 			table.remove(water, iter)
-			animalia.action_boid_move(self, pos2, 2, "animalia:swim_obstacle_avoidance")
+			animalia.action_boid_move(self, pos2, 2, "animalia:swim_obstacle_avoidance", 1, "swim")
 		end
 	end
 	self:set_utility(func)
@@ -1481,7 +1510,7 @@ creatura.register_utility("animalia:return_to_home", function(self)
 		local pos2 = self.home_position
 		local dist = vec_dist(pos, pos2)
 		if dist < 2 then
-			if is_solid[minetest.get_node(vec_raise(pos, 1)).name] then
+			if creatura.get_node_def(vec_raise(pos, 1)).walkable then
 				creatura.action_idle(self, 1, "latch")
 				self:set_gravity(9.8)
 				self.object:set_velocity({x = 0, y = 0, z = 0})
@@ -1518,7 +1547,7 @@ creatura.register_utility("animalia:find_home", function(self)
 			elseif dist2ceil < 4 then
 				pos2.y = pos.y - 1
 			end
-			animalia.action_boid_move(self, pos2, 2)
+			animalia.action_boid_move(self, pos2, 2, "animalia:fly_obstacle_avoidance", 1)
 		end
 		if ceiling[iter] then
 			local pos2 = {
