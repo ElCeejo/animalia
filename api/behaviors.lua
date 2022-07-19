@@ -11,6 +11,9 @@ local floor = math.floor
 local sin = math.sin
 local cos = math.cos
 local rad = math.rad
+local cos = math.cos
+local sin = math.sin
+local vec_center = creatura.vec_center
 
 local function clamp(val, min, max)
 	if val < min then
@@ -637,6 +640,7 @@ creatura.register_utility("animalia:boid_wander", function(self, group)
 	local move_probability = 5
 	local far_from_group = false
 	local group_tick = 1
+	local far_from_group = false
 	local function func(self)
 		local pos = self.object:get_pos()
 		if not pos then return end
