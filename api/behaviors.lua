@@ -1456,6 +1456,7 @@ creatura.register_utility("animalia:walk_ahead_of_player", function(self, player
 		tpos.z = tpos.z + dir.z
 		self.status = self:memorize("status", "following")
 		local dist = vec_dist(pos, tpos)
+		self.view_range = math.abs(tpos.x) + 80
 		if dist > self.view_range then
 			self.status = self:memorize("status", "")
 			return true
