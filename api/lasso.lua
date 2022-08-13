@@ -182,7 +182,7 @@ minetest.register_entity("animalia:lasso_visual", {
     is_visible = true,
     makes_footstep_sound = false,
     glow = 1,
-    on_step = function(self, dtime)
+    on_step = function(self)
         self.object:set_armor_groups({immortal = 1})
         if not self.parent
         or not self.lasso_origin
@@ -206,7 +206,7 @@ minetest.register_entity("animalia:frog_tongue_visual", {
     textures = {"animalia_frog_tongue.png"},
     is_visible = true,
     makes_footstep_sound = false,
-    on_step = function(self, dtime)
+    on_step = function(self)
         self.object:set_armor_groups({immortal = 1})
         if not self.parent
         or not self.lasso_origin
@@ -319,7 +319,7 @@ minetest.register_entity("animalia:lasso_fence_ent", {
 minetest.register_craftitem("animalia:lasso", {
     description = "Lasso",
     inventory_image = "animalia_lasso.png",
-    on_secondary_use = function(itemstack, placer, pointed_thing)
+    on_secondary_use = function(_, placer, pointed_thing)
         if pointed_thing.type == "object" then
             if pointed_thing.ref:is_player() then return end
             local ent = pointed_thing.ref:get_luaentity()

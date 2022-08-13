@@ -2,10 +2,12 @@
 -- Sheep --
 -----------
 
+local random = math.random
+
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name, def in pairs(minetest.registered_items) do
+    for name in pairs(minetest.registered_items) do
         if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
@@ -69,6 +71,7 @@ creatura.register_mob("animalia:sheep", {
 		run = {range = {x = 70, y = 110}, speed = 50, frame_blend = 0.3, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -94,14 +97,8 @@ creatura.register_mob("animalia:sheep", {
     },
     follow = follows,
 	consumable_nodes = {
-		{
-			name = "default:dirt_with_grass",
-			replacement = "default:dirt"
-		},
-		{
-			name = "default:dry_dirt_with_dry_grass",
-			replacement = "default:dry_dirt"
-		}
+		["default:dirt_with_grass"] = "default:dirt",
+		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
 	},
 	head_data = {
 		offset = {x = 0, y = 0.41, z = 0},
@@ -111,67 +108,83 @@ creatura.register_mob("animalia:sheep", {
 	},
     -- Function
 	utility_stack = {
-		[1] = {
-			utility = "animalia:wander",
+		{
+			utility = "animalia:wander_group",
+			step_delay = 0.25,
 			get_score = function(self)
-				return 0.1, {self, true}
+				return 0.1, {self}
 			end
 		},
-		[2] = {
-			utility = "animalia:eat_from_turf",
+		{
+			utility = "animalia:eat_turf",
+			step_delay = 0.25,
 			get_score = function(self)
-				if math.random(25) < 2 then
-					return 0.1, {self}
+				if random(64) < 2 then
+					return 0.2, {self}
 				end
 				return 0
 			end
 		},
-		[3] = {
+		{
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 1, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
-		[4] = {
+		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
 				if self.lasso_origin
 				and type(self.lasso_origin) == "userdata" then
-					return 0.8, {self, self.lasso_origin, true}
+					return 0.4, {self, self.lasso_origin, true}
 				end
 				local player = creatura.get_nearby_player(self)
 				if player
 				and self:follow_wielded_item(player) then
-					return 0.8, {self, player}
+					return 0.4, {self, player}
 				end
 				return 0
 			end
 		},
-		[5] = {
-			utility = "animalia:mammal_breed",
+		{
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
-					return 0.9, {self}
+					return 0.5, {self}
 				end
+				return 0
+			end
+		},
+		{
+			utility = "animalia:flee_from_target",
+			get_score = function(self)
+				local puncher = self._target
+				if puncher
+				and puncher:get_pos() then
+					return 0.6, {self, puncher}
+				end
+				self._target = nil
 				return 0
 			end
 		}
 	},
     activate_func = function(self)
-        self.gotten = self:recall("gotten") or false
+        self.collected = self:recall("collected") or false
 		self.dye_color = self:recall("dye_color") or "white"
 		self.dye_hex = self:recall("dye_hex") or ""
 		if self.dye_color ~= "white"
-		and not self.gotten then
+		and not self.collected then
 			self.object:set_properties({
 				textures = {"animalia_sheep.png^(animalia_sheep_wool.png^[colorize:" .. self.dye_hex .. ")"},
 			})
 		end
-		if self.gotten then
+		if self.collected then
 			self.object:set_properties({
 				textures = {"animalia_sheep.png"},
 			})
@@ -202,7 +215,7 @@ creatura.register_mob("animalia:sheep", {
 		local tool = clicker:get_wielded_item()
 		local tool_name = tool:get_name()
 		if tool_name == "animalia:shears"
-		and not self.gotten
+		and not self.collected
 		and self.growth_scale > 0.9 then
 			if not minetest.get_modpath("wool") then
 				return
@@ -213,7 +226,7 @@ creatura.register_mob("animalia:sheep", {
 				ItemStack( "wool:" .. self.dye_color .. " " .. math.random(1, 3) )
 			)
 
-			self.gotten = self:memorize("gotten", true)
+			self.collected = self:memorize("collected", true)
 			self.dye_color = self:memorize("dye_color", "white")
 			self.dye_hex = self:memorize("dye_hex",  "#abababc000")
 
@@ -227,9 +240,9 @@ creatura.register_mob("animalia:sheep", {
 		end
 		for _, color in ipairs(palette) do
 			if tool_name:find("dye:")
-			and not self.gotten
+			and not self.collected
 			and self.growth_scale > 0.9 then
-				local dye = string.split(tool_name, ":")[2]
+				local dye = tool_name:split(":")[2]
 				if color[1] == dye then
 
 					self.dye_color = self:memorize("dye_color", color[1])
@@ -256,8 +269,7 @@ creatura.register_mob("animalia:sheep", {
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self:initiate_utility("animalia:boid_flee_from_player", self, puncher, true)
-		self:set_utility_score(1)
+		self._target = puncher
 	end
 })
 

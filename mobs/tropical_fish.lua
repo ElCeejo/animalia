@@ -12,7 +12,7 @@ creatura.register_mob("animalia:tropical_fish", {
     despawn_after = 2500,
 	-- Entity Physics
 	stepheight = 0.1,
-	max_fall = 8,
+	max_fall = 0,
 	turn_rate = 8,
 	boid_seperation = 0.3,
 	bouyancy_multiplier = 0,
@@ -33,19 +33,22 @@ creatura.register_mob("animalia:tropical_fish", {
 		flop = {range = {x = 30, y = 40}, speed = 20, frame_blend = 0.3, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = false,
 	makes_footstep_sound = false,
     -- Function
 	utility_stack = {
 		{
-			utility = "animalia:schooling",
+			utility = "animalia:aquatic_wander_school",
+			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
 			end
 		},
 		{
 			utility = "animalia:flop",
+			step_delay = 0.25,
 			get_score = function(self)
 				if not self.in_liquid then
 					self:hurt(1)

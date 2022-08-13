@@ -5,7 +5,7 @@
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name, def in pairs(minetest.registered_items) do
+    for name in pairs(minetest.registered_items) do
         if name:match(":carrot")
 		and (minetest.get_item_group(name, "food") > 0
 		or minetest.get_item_group(name, "food_carrot") > 0) then
@@ -64,6 +64,7 @@ creatura.register_mob("animalia:pig", {
 		run = {range = {x = 1, y = 20}, speed = 45, frame_blend = 0.3, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	consumable_nodes = destroyable_crops,
 	birth_count = 2,
 	catch_with_net = true,
@@ -93,24 +94,27 @@ creatura.register_mob("animalia:pig", {
 	utility_stack = {
 		[1] = {
 			utility = "animalia:wander",
+			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self, true}
 			end
 		},
 		[2] = {
 			utility = "animalia:eat_from_turf",
+			step_delay = 0.25,
 			get_score = function(self)
 				if math.random(25) < 2 then
-					return 0.1, {self}
+					return 0.2, {self}
 				end
 				return 0
 			end
 		},
 		[3] = {
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 1, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
@@ -118,24 +122,23 @@ creatura.register_mob("animalia:pig", {
 		[4] = {
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				if self.lasso_origin
-				and type(self.lasso_origin) == "userdata" then
-					return 0.8, {self, self.lasso_origin, true}
-				end
-				local player = creatura.get_nearby_player(self)
+				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local force = lasso and lasso ~= false
+				local player = (force and lasso) or creatura.get_nearby_player(self)
 				if player
 				and self:follow_wielded_item(player) then
-					return 0.8, {self, player}
+					return 0.4, {self, player}
 				end
 				return 0
 			end
 		},
 		[5] = {
-			utility = "animalia:mammal_breed",
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
-					return 0.9, {self}
+					return 0.5, {self}
 				end
 				return 0
 			end
@@ -166,8 +169,7 @@ creatura.register_mob("animalia:pig", {
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self:initiate_utility("animalia:flee_from_player", self, puncher)
-		self:set_utility_score(1)
+		self._target = puncher
 	end
 })
 

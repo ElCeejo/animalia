@@ -2,7 +2,20 @@
 -- Wolf --
 ----------
 
-local vec_dist = vector.distance
+local function shared_owner(obj1, obj2)
+	if not obj1 or not obj2 then return false end
+	obj1 = creatura.is_valid(obj1)
+	obj2 = creatura.is_valid(obj2)
+	if obj1
+	and obj2
+	and obj1:get_luaentity()
+	and obj2:get_luaentity() then
+		obj1 = obj1:get_luaentity()
+		obj2 = obj2:get_luaentity()
+		return obj1.owner and obj2.owner and obj1.owner == obj2.owner
+	end
+	return false
+end
 
 local follow = {
 	"animalia:mutton_raw",
@@ -40,6 +53,7 @@ creatura.register_mob("animalia:wolf", {
     despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
+	max_fall = 3,
     -- Visuals
     mesh = "animalia_wolf.b3d",
 	hitbox = {
@@ -47,117 +61,91 @@ creatura.register_mob("animalia:wolf", {
 		height = 0.7
 	},
     visual_size = {x = 9, y = 9},
-	textures = {"animalia_wolf.png"},
+	textures = {
+		"animalia_wolf_1.png",
+		"animalia_wolf_2.png",
+		"animalia_wolf_3.png",
+		"animalia_wolf_4.png"
+	},
 	animations = {
-		stand = {range = {x = 30, y = 49}, speed = 10, frame_blend = 0.3, loop = true},
-		sit = {range = {x = 60, y = 90}, speed = 20, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 1, y = 20}, speed = 30, frame_blend = 0.3, loop = true},
-		run = {range = {x = 1, y = 20}, speed = 45, frame_blend = 0.3, loop = true},
-		leap = {range = {x = 100, y = 100}, speed = 1, frame_blend = 0.15, loop = false}
+		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 41, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 41, y = 59}, speed = 45, frame_blend = 0.3, loop = true},
+		sit = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	assist_owner = true,
     follow = follow,
 	head_data = {
-		offset = {x = 0, y = 0.22, z = 0},
-		pitch_correction = -25,
+		offset = {x = 0, y = 0.33, z = 0},
+		pitch_correction = -67,
 		pivot_h = 0.65,
 		pivot_v = 0.65
 	},
     -- Function
 	utility_stack = {
-		[1] = {
-			utility = "animalia:skittish_boid_wander",
+		{
+			utility = "animalia:wander_skittish",
+			step_delay = 0.25,
 			get_score = function(self)
-				return 0.1, {self, true}
+				return 0.1, {self}
 			end
 		},
-		[2] = {
+		{
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 0.9, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
-		[3] = {
-			utility = "animalia:attack",
+		{
+			utility = "animalia:attack_target",
 			get_score = function(self)
-				local target = creatura.get_nearby_entity(self, "animalia:sheep")
-				local player = self._nearby_player
-				local is_attacking = self:get_utility() == "animalia:attack"
-				if player
-				and player:get_player_name() then
-					if is_value_in_table(self.enemies, player:get_player_name()) then
-						local nearby_players = creatura.get_nearby_players(self)
-						local nearby_allies = creatura.get_nearby_entities(self, self.name)
-						if #nearby_players < #nearby_allies then
-							target = player
-						end
-					end
-				end
-				if target then
-					if is_attacking
-					and self._utility_data.args[2]
-					and self._utility_data.args[2] == target then
-						return 0
-					end
-					return 0.85, {self, target}
+				local order = self.order or "wander"
+				if order ~= "wander" then return 0 end
+				local target = self._target or creatura.get_nearby_object(self, "animalia:sheep")
+				if target
+				and not shared_owner(self, target) then
+					return 0.4, {self, target}
 				end
 				return 0
 			end
 		},
-		[4] = {
-			utility = "animalia:flee_from_player",
+		{
+			utility = "animalia:stay",
+			step_delay = 0.25,
 			get_score = function(self)
-				local player = self._nearby_player
-				if player
-				and player:get_player_name() then
-					if is_value_in_table(self.enemies, player:get_player_name()) then
-						local nearby_players = creatura.get_nearby_players(self)
-						local nearby_allies =  creatura.get_nearby_entities(self, self.name)
-						if #nearby_players >= #nearby_allies then
-							return 0.86, {self, player}
-						end
-					end
+				local order = self.order or "wander"
+				if order == "sit" then
+					return 0.5, {self}
 				end
 				return 0
 			end
 		},
-		[5] = {
-			utility = "animalia:sit",
-			get_score = function(self)
-				if self.order == "sit" then
-					return 0.8, {self}
-				end
-				return 0
-			end
-		},
-		[6] = {
+		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				local trust = 0
-				local player = self._nearby_player
-				if self.lasso_origin
-				and type(self.lasso_origin) == "userdata" then
-					return 0.7, {self, self.lasso_origin, true}
-				elseif player
-				and self:follow_wielded_item(player) then
-					return 0.7, {self, player}
-				end
-				if self.order == "follow"
-				and self.owner
-				and minetest.get_player_by_name(self.owner) then
-					return 1, {self, minetest.get_player_by_name(self.owner), true}
+				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local owner = self.owner and self.order == "follow" and minetest.get_player_by_name(self.owner)
+				local force = (lasso and lasso ~= false) or owner
+				local player = (force and (owner or lasso)) or creatura.get_nearby_player(self)
+				if player
+				and (self:follow_wielded_item(player)
+				or force) then
+					return 0.6, {self, player, force}
 				end
 				return 0
 			end
 		},
-		[7] = {
-			utility = "animalia:mammal_breed",
+		{
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
@@ -170,7 +158,6 @@ creatura.register_mob("animalia:wolf", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self._path = {}
 		self.order = self:recall("order") or "wander"
 		self.owner = self:recall("owner") or nil
 		self.enemies = self:recall("enemies") or {}
@@ -194,10 +181,9 @@ creatura.register_mob("animalia:wolf", {
     end,
 	on_rightclick = function(self, clicker)
 		if not clicker:is_player() then return end
+		local name = clicker:get_player_name()
 		local passive = true
-		if is_value_in_table(self.enemies, clicker:get_player_name()) then
-			passive = false
-		end
+		if is_value_in_table(self.enemies, name) then passive = false end
 		if animalia.feed(self, clicker, passive, passive) then
 			return
 		end
@@ -205,21 +191,21 @@ creatura.register_mob("animalia:wolf", {
 			return
 		end
 		if self.owner
-		and clicker:get_player_name() == self.owner
+		and name == self.owner
 		and clicker:get_player_control().sneak then
 			local order = self.order
 			if order == "wander" then
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is following")
+				minetest.chat_send_player(name, "Wolf is following")
 				self.order = "follow"
 				self:initiate_utility("animalia:follow_player", self, clicker, true)
-				self:set_utility_score(1)
+				self:set_utility_score(0.7)
 			elseif order == "follow" then
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is sitting")
+				minetest.chat_send_player(name, "Wolf is sitting")
 				self.order = "sit"
-				self:initiate_utility("animalia:sit", self)
-				self:set_utility_score(0.8)
+				self:initiate_utility("animalia:stay", self)
+				self:set_utility_score(0.5)
 			else
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is wandering")
+				minetest.chat_send_player(name, "Wolf is wandering")
 				self.order = "wander"
 				self:set_utility_score(0)
 			end
@@ -229,24 +215,24 @@ creatura.register_mob("animalia:wolf", {
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		if puncher:is_player() then
+		local name = puncher:is_player() and puncher:get_player_name()
+		if name then
 			if self.owner
-			and puncher:get_player_name() == self.owner then
+			and name == self.owner then
 				return
-			elseif not is_value_in_table(self.enemies, puncher:get_player_name()) then
-				table.insert(self.enemies, puncher:get_player_name())
+			elseif not is_value_in_table(self.enemies, name) then
+				table.insert(self.enemies, name)
 				if #self.enemies > 15 then
 					table.remove(self.enemies, 1)
 				end
 				self.enemies = self:memorize("enemies", self.enemies)
 			else
 				table.remove(self.enemies, 1)
-				table.insert(self.enemies, puncher:get_player_name())
+				table.insert(self.enemies, name)
 				self.enemies = self:memorize("enemies", self.enemies)
 			end
 		end
-		self:initiate_utility("animalia:attack", self, puncher, true)
-		self:set_utility_score(1)
+		self._target = puncher
 	end,
 	deactivate_func = function(self)
 		if self.owner then

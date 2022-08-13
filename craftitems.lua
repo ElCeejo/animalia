@@ -4,30 +4,28 @@
 
 local random = math.random
 
-local function vec_raise(v, n)
-    return {x = v.x, y = v.y + n, z = v.z}
-end
-
 local walkable_nodes = {}
 
+local color = minetest.colorize
+
 minetest.register_on_mods_loaded(function()
-    for name in pairs(minetest.registered_nodes) do
-        if name ~= "air" and name ~= "ignore" then
-            if minetest.registered_nodes[name].walkable then
-                table.insert(walkable_nodes, name)
-            end
-        end
-    end
+	for name in pairs(minetest.registered_nodes) do
+		if name ~= "air" and name ~= "ignore" then
+			if minetest.registered_nodes[name].walkable then
+				table.insert(walkable_nodes, name)
+			end
+		end
+	end
 end)
 
 local function correct_name(str)
-    if str then
-        if str:match(":") then str = str:split(":")[2] end
-        return (string.gsub(" " .. str, "%W%l", string.upper):sub(2):gsub("_", " "))
-    end
+	if str then
+		if str:match(":") then str = str:split(":")[2] end
+		return (string.gsub(" " .. str, "%W%l", string.upper):sub(2):gsub("_", " "))
+	end
 end
 
-function register_egg(name, def)
+local function register_egg(name, def)
 
 	minetest.register_entity(def.mob .. "_egg_sprite", {
 		hp_max = 1,
@@ -38,7 +36,7 @@ function register_egg(name, def)
 		textures = {"animalia_egg.png"},
 		initial_sprite_basepos = {x = 0, y = 0},
 		is_visible = true,
-		on_step = function(self, dtime)
+		on_step = function(self)
 			local pos = self.object:get_pos()
 			local objects = minetest.get_objects_inside_radius(pos, 1.5)
 			local cube = minetest.find_nodes_in_area(
@@ -77,48 +75,48 @@ function register_egg(name, def)
 		end
 	})
 
-	local function mobs_shoot_egg(item, player, pointed_thing)
+	local function mobs_shoot_egg(item, player)
 		local pos = player:get_pos()
-	
+
 		minetest.sound_play("default_place_node_hard", {
 			pos = pos,
 			gain = 1.0,
 			max_hear_distance = 5,
 		})
-	
+
 		local vel = 19
 		local gravity = 9
-	
+
 		local obj = minetest.add_entity({
 			x = pos.x,
 			y = pos.y +1.5,
 			z = pos.z
 		}, def.mob .. "_egg_sprite")
-	
+
 		local ent = obj:get_luaentity()
 		local dir = player:get_look_dir()
-	
+
 		ent.velocity = vel -- needed for api internal timing
 		ent.switch = 1 -- needed so that egg doesn't despawn straight away
-	
+
 		obj:set_velocity({
 			x = dir.x * vel,
 			y = dir.y * vel,
 			z = dir.z * vel
 		})
-	
+
 		obj:set_acceleration({
 			x = dir.x * -3,
 			y = -gravity,
 			z = dir.z * -3
 		})
-	
+
 		-- pass player name to egg for chick ownership
 		local ent2 = obj:get_luaentity()
 		ent2.playername = player:get_player_name()
-	
+
 		item:take_item()
-	
+
 		return item
 	end
 
@@ -148,8 +146,8 @@ end
 -----------
 
 minetest.register_craftitem("animalia:leather", {
-    description = "Leather",
-    inventory_image = "animalia_leather.png",
+	description = "Leather",
+	inventory_image = "animalia_leather.png",
 	groups = {flammable = 2, leather = 1},
 })
 
@@ -241,6 +239,26 @@ minetest.register_craft({
 	output = "animalia:poultry_cooked",
 })
 
+minetest.register_craftitem("animalia:venison_raw", {
+	description = "Raw Venison",
+	inventory_image = "animalia_venison_raw.png",
+	on_use = minetest.item_eat(1),
+	groups = {flammable = 2, meat = 1, food_meat = 1},
+})
+
+minetest.register_craftitem("animalia:venison_raw_cooked", {
+	description = "Venison Steak",
+	inventory_image = "animalia_venison_cooked.png",
+	on_use = minetest.item_eat(10),
+	groups = {flammable = 2, meat = 1, food_meat = 1},
+})
+
+minetest.register_craft({
+	type  =  "cooking",
+	recipe  = "animalia:venison_raw",
+	output = "animalia:venison_cooked",
+})
+
 register_egg("animalia:chicken_egg", {
 	description = "Chicken Egg",
 	inventory_image = "animalia_egg",
@@ -259,54 +277,54 @@ minetest.register_craftitem("animalia:bucket_milk", {
 	groups = {food_milk = 1, flammable = 3},
 })
 
-function grow_crops(pos, nodename)
-    local checkname = nodename:sub(1, string.len(nodename) - 1)
-    if minetest.registered_nodes[checkname .. "1"]
-    and minetest.registered_nodes[checkname .. "2"]
-    and minetest.registered_nodes[checkname .. "2"].drawtype == "plantlike" then -- node is more than likely a plant
-        local stage = tonumber(string.sub(nodename, -1)) or 0
-        local newname = checkname .. (stage + 1)
-        if minetest.registered_nodes[newname] then
-            local def = minetest.registered_nodes[newname]
-            def = def and def.place_param2 or 0
-            minetest.set_node(pos, {name = newname, param2 = def})
-            minetest.add_particlespawner({
-                amount = 6,
-                time = 0.1,
-                minpos = vector.subtract(pos, 0.5),
-                maxpos = vector.add(pos, 0.5),
-                minvel = {
-                    x = -0.5,
-                    y = 0.5,
-                    z = -0.5
-                },
-                maxvel = {
-                    x = 0.5,
-                    y = 1,
-                    z = 0.5
-                },
-                minacc = {
-                    x = 0,
-                    y = 2,
-                    z = 0
-                },
-                maxacc = {
-                    x = 0,
-                    y = 4,
-                    z = 0
-                },
-                minexptime = 0.5,
-                maxexptime = 1,
-                minsize = 1,
-                maxsize = 2,
-                collisiondetection = false,
-                vertical = false,
-                use_texture_alpha = true,
-                texture = "creatura_particle_green.png",
-                glow = 6
-            })
-        end
-    end
+local function grow_crops(pos, nodename)
+	local checkname = nodename:sub(1, string.len(nodename) - 1)
+	if minetest.registered_nodes[checkname .. "1"]
+	and minetest.registered_nodes[checkname .. "2"]
+	and minetest.registered_nodes[checkname .. "2"].drawtype == "plantlike" then -- node is more than likely a plant
+		local stage = tonumber(string.sub(nodename, -1)) or 0
+		local newname = checkname .. (stage + 1)
+		if minetest.registered_nodes[newname] then
+			local def = minetest.registered_nodes[newname]
+			def = def and def.place_param2 or 0
+			minetest.set_node(pos, {name = newname, param2 = def})
+			minetest.add_particlespawner({
+				amount = 6,
+				time = 0.1,
+				minpos = vector.subtract(pos, 0.5),
+				maxpos = vector.add(pos, 0.5),
+				minvel = {
+					x = -0.5,
+					y = 0.5,
+					z = -0.5
+				},
+				maxvel = {
+					x = 0.5,
+					y = 1,
+					z = 0.5
+				},
+				minacc = {
+					x = 0,
+					y = 2,
+					z = 0
+				},
+				maxacc = {
+					x = 0,
+					y = 4,
+					z = 0
+				},
+				minexptime = 0.5,
+				maxexptime = 1,
+				minsize = 1,
+				maxsize = 2,
+				collisiondetection = false,
+				vertical = false,
+				use_texture_alpha = true,
+				texture = "creatura_particle_green.png",
+				glow = 6
+			})
+		end
+	end
 end
 
 local guano_fert = minetest.settings:get_bool("guano_fertilization")
@@ -317,18 +335,22 @@ minetest.register_craftitem("animalia:bucket_guano", {
 	stack_max = 1,
 	groups = {flammable = 3},
 	on_place = function(itemstack, placer, pointed_thing)
-        local pos = pointed_thing.above
-        if pos then
-            local under = minetest.get_node(pointed_thing.under)
-            local node = minetest.registered_nodes[under.name]
-            if node and node.on_rightclick then
-                return node.on_rightclick(pointed_thing.under, under, placer,
-                                          itemstack)
-            end
-            if pos
+		local pos = pointed_thing.above
+		if pos then
+			local under = minetest.get_node(pointed_thing.under)
+			local node = minetest.registered_nodes[under.name]
+			if node and node.on_rightclick then
+				return node.on_rightclick(pointed_thing.under, under, placer,
+										  itemstack)
+			end
+			if pos
 			and not minetest.is_protected(pos, placer:get_player_name()) then
 				if guano_fert then
-					local nodes = minetest.find_nodes_in_area_under_air(vector.subtract(pos, 5), vector.add(pos, 5), {"group:grass", "group:plant", "group:flora"})
+					local nodes = minetest.find_nodes_in_area_under_air(
+						vector.subtract(pos, 5),
+						vector.add(pos, 5),
+						{"group:grass", "group:plant", "group:flora"}
+					)
 					if #nodes > 0 then
 						for n = 1, #nodes do
 							grow_crops(nodes[n], minetest.get_node(nodes[n]).name)
@@ -349,10 +371,10 @@ minetest.register_craftitem("animalia:bucket_guano", {
 					end
 					itemstack:set_name(replace)
 				end
-            end
-        end
-        return itemstack
-    end
+			end
+		end
+		return itemstack
+	end
 })
 
 minetest.register_node("animalia:nest_song_bird", {
@@ -365,13 +387,13 @@ minetest.register_node("animalia:nest_song_bird", {
 	stack_max = 1,
 	groups = {snappy = 3, flammable = 3},
 	selection_box = {
-        type = "fixed",
-        fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
-    },
+		type = "fixed",
+		fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
+	},
 	node_box = {
-        type = "fixed",
-        fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
-    },
+		type = "fixed",
+		fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
+	},
 	drops = "default:stick"
 })
 
@@ -380,41 +402,42 @@ minetest.register_node("animalia:nest_song_bird", {
 -----------
 
 minetest.register_craftitem("animalia:cat_toy", {
-    description = "Cat Toy",
-    inventory_image = "animalia_cat_toy.png",
-    wield_image = "animalia_cat_toy.png^[transformFYR90",
+	description = "Cat Toy",
+	inventory_image = "animalia_cat_toy.png",
+	wield_image = "animalia_cat_toy.png^[transformFYR90",
+	stack_max = 1
 })
 
 local nametag = {}
 
 local function get_rename_formspec(meta)
-    local tag = meta:get_string("name") or ""
-    local form = {
-        "size[8,4]",
-        "field[0.5,1;7.5,0;name;" .. minetest.formspec_escape("Enter name:") .. ";" .. tag .. "]",
-        "button_exit[2.5,3.5;3,1;set_name;" .. minetest.formspec_escape("Set Name") .. "]"
-    }
-    return table.concat(form, "")
+	local tag = meta:get_string("name") or ""
+	local form = {
+		"size[8,4]",
+		"field[0.5,1;7.5,0;name;" .. minetest.formspec_escape("Enter name:") .. ";" .. tag .. "]",
+		"button_exit[2.5,3.5;3,1;set_name;" .. minetest.formspec_escape("Set Name") .. "]"
+	}
+	return table.concat(form, "")
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
-    if formname == "animalia:set_name" and fields.name then
-        local name = player:get_player_name()
-        if not nametag[name] then
-            return
-        end
-        local itemstack = nametag[name]
-        if string.len(fields.name) > 64 then
-            fields.name = string.sub(fields.name, 1, 64)
-        end
+	if formname == "animalia:set_name" and fields.name then
+		local name = player:get_player_name()
+		if not nametag[name] then
+			return
+		end
+		local itemstack = nametag[name]
+		if string.len(fields.name) > 64 then
+			fields.name = string.sub(fields.name, 1, 64)
+		end
 		local meta = itemstack:get_meta()
 		meta:set_string("name", fields.name)
 		meta:set_string("description", fields.name)
 		player:set_wielded_item(itemstack)
-        if fields.quit or fields.key_enter then
-            nametag[name] = nil
-        end
-    end
+		if fields.quit or fields.key_enter then
+			nametag[name] = nil
+		end
+	end
 end)
 
 local function nametag_rightclick(itemstack, player, pointed_thing)
@@ -429,15 +452,15 @@ local function nametag_rightclick(itemstack, player, pointed_thing)
 end
 
 minetest.register_craftitem("animalia:nametag", {
-    description = "Nametag",
-    inventory_image = "animalia_nametag.png",
+	description = "Nametag",
+	inventory_image = "animalia_nametag.png",
 	on_rightclick = nametag_rightclick,
 	on_secondary_use = nametag_rightclick
 })
 
 minetest.register_craftitem("animalia:saddle", {
-    description = "Saddle",
-    inventory_image = "animalia_saddle.png",
+	description = "Saddle",
+	inventory_image = "animalia_saddle.png",
 })
 
 minetest.register_tool("animalia:shears", {
@@ -447,77 +470,77 @@ minetest.register_tool("animalia:shears", {
 })
 
 minetest.register_craftitem("animalia:net", {
-    description = "Animal Net",
-    inventory_image = "animalia_net.png",
-    stack_max = 1,
-    on_secondary_use = function(itemstack, placer, pointed_thing)
-        if pointed_thing.type == "object" then
-            if pointed_thing.ref:is_player() then return end
-            local ent = pointed_thing.ref:get_luaentity()
-            if not ent.name:match("^animalia:") or not ent.catch_with_net then
-                return
-            end
-            local ent_name = correct_name(ent.name)
-            local ent_gender = correct_name(ent.gender)
-            local meta = itemstack:get_meta()
-            if not meta:get_string("mob") or meta:get_string("mob") == "" then
-                if placer:get_wielded_item():get_count() > 1 then
-                    if placer:get_inventory():room_for_item("main", {name = "animalia:net"}) then
-                        itemstack:take_item(1)
-                        placer:get_inventory():add_item("main", "animalia:net")
-                        return itemstack
-                    else
-                        return
-                    end
-                end
-                meta:set_string("mob", ent.name)
-                meta:set_string("staticdata", ent:get_staticdata())
-                local desc = "Animal Net \n" .. minetest.colorize("#a9a9a9", ent_name) .. "\n" .. minetest.colorize("#a9a9a9", ent_gender)
-                if ent.name == "animalia:cat"
-                and ent.trust
-                and ent.trust[placer:get_player_name()] then
-                    desc = desc .. "\n" .. minetest.colorize("#a9a9a9", ent.trust[placer:get_player_name()])
-                end
-                meta:set_string("description", desc)
-                placer:set_wielded_item(itemstack)
+	description = "Animal Net",
+	inventory_image = "animalia_net.png",
+	stack_max = 1,
+	on_secondary_use = function(itemstack, placer, pointed_thing)
+		if pointed_thing.type == "object" then
+			if pointed_thing.ref:is_player() then return end
+			local ent = pointed_thing.ref:get_luaentity()
+			if not ent.name:match("^animalia:") or not ent.catch_with_net then
+				return
+			end
+			local ent_name = correct_name(ent.name)
+			local ent_gender = correct_name(ent.gender)
+			local meta = itemstack:get_meta()
+			if not meta:get_string("mob") or meta:get_string("mob") == "" then
+				if placer:get_wielded_item():get_count() > 1 then
+					if placer:get_inventory():room_for_item("main", {name = "animalia:net"}) then
+						itemstack:take_item(1)
+						placer:get_inventory():add_item("main", "animalia:net")
+						return itemstack
+					else
+						return
+					end
+				end
+				meta:set_string("mob", ent.name)
+				meta:set_string("staticdata", ent:get_staticdata())
+				local desc = "Animal Net \n" .. color("#a9a9a9", ent_name) .. "\n" .. color("#a9a9a9", ent_gender)
+				if ent.name == "animalia:cat"
+				and ent.trust
+				and ent.trust[placer:get_player_name()] then
+					desc = desc .. "\n" .. color("#a9a9a9", ent.trust[placer:get_player_name()])
+				end
+				meta:set_string("description", desc)
+				placer:set_wielded_item(itemstack)
 				animalia.protect_from_despawn(ent)
-                ent.object:remove()
-                return itemstack
-            else
-                minetest.chat_send_player(placer:get_player_name(),
-                                          "This Net already contains a " ..
-                                              correct_name(
-                                                  meta:get_string("mob")))
-                return
-            end
-        end
-    end,
-    on_place = function(itemstack, placer, pointed_thing)
-        local pos = pointed_thing.above
-        if pos then
-            local under = minetest.get_node(pointed_thing.under)
-            local node = minetest.registered_nodes[under.name]
-            if node and node.on_rightclick then
-                return node.on_rightclick(pointed_thing.under, under, placer,
-                                          itemstack)
-            end
-            if pos and not minetest.is_protected(pos, placer:get_player_name()) then
-                local mob = itemstack:get_meta():get_string("mob")
-                local staticdata = itemstack:get_meta():get_string("staticdata")
-                if mob ~= "" then
-                    pos.y = pos.y +
-                                math.abs(
-                                    minetest.registered_entities[mob]
-                                        .collisionbox[2])
-                    minetest.add_entity(pos, mob, staticdata)
-                    itemstack:get_meta():set_string("mob", nil)
-                    itemstack:get_meta():set_string("staticdata", nil)
-                    itemstack:get_meta():set_string("description", "Animal Net")
-                end
-            end
-        end
-        return itemstack
-    end
+				ent.object:remove()
+				return itemstack
+			else
+				minetest.chat_send_player(placer:get_player_name(),
+										  "This Net already contains a " ..
+											  correct_name(
+												  meta:get_string("mob")))
+				return
+			end
+		end
+	end,
+	on_place = function(itemstack, placer, pointed_thing)
+		local pos = pointed_thing.above
+		if pos then
+			local under = minetest.get_node(pointed_thing.under)
+			local node = minetest.registered_nodes[under.name]
+			if node and node.on_rightclick then
+				return node.on_rightclick(pointed_thing.under, under, placer,
+										  itemstack)
+			end
+			if pos and not minetest.is_protected(pos, placer:get_player_name()) then
+				local mob = itemstack:get_meta():get_string("mob")
+				local staticdata = itemstack:get_meta():get_string("staticdata")
+				if mob ~= "" then
+					pos.y = pos.y +
+								math.abs(
+									minetest.registered_entities[mob]
+										.collisionbox[2])
+					minetest.add_entity(pos, mob, staticdata)
+					itemstack:get_meta():set_string("mob", nil)
+					itemstack:get_meta():set_string("staticdata", nil)
+					itemstack:get_meta():set_string("description", "Animal Net")
+				end
+			end
+		end
+		return itemstack
+	end
 })
 
 -----------
@@ -538,9 +561,8 @@ minetest.register_node("animalia:guano", {
 			{-0.5, -0.5, -0.5, 0.5, -0.25, 0.5},
 		},
 	},
-	groups = {crumbly = 3, falling_node = 1},
+	groups = {crumbly = 3, falling_node = 1, not_in_creative_inventory = 1},
 	on_punch = function(pos, _, player)
-		local item = player:get_wielded_item()
 		local item_name = player:get_wielded_item():get_name()
 		if item_name:find("bucket")
 		and item_name:find("empty") then
@@ -560,10 +582,10 @@ animalia.libri_pages = {}
 
 function animalia.show_libri_main_form(player, pages, group)
 	group = group or 1
-    local basic_form = table.concat({
-        "formspec_version[3]",
-        "size[16,10]",
-        "background[-0.7,-0.5;17.5,11.5;animalia_libri_bg.png]"
+	local basic_form = table.concat({
+		"formspec_version[3]",
+		"size[16,10]",
+		"background[-0.7,-0.5;17.5,11.5;animalia_libri_bg.png]"
 	}, "")
 	if group == 1 then
 		if pages[1] then
@@ -620,7 +642,7 @@ function animalia.show_libri_main_form(player, pages, group)
 		end
 	end
 	animalia.libri_pages[player:get_player_name()] = pages
-    minetest.show_formspec(player:get_player_name(), "animalia:libri_main", basic_form)
+	minetest.show_formspec(player:get_player_name(), "animalia:libri_main", basic_form)
 end
 
 minetest.register_craftitem("animalia:libri_animalia", {
@@ -631,7 +653,6 @@ minetest.register_craftitem("animalia:libri_animalia", {
 		if pointed_thing and pointed_thing.type == "object" then return end
 		local meta = itemstack:get_meta()
 		local pages = minetest.deserialize(meta:get_string("pages"))
-        local desc = meta:get_string("description")
 		if not pages
 		or #pages < 1 then return end
 		animalia.show_libri_main_form(player, pages)
@@ -640,7 +661,6 @@ minetest.register_craftitem("animalia:libri_animalia", {
 		if pointed_thing and pointed_thing.type == "object" then return end
 		local meta = itemstack:get_meta()
 		local pages = minetest.deserialize(meta:get_string("pages"))
-        local desc = meta:get_string("description")
 		if not pages
 		or #pages < 1 then return end
 		animalia.show_libri_main_form(player, pages)
@@ -652,59 +672,59 @@ minetest.register_craftitem("animalia:libri_animalia", {
 --------------
 
 minetest.register_on_mods_loaded(function()
-    for name, def in pairs(minetest.registered_items) do
-        if string.find(name, "ingot")
+	for name, def in pairs(minetest.registered_items) do
+		if string.find(name, "ingot")
 		and string.find(name, "steel") then
-            if not def.groups then
+			if not def.groups then
 				def.groups = {}
 			end
 			def.groups["steel_ingot"] = 1
 			minetest.register_item(":" .. name, def)
-        elseif string.find(name, "string") then
-            if not def.groups then
+		elseif string.find(name, "string") then
+			if not def.groups then
 				def.groups = {}
 			end
 			def.groups["string"] = 1
 			minetest.register_item(":" .. name, def)
-        end
-    end
+		end
+	end
 end)
 
 minetest.register_craft({
-    output = "animalia:cat_toy",
-    recipe = {
-        {"", "", "group:string"},
-        {"", "group:stick", "group:string"},
-        {"group:stick", "", "group:feather"}
-    }
+	output = "animalia:cat_toy",
+	recipe = {
+		{"", "", "group:string"},
+		{"", "group:stick", "group:string"},
+		{"group:stick", "", "group:feather"}
+	}
 })
 
 minetest.register_craft({
-    output = "animalia:lasso",
-    recipe = {
-        {"", "group:string", "group:string"},
-        {"", "group:leather", "group:string"},
-        {"group:string", "", ""}
-    }
+	output = "animalia:lasso",
+	recipe = {
+		{"", "group:string", "group:string"},
+		{"", "group:leather", "group:string"},
+		{"group:string", "", ""}
+	}
 })
 
 minetest.register_craft({
-    output = "animalia:net",
-    recipe = {
-        {"group:string", "", "group:string"},
-        {"group:string", "", "group:string"},
-        {"group:stick", "group:string", ""}
-    }
+	output = "animalia:net",
+	recipe = {
+		{"group:string", "", "group:string"},
+		{"group:string", "", "group:string"},
+		{"group:stick", "group:string", ""}
+	}
 })
 
 
 minetest.register_craft({
-    output = "animalia:saddle",
-    recipe = {
-        {"group:leather", "group:leather", "group:leather"},
-        {"group:leather", "group:steel_ingot", "group:leather"},
-        {"group:string", "", "group:string"}
-    }
+	output = "animalia:saddle",
+	recipe = {
+		{"group:leather", "group:leather", "group:leather"},
+		{"group:leather", "group:steel_ingot", "group:leather"},
+		{"group:string", "", "group:string"}
+	}
 })
 
 minetest.register_craft({
@@ -716,33 +736,33 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "animalia:libri_animalia",
-    recipe = {
-        {"", "", ""},
-        {"animalia:feather", "", ""},
-        {"group:book", "group:color_green", ""}
-    }
+	output = "animalia:libri_animalia",
+	recipe = {
+		{"", "", ""},
+		{"animalia:feather", "", ""},
+		{"group:book", "group:color_green", ""}
+	}
 })
 
 minetest.register_craft({
-    output = "animalia:libri_animalia",
-    recipe = {
-        {"", "", ""},
-        {"animalia:feather", "", ""},
-        {"group:book", "group:unicolor_green", ""}
-    }
+	output = "animalia:libri_animalia",
+	recipe = {
+		{"", "", ""},
+		{"animalia:feather", "", ""},
+		{"group:book", "group:unicolor_green", ""}
+	}
 })
 
 minetest.register_craft({
-    output = "animalia:libri_animalia 2",
-    recipe = {
-        {"", "", ""},
-        {"animalia:libri_animalia", "group:book", ""},
-        {"", "", ""}
-    }
+	output = "animalia:libri_animalia 2",
+	recipe = {
+		{"", "", ""},
+		{"animalia:libri_animalia", "group:book", ""},
+		{"", "", ""}
+	}
 })
 
-minetest.register_on_craft(function(itemstack, player, old_craft_grid)
+minetest.register_on_craft(function(itemstack, _, old_craft_grid)
 	if itemstack:get_name() == "animalia:libri_animalia"
 	and itemstack:get_count() > 1 then
 		for _, old_libri in pairs(old_craft_grid) do

@@ -7,7 +7,7 @@ local random = math.random
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name, def in pairs(minetest.registered_items) do
+    for name in pairs(minetest.registered_items) do
         if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
@@ -16,42 +16,59 @@ minetest.register_on_mods_loaded(function()
     end
 end)
 
-local function set_pattern(self)
-	local types = {
-		"spots",
-		"patches"
+local patterns = {
+	"animalia_horse_pattern_1.png",
+	"animalia_horse_pattern_2.png",
+	"animalia_horse_pattern_3.png"
+}
+
+local avlbl_colors = {
+	[1] = {
+		"animalia_horse_2.png",
+		"animalia_horse_3.png",
+		"animalia_horse_6.png"
+	},
+	[2] = {
+		"animalia_horse_1.png",
+		"animalia_horse_6.png"
+	},
+	[3] = {
+		"animalia_horse_2.png",
+		"animalia_horse_1.png"
+	},
+	[4] = {
+		"animalia_horse_2.png",
+		"animalia_horse_1.png"
+	},
+	[5] = {
+		"animalia_horse_2.png",
+		"animalia_horse_1.png"
+	},
+	[6] = {
+		"animalia_horse_2.png",
+		"animalia_horse_1.png"
 	}
-    if self:recall("pattern")
-	and not self:recall("pattern"):find("better_fauna") then
-        local pattern = self:recall("pattern")
-        local texture = self.object:get_properties().textures[1]
-        self.object:set_properties({
-            textures = {texture .. "^" .. pattern}
-        })
-    else
-		local type = types[random(#types)]
-        local overlay = "(animalia_horse_".. type ..".png)"
-		if type == "patches" then
-			local colors = {
-				"brown",
-				"white"
-			}
-			if self.texture_no < 1 then
-				table.insert(colors, "black")
-			else
-				table.remove(colors, 1)
-			end
-			overlay = "(animalia_horse_".. colors[random(#colors)] .."_patches.png)"
+}
+
+local function set_pattern(self)
+	local pattern_no = self:recall("pattern_no")
+	if pattern_no and pattern_no < 1 then return end
+	if not pattern_no then
+		if random(3) < 2 then
+			pattern_no = self:memorize("pattern_no", random(#patterns))
+		else
+			self:memorize("pattern_no", 0)
+			return
 		end
-        if random(100) > 50 then
-            overlay = "transparency.png"
-        end
-        local texture = self.object:get_properties().textures[1]
-        self.object:set_properties({
-            textures = {texture .. "^" .. overlay}
-        })
-        self:memorize("pattern", overlay)
-    end
+	end
+	local colors = avlbl_colors[self.texture_no]
+	local color_no = self:recall("color_no") or self:memorize("color_no", random(#colors))
+	if not colors[color_no] then return end
+	local pattern = "(" .. patterns[pattern_no] .. "^[mask:" .. colors[color_no] .. ")"
+	local texture = self.object:get_properties().textures[1]
+	self.object:set_properties({
+		textures = {texture .. "^" .. pattern}
+	})
 end
 
 creatura.register_mob("animalia:horse", {
@@ -82,14 +99,16 @@ creatura.register_mob("animalia:horse", {
 		"animalia_horse_6.png"
 	},
 	animations = {
-		stand = {range = {x = 1, y = 60}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 70, y = 110}, speed = 30, frame_blend = 0.3, loop = true},
-		run = {range = {x = 120, y = 140}, speed = 30, frame_blend = 0.3, loop = true},
-		rear = {range = {x = 150, y = 180}, speed = 27, frame_blend = 0.2, loop = false},
-		rear_constant = {range = {x = 160, y = 170}, speed = 20, frame_blend = 0.3, loop = true},
-		eat = {range = {x = 190, y = 220}, speed = 20, frame_blend = 0.3, loop = false}
+		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
+		run = {range = {x = 81, y = 99}, speed = 30, frame_blend = 0.3, loop = true},
+		punch_aoe = {range = {x = 101, y = 119}, speed = 30, frame_blend = 0.2, loop = false},
+		rear = {range = {x = 121, y = 140}, speed = 20, frame_blend = 0.2, loop = false},
+		rear_constant = {range = {x = 121, y = 140}, speed = 20, frame_blend = 0.3, loop = false},
+		eat = {range = {x = 141, y = 160}, speed = 20, frame_blend = 0.3, loop = false}
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = true,
     sounds = {
@@ -116,71 +135,101 @@ creatura.register_mob("animalia:horse", {
     },
     follow = follows,
 	consumable_nodes = {
-		{
-			name = "default:dirt_with_grass",
-			replacement = "default:dirt"
-		},
-		{
-			name = "default:dry_dirt_with_dry_grass",
-			replacement = "default:dry_dirt"
-		}
+		["default:dirt_with_grass"] = "default:dirt",
+		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
 	},
 	head_data = {
 		bone = "Neck.CTRL",
-		offset = {x = 0, y = 1.2, z = 0.15},
-		pitch_correction = 45,
+		offset = {x = 0, y = 1.45, z = 0.0},
+		pitch_correction = 25,
 		pivot_h = 1,
 		pivot_v = 1.5
 	},
     -- Function
+	wander_action = animalia.action_move_flock,
 	utility_stack = {
-		[1] = {
-			utility = "animalia:boid_wander",
+		{
+			utility = "animalia:wander_group",
+			step_delay = 0.25,
 			get_score = function(self)
-				return 0.1, {self, true}
+				return 0.1, {self}
 			end
 		},
-		[2] = {
-			utility = "animalia:eat_from_turf",
+		{
+			utility = "animalia:eat_turf",
+			step_delay = 0.25,
 			get_score = function(self)
-				return math.random(11) * 0.01, {self}
+				if random(64) < 2 then
+					return 0.2, {self}
+				end
+				return 0
 			end
 		},
-		[3] = {
+		{
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 0.95, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
-		[4] = {
+		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				if self.lasso_origin
-				and type(self.lasso_origin) == "userdata" then
-					return 0.8, {self, self.lasso_origin, true}
+				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local force = lasso and lasso ~= false
+				local player = (force and lasso) or creatura.get_nearby_player(self)
+				if player
+				and self:follow_wielded_item(player) then
+					return 0.4, {self, player}
 				end
 				return 0
 			end
 		},
-		[5] = {
-			utility = "animalia:horse_breed",
+		{
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
-					return 0.9, {self}
+					return 0.5, {self}
 				end
 				return 0
 			end
 		},
-		[6] = {
-			utility = "animalia:mount",
+		{
+			utility = "animalia:flee_from_target_defend",
 			get_score = function(self)
-				if self.rider
-				and self.saddled then
-					return 1, {self, self.rider}
+				local puncher = self._puncher
+				if puncher
+				and puncher:get_pos() then
+					return 0.6, {self, puncher}
+				end
+				self._puncher = nil
+				return 0
+			end
+		},
+		{
+			utility = "animalia:tame_horse",
+			get_score = function(self)
+				local rider = not self.owner and self.rider
+				if rider
+				and rider:get_pos() then
+					return 0.7, {self}
+				end
+				return 0
+			end
+		},
+		{
+			utility = "animalia:mount_horse",
+			get_score = function(self)
+				local owner = self.owner and minetest.get_player_by_name(self.owner)
+				local rider = owner == self.rider and self.rider
+				if rider
+				and rider:get_pos() then
+					return 0.8, {self, rider}
 				end
 				return 0
 			end
@@ -219,43 +268,6 @@ creatura.register_mob("animalia:horse", {
 		animalia.head_tracking(self)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-		if self.breaking
-		and self:timer(1) then
-			local pos = self:get_center_pos()
-			if not minetest.get_player_by_name(self.breaker) then
-				self.breaking = nil
-				self.breaker = nil
-			else
-				local yaw = self.object:get_yaw()
-				local yaw2 = minetest.get_player_by_name(self.breaker):get_look_horizontal()
-				if math.abs(yaw - yaw2) > 5.8
-				or math.abs(yaw - yaw2) < 0.5 then
-					self.breaking_progress = self.breaking_progress + 1
-				else
-					self.breaking_progress = self.breaking_progress - 1
-				end
-				self:initiate_utility("animalia:horse_breaking", self)
-				if self.breaking_progress < -5
-				or minetest.get_player_by_name(self.breaker):get_player_control().sneak then
-					animalia.mount(self, minetest.get_player_by_name(self.breaker))
-					creatura.action_idle(self, 0.5, "rear")
-					self.breaking = nil
-					self.breaker = nil
-					self.breaking_progress = nil
-				elseif self.breaking_progress > 5 then
-					animalia.mount(self, minetest.get_player_by_name(self.breaker))
-					self.owner = self:memorize("owner", self.breaker)
-					animalia.protect_from_despawn(self)
-					self.breaking = nil
-					self.breaker = nil
-					self.breaking_progress = nil
-					local prt_pos = vector.new(pos.x, pos.y + 2, pos.z)
-					local minppos = vector.add(prt_pos, 1)
-					local maxppos = vector.subtract(prt_pos, 1)
-					animalia.particle_spawner(prt_pos, "creatura_particle_green.png", "float", minppos, maxppos)
-				end
-			end
-		end
     end,
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
@@ -275,7 +287,7 @@ creatura.register_mob("animalia:horse", {
         and self.owner == clicker:get_player_name() then
 			if self.saddled
 			and tool_name == "" then
-				animalia.mount(self, clicker, {rot = {x = -60, y = 180, z = 0}, pos = {x = 0, y = 1.1, z = 0.5}})
+				animalia.mount(self, clicker, {rot = {x = -75, y = 180, z = 0}, pos = {x = 0, y = 0.6, z = 0.5}})
 				self:initiate_utility("animalia:mount", self, clicker)
 			elseif tool_name == "animalia:saddle" then
 				self.saddled = self:memorize("saddled", true)
@@ -293,16 +305,14 @@ creatura.register_mob("animalia:horse", {
         elseif not self.owner
 		and tool_name == "" then
 			animalia.mount(self, clicker, {rot = {x = -60, y = 180, z = 0}, pos = {x = 0, y = 1.1, z = 0.5}})
-			self.breaking = true
-			self.breaker = clicker:get_player_name()
-			self.breaking_progress = 0
 		end
 		animalia.add_libri_page(self, clicker, {name = "horse", form = "pg_horse;Horses"})
 	end,
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self:initiate_utility("animalia:boid_flee_from_player", self, puncher, true)
-		self:set_utility_score(1)
+	on_punch = function(self, puncher, ...)
+		if self.rider and puncher == self.rider then return end
+		creatura.basic_punch_func(self, puncher, ...)
+		if self.hp < 0 then return end
+		self._puncher = puncher
 	end
 })
 

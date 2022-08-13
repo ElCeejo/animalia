@@ -8,7 +8,8 @@ for i = 1, #animalia.mobs do
     minetest.register_entity(":" .. old_mob, {
         on_activate = mob_core.on_activate
     })
-    minetest.register_alias_force("better_fauna:spawn_" .. new_mob:split(":")[2], "animalia:spawn_" .. new_mob:split(":")[2])
+    minetest.register_alias_force("better_fauna:spawn_" .. new_mob:split(":")[2],
+		"animalia:spawn_" .. new_mob:split(":")[2])
 end
 
 minetest.register_globalstep(function(dtime)
@@ -16,8 +17,9 @@ minetest.register_globalstep(function(dtime)
     for _, mob in pairs(mobs) do
         if mob
         and mob.name:match("better_fauna:") then
+			local pos = mob.object:get_pos()
+			if not pos then return end
             if mob.name:find("lasso_fence_ent") then
-                local pos = mob.object:get_pos()
                 if pos then
                     minetest.add_entity(pos, "animalia:lasso_fence_ent")
                 end
@@ -33,7 +35,6 @@ minetest.register_globalstep(function(dtime)
                 local new_name = ent:split(":")[2]
                 local old_name = mob.name:split(":")[2]
                 if new_name == old_name then
-                    local pos = mob.object:get_pos()
                     if pos then
                         local new_mob = minetest.add_entity(pos, ent)
                         local mem = nil

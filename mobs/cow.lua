@@ -2,10 +2,12 @@
 -- Cow --
 ---------
 
+local random = math.random
+
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name, def in pairs(minetest.registered_items) do
+    for name in pairs(minetest.registered_items) do
         if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
@@ -51,11 +53,12 @@ creatura.register_mob("animalia:cow", {
 		"animalia_cow_4.png"
 	},
 	animations = {
-		stand = {range = {x = 1, y = 60}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 70, y = 110}, speed = 40, frame_blend = 0.3, loop = true},
-		run = {range = {x = 70, y = 110}, speed = 60, frame_blend = 0.3, loop = true},
+		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
+		run = {range = {x = 61, y = 79}, speed = 30, frame_blend = 0.3, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -82,69 +85,77 @@ creatura.register_mob("animalia:cow", {
     },
     follow = follows,
 	consumable_nodes = {
-		{
-			name = "default:dirt_with_grass",
-			replacement = "default:dirt"
-		},
-		{
-			name = "default:dry_dirt_with_dry_grass",
-			replacement = "default:dry_dirt"
-		}
+		["default:dirt_with_grass"] = "default:dirt",
+		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
 	},
 	head_data = {
-		offset = {x = 0, y = 0.5, z = 0},
-		pitch_correction = -45,
+		offset = {x = 0, y = 0.7, z = 0.0},
+		pitch_correction = -65,
 		pivot_h = 0.75,
 		pivot_v = 1
 	},
     -- Function
 	utility_stack = {
-		[1] = {
+		{
 			utility = "animalia:wander",
+			step_delay = 0.25,
 			get_score = function(self)
-				return 0.1, {self, true}
+				return 0.1, {self}
 			end
 		},
-		[2] = {
-			utility = "animalia:eat_from_turf",
+		{
+			utility = "animalia:eat_turf",
+			step_delay = 0.25,
 			get_score = function(self)
-				if math.random(25) < 2 then
-					return 0.1, {self}
+				if random(64) < 2 then
+					return 0.2, {self}
 				end
 				return 0
 			end
 		},
-		[3] = {
+		{
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 1, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
-		[4] = {
+		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				if self.lasso_origin
-				and type(self.lasso_origin) == "userdata" then
-					return 0.8, {self, self.lasso_origin, true}
-				end
-				local player = creatura.get_nearby_player(self)
+				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local force = lasso and lasso ~= false
+				local player = (force and lasso) or creatura.get_nearby_player(self)
 				if player
 				and self:follow_wielded_item(player) then
-					return 0.8, {self, player}
+					return 0.4, {self, player}
 				end
 				return 0
 			end
 		},
-		[5] = {
-			utility = "animalia:mammal_breed",
+		{
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
-					return 0.9, {self}
+					return 0.5, {self}
 				end
+				return 0
+			end
+		},
+		{
+			utility = "animalia:flee_from_target",
+			get_score = function(self)
+				local puncher = self._target
+				if puncher
+				and puncher:get_pos() then
+					return 0.6, {self, puncher}
+				end
+				self._target = nil
 				return 0
 			end
 		}
@@ -152,7 +163,7 @@ creatura.register_mob("animalia:cow", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self.gotten = self:recall("gotten") or false
+        self.collected = self:recall("collected") or false
     end,
     step_func = function(self)
 		animalia.step_timers(self)
@@ -181,7 +192,7 @@ creatura.register_mob("animalia:cow", {
 				return
 			end
 
-			if self.gotten then
+			if self.collected then
 				minetest.chat_send_player(name, "This Cow has already been milked.")
 				return
 			end
@@ -199,15 +210,14 @@ creatura.register_mob("animalia:cow", {
 				minetest.add_item(pos, {name = "animalia:bucket_milk"})
 			end
 
-			self.gotten = self:memorize("gotten", true)
+			self.collected = self:memorize("collected", true)
 			return
 		end
 		animalia.add_libri_page(self, clicker, {name = "cow", form = "pg_cow;Cows"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self:initiate_utility("animalia:flee_from_player", self, puncher)
-		self:set_utility_score(1)
+		self._target = puncher
 	end
 })
 

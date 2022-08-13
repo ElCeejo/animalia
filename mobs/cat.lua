@@ -2,6 +2,10 @@
 -- Cat --
 ---------
 
+local random = math.random
+
+local vec_dist = vector.distance
+
 local follow = {
 	"animalia:poultry_raw"
 }
@@ -20,6 +24,7 @@ creatura.register_mob("animalia:cat", {
     damage = 1,
     speed = 5,
 	tracking_range = 24,
+	turn_rate = 9,
     despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
@@ -34,16 +39,25 @@ creatura.register_mob("animalia:cat", {
 		"animalia_cat_1.png",
 		"animalia_cat_2.png",
 		"animalia_cat_3.png",
-		"animalia_cat_4.png"
+		"animalia_cat_4.png",
+		"animalia_cat_5.png",
+		"animalia_cat_6.png",
+		"animalia_cat_7.png",
+		"animalia_cat_8.png",
+		"animalia_cat_9.png",
+		"animalia_cat_ash.png",
+		"animalia_cat_birch.png",
 	},
 	animations = {
 		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 50, y = 90}, speed = 45, frame_blend = 0.3, loop = true},
-		run = {range = {x = 100, y = 130}, speed = 50, frame_blend = 0.3, loop = true},
-		sit = {range = {x = 140, y = 180}, speed = 10, frame_blend = 0.3, loop = true},
-		smack = {range = {x = 190, y = 210}, speed = 40, frame_blend = 0.1, loop = true},
+		walk = {range = {x = 41, y = 59}, speed = 20, frame_blend = 0.3, loop = true},
+		run = {range = {x = 42, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
+		play = {range = {x = 61, y = 79}, speed = 30, frame_blend = 0.3, loop = false},
+		sit = {range = {x = 81, y = 99}, speed = 10, frame_blend = 0.3, loop = true},
+		smack = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.1, loop = true},
 	},
     -- Misc
+	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -70,7 +84,7 @@ creatura.register_mob("animalia:cat", {
 	},
     follow = follow,
 	head_data = {
-		offset = {x = 0, y = 0.22, z = 0},
+		offset = {x = 0, y = 0.18, z = 0},
 		pitch_correction = -20,
 		pivot_h = 0.65,
 		pivot_v = 0.65
@@ -79,7 +93,6 @@ creatura.register_mob("animalia:cat", {
     activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-        self._path = {}
 		self.interact_sound_cooldown = 0
 		self.trust_cooldown = self:recall("trust_cooldown") or 0
 		self.order = self:recall("order") or "wander"
@@ -93,94 +106,94 @@ creatura.register_mob("animalia:cat", {
 		end
     end,
 	utility_stack = {
-		[1] = {
-			utility = "animalia:skittish_wander",
+		{
+			utility = "animalia:wander_skittish",
+			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
 			end
 		},
-		[2] = {
+		{
 			utility = "animalia:swim_to_land",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.in_liquid then
-					return 0.9, {self}
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
-		[3] = {
-			utility = "animalia:find_and_break_glass_vessels",
+		{
+			utility = "animalia:destroy_nearby_vessel",
+			step_delay = 0.25,
 			get_score = function(self)
-				return math.random(10) * 0.01, {self}
-			end
-		},
-		[4] = {
-			utility = "animalia:walk_ahead_of_player",
-			get_score = function(self)
-				local player = creatura.get_nearby_player(self)
-				if player
-				and player:get_player_name() then
-					local trust = 0
-					if not self.trust[player:get_player_name()] then
-						self.trust[player:get_player_name()] = 0
-						self:memorize("trust", self.trust)
-					else
-						trust = self.trust[player:get_player_name()]
-					end
-					self._nearby_player = player
-					if trust > 3 then
-						return math.random(10) * 0.01, {self, player}
-					else
-						return 0
-					end
+				if random(24) < 2 then
+					return 0.2, {self}
 				end
 				return 0
 			end
 		},
-		[5] = {
-			utility = "animalia:sit",
+		{
+			utility = "animalia:bother_player",
+			step_delay = 0.25,
 			get_score = function(self)
-				if self.order == "sit"
-				and self.trust[self.owner] > 7 then
-					return 0.8, {self}
+				if random(24) > 1 then return 0 end
+				local owner = self.owner and minetest.get_player_by_name(self.owner)
+				local pos = self.object:get_pos()
+				if not pos then return end
+				local trust = self.trust[self.owner] or 0
+				if trust > 3
+				and owner
+				and vec_dist(pos, owner:get_pos()) < self.tracking_range then
+					return 0.2, {self, owner}
 				end
 				return 0
 			end
 		},
-		[6] = {
+		{
+			utility = "animalia:stay",
+			step_delay = 0.25,
+			get_score = function(self)
+				local trust = (self.owner and self.trust[self.owner]) or 0
+				if trust < 5 then return 0 end
+				local order = self.order or "wander"
+				if order == "sit" then
+					return 0.5, {self}
+				end
+				return 0
+			end
+		},
+		{
+			utility = "animalia:play_with_player",
+			step_delay = 0.25,
+			get_score = function(self)
+				if self.trust_cooldown > 0 then return 0 end
+				local owner = self.owner and minetest.get_player_by_name(self.owner)
+				if owner
+				and owner:get_wielded_item():get_name() == "animalia:cat_toy" then
+					return 0.6, {self, owner}
+				end
+				return 0
+			end
+		},
+		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				if self.order == "follow"
-				and minetest.get_player_by_name(self.owner)
-				and self.trust[self.owner] > 7 then
-					return 1, {self, minetest.get_player_by_name(self.owner)}
-				end
-				local trust = 0
-				local player = self._nearby_player
+				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local trust = (self.owner and self.trust[self.owner]) or 0
+				local owner = self.owner and self.order == "follow" and trust > 4 and minetest.get_player_by_name(self.owner)
+				local force = (lasso and lasso ~= false) or (owner and owner ~= false)
+				local player = (force and (owner or lasso)) or creatura.get_nearby_player(self)
 				if player
-				and player:get_player_name() then
-					if not self.trust[player:get_player_name()] then
-						self.trust[player:get_player_name()] = 0
-						self:memorize("trust", self.trust)
-					else
-						trust = self.trust[player:get_player_name()]
-					end
-				else
-					return 0
-				end
-				if player:get_velocity()
-				and vector.length(player:get_velocity()) < 2
-				and self:follow_wielded_item(player)
-				and trust >= 4 then
-					return 0.6, {self, player}
-				elseif player:get_wielded_item():get_name() == "animalia:cat_toy" then
-					return 0.6, {self, player, true}
+				and self:follow_wielded_item(player) then
+					return 0.6, {self, player, force}
 				end
 				return 0
 			end
 		},
-		[7] = {
-			utility = "animalia:mammal_breed",
+		{
+			utility = "animalia:breed",
+			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
@@ -196,9 +209,6 @@ creatura.register_mob("animalia:cat", {
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 		if self:timer(1) then
-			if self.trust_cooldown > 0 then
-				self.trust_cooldown = self:memorize("trust_cooldown", self.trust_cooldown - 1)
-			end
 			if self.interact_sound_cooldown > 0 then
 				self.interact_sound_cooldown = self.interact_sound_cooldown - 1
 			end
@@ -234,20 +244,6 @@ creatura.register_mob("animalia:cat", {
 			self.trust[clicker:get_player_name()] = 0
 			self:memorize("trust", self.trust)
 		end
-		-- Increase trust by playing
-		if item_name == "animalia:cat_toy"
-		and self:get_utility() == "animalia:follow_player" then
-			if trust < 10 then
-				self.trust[clicker:get_player_name()] = trust + 1
-				self:memorize("trust", self.trust)
-				animalia.particle_spawner(pos, "creatura_particle_green.png", "float", minppos, maxppos)
-				if self.interact_sound_cooldown <= 0 then
-					self.sounds["purr"].gain = 1
-					self.interact_sound_cooldown = 3
-					self:play_sound("purr")
-				end
-			end
-		end
 		-- Purr to indicate trust level (louder = more trust)
 		if clicker:get_player_control().sneak then
 			if self.interact_sound_cooldown <= 0 then
@@ -261,7 +257,7 @@ creatura.register_mob("animalia:cat", {
 		or clicker:get_player_name() ~= self.owner then
 			return
 		end
-		if trust <= 7 then
+		if trust <= 5 then
 			if self.interact_sound_cooldown <= 0 then
 				self.interact_sound_cooldown = 3
 				self:play_sound("random")
@@ -276,11 +272,19 @@ creatura.register_mob("animalia:cat", {
 			end
 			local order = self.order
 			if order == "wander" then
+				minetest.chat_send_player(clicker:get_player_name(), "Wolf is following")
 				self.order = "follow"
+				self:initiate_utility("animalia:follow_player", self, clicker, true)
+				self:set_utility_score(0.7)
 			elseif order == "follow" then
+				minetest.chat_send_player(clicker:get_player_name(), "Wolf is sitting")
 				self.order = "sit"
+				self:initiate_utility("animalia:stay", self)
+				self:set_utility_score(0.5)
 			else
+				minetest.chat_send_player(clicker:get_player_name(), "Wolf is wandering")
 				self.order = "wander"
+				self:set_utility_score(0)
 			end
 			self:memorize("order", self.order)
 		end

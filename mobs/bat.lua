@@ -2,30 +2,6 @@
 -- Bat --
 ---------
 
-
-local function get_ceiling_positions(pos, range)
-    local walkable = minetest.find_nodes_in_area(
-        {x = pos.x + range, y = pos.y + range, z = pos.z + range},
-        {x = pos.x - range, y = pos.y, z = pos.z - range},
-        animalia.walkable_nodes
-    )
-    if #walkable < 1 then return {} end
-    local output = {}
-    for i = 1, #walkable do
-        local i_pos = walkable[i]
-        local under = {
-            x = i_pos.x,
-            y = i_pos.y - 1,
-            z = i_pos.z
-        }
-        if minetest.get_node(under).name == "air"
-        and minetest.registered_nodes[minetest.get_node(i_pos).name].walkable then
-            table.insert(output, i_pos)
-        end
-    end
-    return output
-end
-
 local guano_accumulation = minetest.settings:get_bool("guano_accumulation")
 
 -- Math --
@@ -49,6 +25,33 @@ local vec_add = vector.add
 
 local function vec_raise(v, n)
     return {x = v.x, y = v.y + n, z = v.z}
+end
+
+---------------
+-- Utilities --
+---------------
+
+local function get_roost(pos, range)
+    local walkable = minetest.find_nodes_in_area(
+        {x = pos.x + range, y = pos.y + range, z = pos.z + range},
+        {x = pos.x - range, y = pos.y, z = pos.z - range},
+        animalia.walkable_nodes
+    )
+    if #walkable < 1 then return end
+    local roosts = {}
+    for i = 1, #walkable do
+        local i_pos = walkable[i]
+        local n_pos = {
+            x = i_pos.x,
+            y = i_pos.y - 1,
+            z = i_pos.z
+        }
+        if creatura.get_node_def(n_pos).name == "air"
+		and minetest.line_of_sight(pos, n_pos) then
+            table.insert(roosts, n_pos)
+        end
+    end
+    return roosts[random(#roosts)]
 end
 
 local function is_node_walkable(name)
@@ -84,7 +87,7 @@ creatura.register_mob("animalia:bat", {
 		stand = {range = {x = 1, y = 40}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 50, y = 90}, speed = 30, frame_blend = 0.3, loop = true},
         fly = {range = {x = 100, y = 140}, speed = 80, frame_blend = 0.3, loop = true},
-        latch = {range = {x = 150, y = 150}, speed = 1, frame_blend = 0, loop = false}
+        cling = {range = {x = 150, y = 150}, speed = 1, frame_blend = 0, loop = false}
 	},
     -- Misc
 	sounds = {
@@ -103,79 +106,62 @@ creatura.register_mob("animalia:bat", {
 		"butterflies:butterfly_violet"
 	},
     -- Function
+	step_delay = 0.25,
+	roost_action = animalia.action_cling,
 	utility_stack = {
-		[1] = {
+		{
 			utility = "animalia:wander",
+			step_delay = 0.25,
 			get_score = function(self)
-				if self.is_landed then
-					return 0.1, {self}
-				end
-				return 0
+				return 0.1, {self}
 			end
 		},
-		[2] = {
-			utility = "animalia:aerial_swarm",
+		{
+			utility = "animalia:aerial_wander",
+			step_delay = 0.25,
 			get_score = function(self)
-				if self:get_utility() == "animalia:return_to_home"
-				or self:get_utility() == "animalia:wander" then
-					local pos = self.object:get_pos()
-					local player = creatura.get_nearby_player(self)
-					if player
-					and player:get_pos()
-					and not player:get_player_control().sneak then
-						local dist = vector.distance(pos, player:get_pos())
-						self._nearby_player = player
-						self.is_landed = false
-						return (12 - dist) * 0.1, {self, 1}
-					end
+				local pos = self.object:get_pos()
+				if not pos then return end
+				local player = creatura.get_nearby_player(self)
+				local plyr_pos = player and not player:get_player_control().sneak and player:get_pos()
+				if plyr_pos then
+					local trust = self.trust[player:get_player_name() or ""] or 0
+					local dist = vec_dist(pos, plyr_pos)
+					self._target = player
+					self.is_landed = false
+					return (12 - (dist + trust)) * 0.1, {self}
 				end
 				if self.in_liquid
 				or not self.is_landed then
-					return 0.11, {self, 1}
+					return 0.2, {self}
 				end
 				return 0
 			end
 		},
-		[3] = {
-			utility = "animalia:land",
+		{
+			utility = "animalia:fly_to_land",
 			get_score = function(self)
-				if not self.is_landed
-				and not self.touching_ground then
-					return 0.12, {self}
+				if self.is_landed
+				and not self.touching_ground
+				and not self.in_liquid
+				and creatura.sensor_floor(self, 3, true) > 2 then
+					return 0.3, {self}
 				end
 				return 0
 			end
 		},
 		[4] = {
-			utility = "animalia:return_to_home",
+			utility = "animalia:fly_to_roost",
 			get_score = function(self)
-				if not self.home_position then return 0 end
-				local player = self._nearby_player
-				if player
-				and player:get_pos() then
-					local pos = self.object:get_pos()
-					local dist = vector.distance(pos, player:get_pos())
-					if dist < 9 then
-						return 0
-					end
-				end
-				local time = (minetest.get_timeofday() * 24000) or 0
-				local is_day = time < 19500 and time > 4500
-				if is_day then
+				local pos = self.object:get_pos()
+				if not pos then return end
+				local home = animalia.is_day and self.home_position
+				if home
+				and home.x
+				and vec_dist(pos, home) < 8 then
 					return 0.6, {self}
 				end
 				return 0
-			end
-		},
-		[5] = {
-			utility = "animalia:find_home",
-			get_score = function(self)
-				if self.home_position then return 0 end
-				local pos = self.object:get_pos()
-				local range = self.tracking_range
-				local ceiling = get_ceiling_positions(pos, range / 2)
-				if not ceiling[1] then return 0 end
-				return 1, {self}
 			end
 		}
 	},
@@ -184,32 +170,40 @@ creatura.register_mob("animalia:bat", {
 		animalia.initialize_lasso(self)
 		self.home_position = self:recall("home_position") or nil
 		self.is_landed = self:recall("is_landed") or false
-		self.stamina = self:recall("stamina") or 30
+		self.trust = self:recall("trust") or {}
+		if not self.home_position then
+			local roost = get_roost(self.object:get_pos(), 8)
+			if roost then
+				self.home_position = self:memorize("home_position", roost)
+			end
+		end
     end,
     step_func = function(self)
 		animalia.step_timers(self)
 		--animalia.head_tracking(self, 0.75, 0.75)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-		if self.stamina > 0 then
-			if not self.is_landed then
-				self.stamina = self:memorize("stamina", self.stamina - self.dtime)
-			else
-				self.stamina = self:memorize("stamina", self.stamina + self.dtime)
+		animalia.rotate_to_pitch(self)
+		local pos = self.object:get_pos()
+		if not pos then return end
+		if self:timer(random(10,15)) then
+			if random(4) < 2 then
+				self.is_landed = not self.is_landed
 			end
-			if self.stamina > 25
-			and self.is_landed then
-				self.is_landed = self:memorize("is_landed", false)
+			if not self.home_position
+			or creatura.get_node_def(self.home_position).walkable then
+				local roost = get_roost(pos, 8)
+				if roost then
+					self.home_position = self:memorize("home_position", roost)
+				end
 			end
-		else
-			self.stamina = self:memorize("stamina", self.stamina + self.dtime)
-			self.is_landed = self:memorize("is_landed", true)
 		end
 		if self._anim == "fly" then
-			local vel_y = self.object:get_velocity().y
+			local vel_y = vector.normalize(self.object:get_velocity()).y
 			local rot = self.object:get_rotation()
+			local n_rot = rot.x + (vel_y - rot.x) * 0.2
 			self.object:set_rotation({
-				x = clamp(vel_y * 0.25, -0.75, 0.75),
+				x = clamp(n_rot, -0.75, 0.75),
 				y = rot.y,
 				z = rot.z
 			})
@@ -218,8 +212,7 @@ creatura.register_mob("animalia:bat", {
 			self:play_sound("random")
 			if guano_accumulation
 			and random(16) < 2
-			and self:get_utility() == "animalia:return_to_home" then
-				local pos = self.object:get_pos()
+			and self:get_utility() == "animalia:fly_to_roost" then
 				pos = {
 					x = floor(pos.x + 0.5),
 					y = floor(pos.y + 0.5),
@@ -229,7 +222,7 @@ creatura.register_mob("animalia:bat", {
 					return
 				end
 				local fail_safe = 1
-				while not is_node_walkable(minetest.get_node(floor_pos).name)
+				while not is_node_walkable(minetest.get_node(pos).name)
 				and fail_safe < 16 do
 					pos.y = pos.y - 1
 				end
@@ -260,6 +253,7 @@ creatura.register_mob("animalia:bat", {
     end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
+			animalia.add_trust(self, clicker, 1)
 			return
 		end
 		if animalia.set_nametag(self, clicker) then
