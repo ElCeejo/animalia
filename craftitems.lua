@@ -265,6 +265,12 @@ register_egg("animalia:chicken_egg", {
 	mob = "animalia:chicken"
 })
 
+register_egg("animalia:turkey_egg", {
+	description = "Turkey Egg",
+	inventory_image = "animalia_egg",
+	mob = "animalia:turkey"
+})
+
 ----------
 -- Misc --
 ----------
@@ -499,7 +505,7 @@ minetest.register_craftitem("animalia:net", {
 				if ent.name == "animalia:cat"
 				and ent.trust
 				and ent.trust[placer:get_player_name()] then
-					desc = desc .. "\n" .. color("#a9a9a9", ent.trust[placer:get_player_name()])
+					desc = desc .. "\n Trust: " .. color("#a9a9a9", ent.trust[placer:get_player_name()])
 				end
 				meta:set_string("description", desc)
 				placer:set_wielded_item(itemstack)

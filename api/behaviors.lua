@@ -1049,7 +1049,7 @@ creatura.register_utility("animalia:mount_horse", function(self, player)
 		local yaw = self.object:get_yaw()
 		local tyaw = player:get_look_horizontal()
 		if abs(yaw - tyaw) > 0.1 then
-			_self:turn_to()
+			_self:turn_to(tyaw)
 		end
 		_self:set_forward_velocity(_self.speed * speed_factor)
 		_self:animate(anim)

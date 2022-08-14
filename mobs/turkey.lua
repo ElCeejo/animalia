@@ -160,6 +160,9 @@ creatura.register_mob("animalia:turkey", {
 			self:set_gravity(-4.9)
 			self:animate("fall")
 		end
+		if self:timer(60) then
+			animalia.random_drop_item("animalia:chicken_egg", 3)
+		end
     end,
     death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then

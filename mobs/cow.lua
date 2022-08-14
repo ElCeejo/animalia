@@ -30,8 +30,8 @@ creatura.register_mob("animalia:cow", {
     -- Visuals
     mesh = "animalia_cow.b3d",
 	hitbox = {
-		width = 0.45,
-		height = 0.9
+		width = 0.65,
+		height = 1.5
 	},
     visual_size = {x = 10, y = 10},
 	female_textures = {
