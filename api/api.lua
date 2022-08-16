@@ -103,13 +103,19 @@ local function activate_nametag(self)
 	})
 end
 
-local animate_player = {}
+local animate_player = nil
+local player_attached = {}
 
 if minetest.get_modpath("default")
 and minetest.get_modpath("player_api") then
 	animate_player = player_api.set_animation
+	player_attached = player_api.player_attached
 elseif minetest.get_modpath("mcl_player") then
 	animate_player = mcl_player.set_animation
+	player_attached = mcl_player.player_attached
+elseif minetest.get_modpath("hades_player") then
+	animate_player = hades_player.player_set_animation
+	player_attached = hades_player.player_attached
 end
 
 -----------------------
@@ -522,19 +528,15 @@ function animalia.mount(self, player, params)
 			}
 		})
 		player:set_eye_offset()
-		if minetest.get_modpath("player_api") then
+		if animate_player then
 			animate_player(player, "stand", 30)
-			if player_api.player_attached then
-				player_api.player_attached[player:get_player_name()] = false
-			end
+			player_attached[player:get_player_name()] = false
 		end
 		self.rider = nil
 		return
 	end
-	if player_api then
-		player_api.player_attached[player:get_player_name()] = true
-	end
-	if minetest.get_modpath("player_api") then
+	player_attached[player:get_player_name()] = true
+	if animate_player then
 		animate_player(player, "sit", 30)
 	end
 	self.rider = player
