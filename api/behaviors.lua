@@ -1010,18 +1010,37 @@ creatura.register_utility("animalia:bother_player", function(self, player)
 end)
 
 creatura.register_utility("animalia:mount_horse", function(self, player)
+	if not player or not player:get_properties() then return end
+	local player_size = player:get_properties().visual_size
+	local mob_size = self.visual_size
+	local adj_size = {
+		x = player_size.x / mob_size.x,
+		y = player_size.y / mob_size.y
+	}
 	local function func(_self)
 		if not creatura.is_alive(player) then
 			return true
 		end
 		local anim = "stand"
+		local speed_x = 0
+		local tyaw = player:get_look_horizontal()
 		local control = player:get_player_control()
-		local speed_factor = 0
 		local vel = _self.object:get_velocity()
+		if not tyaw then return end
+		if _self:timer(1) then
+			local player_props = player:get_properties()
+			if player_props.visual_size.x ~= adj_size.x then
+				player:set_properties({
+					visual_size = adj_size
+				})
+			end
+		end
 		if control.up then
-			speed_factor = 1
+			speed_x = 1
+			anim = "walk"
 			if control.aux1 then
-				speed_factor = 1.5
+				speed_x = 1.5
+				anim = "run"
 			end
 		end
 		if control.jump
@@ -1032,26 +1051,18 @@ creatura.register_utility("animalia:mount_horse", function(self, player)
 				z = 0
 			})
 		elseif not _self.touching_ground then
-			speed_factor = speed_factor * 0.5
+			speed_x = speed_x * 0.5
 		end
-		local total_speed = vector.length(vel)
-		if total_speed > 0.2 then
-			anim = "walk"
-			if control.aux1 then
-				anim = "run"
-			end
-			if not _self.touching_ground
-			and not _self.in_liquid
-			and vel.y > 0 then
-				anim = "rear_constant"
-			end
+		if not _self.touching_ground
+		and not _self.in_liquid
+		and vel.y > 0 then
+			anim = "rear"
 		end
 		local yaw = self.object:get_yaw()
-		local tyaw = player:get_look_horizontal()
 		if abs(yaw - tyaw) > 0.1 then
 			_self:turn_to(tyaw)
 		end
-		_self:set_forward_velocity(_self.speed * speed_factor)
+		_self:set_forward_velocity(_self.speed * speed_x)
 		_self:animate(anim)
 		if control.sneak
 		or not _self.rider then

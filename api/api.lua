@@ -298,9 +298,11 @@ function animalia.find_collision(self, dir)
 	return nil
 end
 
-function animalia.random_drop_item(item, chance)
+function animalia.random_drop_item(self, item, chance)
+	local pos = self.object:get_pos()
+	if not pos then return end
 	if random(chance) < 2 then
-		local object = minetest.add_item(ItemStack(item))
+		local object = minetest.add_item(pos, ItemStack(item))
 		object:add_velocity({
 			x = random(-2, 2),
 			y = 1.5,
@@ -520,7 +522,7 @@ function animalia.mount(self, player, params)
 			}
 		})
 		player:set_eye_offset()
-		if player_api then
+		if minetest.get_modpath("player_api") then
 			animate_player(player, "stand", 30)
 			if player_api.player_attached then
 				player_api.player_attached[player:get_player_name()] = false
@@ -532,23 +534,13 @@ function animalia.mount(self, player, params)
 	if player_api then
 		player_api.player_attached[player:get_player_name()] = true
 	end
-	minetest.after(0.2, function()
-		if player
-		and player:is_player()
-		and player_api then
-			animate_player(player, "sit", 30)
-		end
-	end)
+	if minetest.get_modpath("player_api") then
+		animate_player(player, "sit", 30)
+	end
 	self.rider = player
 	local mob_size = self.object:get_properties().visual_size
 	local player_size = player:get_properties().visual_size
 	player:set_attach(self.object, "Torso", params.pos, params.rot)
-	player:set_properties({
-		visual_size = {
-			x = player_size.x / mob_size.x,
-			y = player_size.y / mob_size.y
-		}
-	})
 	player:set_eye_offset({x = 0, y = 25, z = 0}, {x = 0, y = 15, z = 15})
 end
 

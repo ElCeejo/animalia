@@ -161,7 +161,7 @@ creatura.register_mob("animalia:turkey", {
 			self:animate("fall")
 		end
 		if self:timer(60) then
-			animalia.random_drop_item("animalia:chicken_egg", 3)
+			animalia.random_drop_item(self, "animalia:chicken_egg", 3)
 		end
     end,
     death_func = function(self)
