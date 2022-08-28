@@ -1,5 +1,12 @@
 animalia = {}
 
+local path = minetest.get_modpath("animalia")
+
+local storage = dofile(path .. "/api/storage.lua")
+
+animalia.spawn_points = storage.spawn_points
+animalia.libri_font_size = storage.libri_font_size
+
 animalia.pets = {}
 
 minetest.register_on_joinplayer(function(player)
@@ -23,8 +30,6 @@ local function is_day()
 end
 
 is_day()
-
-local path = minetest.get_modpath("animalia")
 
 dofile(path.."/api/api.lua")
 dofile(path.."/api/behaviors.lua")
@@ -55,6 +60,8 @@ end
 if minetest.settings:get_bool("spawn_mobs", true) then
 	dofile(path.."/api/spawning.lua")
 end
+
+dofile(path.."/api/libri.lua")
 
 minetest.register_on_mods_loaded(function()
 	for name, def in pairs(minetest.registered_entities) do

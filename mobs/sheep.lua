@@ -7,13 +7,13 @@ local random = math.random
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name in pairs(minetest.registered_items) do
-        if (name:match(":wheat")
+	for name in pairs(minetest.registered_items) do
+		if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
 			table.insert(follows, name)
-        end
-    end
+		end
+	end
 end)
 
 local wool_block = "wool:white"
@@ -43,17 +43,17 @@ local palette  = {
 }
 
 creatura.register_mob("animalia:sheep", {
-    -- Stats
-    max_health = 15,
-    armor_groups = {fleshy = 125},
-    damage = 0,
-    speed = 3,
+	-- Stats
+	max_health = 15,
+	armor_groups = {fleshy = 125},
+	damage = 0,
+	speed = 3,
 	tracking_range = 16,
-    despawn_after = 1500,
+	despawn_after = 1500,
 	-- Entity Physics
 	stepheight = 1.1,
-    -- Visuals
-    mesh = "animalia_sheep.b3d",
+	-- Visuals
+	mesh = "animalia_sheep.b3d",
 	hitbox = {
 		width = 0.4,
 		height = 0.8
@@ -70,32 +70,32 @@ creatura.register_mob("animalia:sheep", {
 		walk = {range = {x = 70, y = 110}, speed = 40, frame_blend = 0.3, loop = true},
 		run = {range = {x = 70, y = 110}, speed = 50, frame_blend = 0.3, loop = true},
 	},
-    -- Misc
-	step_delay = 0.25,
+	-- Misc
+	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
-        random = {
-            name = "animalia_sheep_idle",
-            gain = 1.0,
-            distance = 8
-        },
-        hurt = {
-            name = "animalia_sheep_hurt",
+		random = {
+			name = "animalia_sheep_idle",
 			gain = 1.0,
-            distance = 8
-        },
-        death = {
-            name = "animalia_sheep_death",
+			distance = 8
+		},
+		hurt = {
+			name = "animalia_sheep_hurt",
 			gain = 1.0,
-            distance = 8
-        }
-    },
-    drops = {
-        {name = "animalia:mutton_raw", min = 1, max = 3, chance = 1},
+			distance = 8
+		},
+		death = {
+			name = "animalia_sheep_death",
+			gain = 1.0,
+			distance = 8
+		}
+	},
+	drops = {
+		{name = "animalia:mutton_raw", min = 1, max = 3, chance = 1},
 		{name = wool_block, min = 1, max = 3, chance = 2}
-    },
-    follow = follows,
+	},
+	follow = follows,
 	consumable_nodes = {
 		["default:dirt_with_grass"] = "default:dirt",
 		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
@@ -106,7 +106,7 @@ creatura.register_mob("animalia:sheep", {
 		pivot_h = 0.75,
 		pivot_v = 0.85
 	},
-    -- Function
+	-- Function
 	utility_stack = {
 		{
 			utility = "animalia:wander_group",
@@ -174,8 +174,8 @@ creatura.register_mob("animalia:sheep", {
 			end
 		}
 	},
-    activate_func = function(self)
-        self.collected = self:recall("collected") or false
+	activate_func = function(self)
+		self.collected = self:recall("collected") or false
 		self.dye_color = self:recall("dye_color") or "white"
 		self.dye_hex = self:recall("dye_hex") or ""
 		if self.dye_color ~= "white"
@@ -189,22 +189,23 @@ creatura.register_mob("animalia:sheep", {
 				textures = {"animalia_sheep.png"},
 			})
 		end
-        self.attention_span = 8
-        self._path = {}
+		self.attention_span = 8
+		self._path = {}
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-    end,
-    step_func = function(self)
+	end,
+	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.75, 0.75)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-    end,
-    death_func = function(self)
+		animalia.random_sound(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
 			return
@@ -265,7 +266,6 @@ creatura.register_mob("animalia:sheep", {
 				end
 			end
 		end
-		animalia.add_libri_page(self, clicker, {name = "sheep", form = "pg_sheep;Sheep"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

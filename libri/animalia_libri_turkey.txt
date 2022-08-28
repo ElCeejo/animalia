@@ -1,0 +1,7 @@
+Turkeys are a flightless bird found in colder 
+pine forests. As far as utility, they are 
+similar to Chickens, but they drop more 
+meat when killed. Similar to Reindeer, 
+they're a good alternative to other more 
+common livestock that don't live in the 
+same cold regions.

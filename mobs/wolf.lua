@@ -35,32 +35,32 @@ if minetest.registered_items["bonemeal:bone"] then
 end
 
 local function is_value_in_table(tbl, val)
-    for _, v in pairs(tbl) do
-        if v == val then
-            return true
-        end
-    end
-    return false
+	for _, v in pairs(tbl) do
+		if v == val then
+			return true
+		end
+	end
+	return false
 end
 
 creatura.register_mob("animalia:wolf", {
-    -- Stats
-    max_health = 15,
-    armor_groups = {fleshy = 100},
-    damage = 4,
-    speed = 5,
+	-- Stats
+	max_health = 15,
+	armor_groups = {fleshy = 100},
+	damage = 4,
+	speed = 5,
 	tracking_range = 24,
-    despawn_after = 2000,
+	despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
 	max_fall = 3,
-    -- Visuals
-    mesh = "animalia_wolf.b3d",
+	-- Visuals
+	mesh = "animalia_wolf.b3d",
 	hitbox = {
 		width = 0.35,
 		height = 0.7
 	},
-    visual_size = {x = 9, y = 9},
+	visual_size = {x = 9, y = 9},
 	textures = {
 		"animalia_wolf_1.png",
 		"animalia_wolf_2.png",
@@ -73,19 +73,19 @@ creatura.register_mob("animalia:wolf", {
 		run = {range = {x = 41, y = 59}, speed = 45, frame_blend = 0.3, loop = true},
 		sit = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
 	},
-    -- Misc
-	step_delay = 0.25,
+	-- Misc
+	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	assist_owner = true,
-    follow = follow,
+	follow = follow,
 	head_data = {
 		offset = {x = 0, y = 0.33, z = 0},
 		pitch_correction = -67,
 		pivot_h = 0.65,
 		pivot_v = 0.65
 	},
-    -- Function
+	-- Function
 	utility_stack = {
 		{
 			utility = "animalia:wander_skittish",
@@ -155,7 +155,7 @@ creatura.register_mob("animalia:wolf", {
 			end
 		}
 	},
-    activate_func = function(self)
+	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.order = self:recall("order") or "wander"
@@ -167,18 +167,18 @@ creatura.register_mob("animalia:wolf", {
 				table.insert(animalia.pets[self.owner], self.object)
 			end
 		end
-    end,
-    step_func = function(self)
+	end,
+	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.5, 0.75)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-    end,
-    death_func = function(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		if not clicker:is_player() then return end
 		local name = clicker:get_player_name()
@@ -211,7 +211,6 @@ creatura.register_mob("animalia:wolf", {
 			end
 			self:memorize("order", self.order)
 		end
-		animalia.add_libri_page(self, clicker, {name = "wolf", form = "pg_wolf;Wolves"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

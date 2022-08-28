@@ -651,7 +651,7 @@ function animalia.show_libri_main_form(player, pages, group)
 	minetest.show_formspec(player:get_player_name(), "animalia:libri_main", basic_form)
 end
 
-minetest.register_craftitem("animalia:libri_animalia", {
+--[[minetest.register_craftitem("animalia:libri_animalia", {
 	description = "Libri Animalia",
 	inventory_image = "animalia_libri_animalia.png",
 	stack_max = 1,
@@ -671,7 +671,7 @@ minetest.register_craftitem("animalia:libri_animalia", {
 		or #pages < 1 then return end
 		animalia.show_libri_main_form(player, pages)
 	end
-})
+})]]
 
 --------------
 -- Crafting --

@@ -48,7 +48,7 @@ creatura.register_mob("animalia:bird", {
 		fly = {range = {x = 120, y = 140}, speed = 80, frame_blend = 0.3, loop = true}
 	},
 	-- Misc
-	step_delay = 0.25,
+	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = false,
 	sounds = {
@@ -212,7 +212,6 @@ creatura.register_mob("animalia:bird", {
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
-		animalia.add_libri_page(self, clicker, {name = "bird", form = "pg_bird;Birds"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

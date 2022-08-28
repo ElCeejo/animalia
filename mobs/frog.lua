@@ -9,26 +9,26 @@ local vec_dist = vector.distance
 local vec_sub = vector.subtract
 
 creatura.register_mob("animalia:frog", {
-    -- Stats
-    max_health = 5,
-    armor_groups = {fleshy = 200},
-    damage = 0,
-    speed = 4,
+	-- Stats
+	max_health = 5,
+	armor_groups = {fleshy = 200},
+	damage = 0,
+	speed = 4,
 	tracking_range = 16,
-    despawn_after = 2500,
+	despawn_after = 2500,
 	-- Entity Physics
 	stepheight = 1.1,
 	max_fall = 0,
 	turn_rate = 10,
 	bouyancy_multiplier = 0,
 	hydrodynamics_multiplier = 0.3,
-    -- Visuals
-    mesh = "animalia_frog.b3d",
-    hitbox = {
+	-- Visuals
+	mesh = "animalia_frog.b3d",
+	hitbox = {
 		width = 0.15,
 		height = 0.3
 	},
-    visual_size = {x = 7, y = 7},
+	visual_size = {x = 7, y = 7},
 	textures = {
 		"animalia_frog_1.png",
 		"animalia_frog_2.png"
@@ -43,20 +43,19 @@ creatura.register_mob("animalia:frog", {
 		walk = {range = {x = 50, y = 80}, speed = 50, frame_blend = 0.3, loop = true},
 		run = {range = {x = 50, y = 80}, speed = 60, frame_blend = 0.3, loop = true}
 	},
-    -- Misc
-	step_delay = 0.25,
+	-- Misc
 	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
 		random = {
-            name = "animalia_frog",
-            gain = 0.5,
-            distance = 32,
+			name = "animalia_frog",
+			gain = 0.5,
+			distance = 32,
 			variations = 3
-        }
-    },
-    follow = {
+		}
+	},
+	follow = {
 		"butterflies:butterfly_red",
 		"butterflies:butterfly_white",
 		"butterflies:butterfly_violet"
@@ -67,7 +66,7 @@ creatura.register_mob("animalia:frog", {
 		pivot_h = 0.3,
 		pivot_v = 0.3
 	},
-    -- Function
+	-- Function
 	utility_stack = {
 		{
 			utility = "animalia:wander",
@@ -159,7 +158,7 @@ creatura.register_mob("animalia:frog", {
 			end
 		}
 	},
-    activate_func = function(self)
+	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.trust = self:recall("trust") or {}
@@ -168,13 +167,13 @@ creatura.register_mob("animalia:frog", {
 			local anim = {range = {x = frame, y = frame}, speed = 1, frame_blend = 0.3, loop = false}
 			self.animations["tongue_" .. i] = anim
 		end
-    end,
-    step_func = function(self)
+	end,
+	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.2, 0.2)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-		if self:timer(random(5, 10)) then
+		if self:timer(random(5, 15)) then
 			self:play_sound("random")
 		end
 		local props = self.object:get_properties()
@@ -184,12 +183,12 @@ creatura.register_mob("animalia:frog", {
 				mesh = "animalia_tadpole.b3d"
 			})
 		end
-    end,
-    death_func = function(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
 			animalia.add_trust(self, clicker, 1)
@@ -198,7 +197,6 @@ creatura.register_mob("animalia:frog", {
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
-		animalia.add_libri_page(self, clicker, {name = "frog", form = "pg_frog;Frogs"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)

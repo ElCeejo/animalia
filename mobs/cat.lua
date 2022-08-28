@@ -18,18 +18,18 @@ if minetest.registered_items["ethereal:fish_raw"] then
 end
 
 creatura.register_mob("animalia:cat", {
-    -- Stats
-    max_health = 10,
-    armor_groups = {fleshy = 200},
-    damage = 1,
-    speed = 5,
+	-- Stats
+	max_health = 10,
+	armor_groups = {fleshy = 200},
+	damage = 1,
+	speed = 5,
 	tracking_range = 24,
 	turn_rate = 9,
-    despawn_after = 2000,
+	despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
-    -- Visuals
-    mesh = "animalia_cat.b3d",
+	-- Visuals
+	mesh = "animalia_cat.b3d",
 	hitbox = {
 		width = 0.2,
 		height = 0.4
@@ -56,41 +56,41 @@ creatura.register_mob("animalia:cat", {
 		sit = {range = {x = 81, y = 99}, speed = 10, frame_blend = 0.3, loop = true},
 		smack = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.1, loop = true},
 	},
-    -- Misc
-	step_delay = 0.25,
+	-- Misc
+	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
-        random = {
-            name = "animalia_cat_idle",
-            gain = 0.25,
-            distance = 8
-        },
+		random = {
+			name = "animalia_cat_idle",
+			gain = 0.25,
+			distance = 8
+		},
 		purr = {
-            name = "animalia_cat_purr",
-            gain = 0.6,
-            distance = 8
-        },
-        hurt = {
-            name = "animalia_cat_hurt",
-            gain = 0.25,
-            distance = 8
-        },
-        death = {
-            name = "animalia_cat_hurt",
-            gain = 0.25,
-            distance = 8
-        }
+			name = "animalia_cat_purr",
+			gain = 0.6,
+			distance = 8
+		},
+		hurt = {
+			name = "animalia_cat_hurt",
+			gain = 0.25,
+			distance = 8
+		},
+		death = {
+			name = "animalia_cat_hurt",
+			gain = 0.25,
+			distance = 8
+		}
 	},
-    follow = follow,
+	follow = follow,
 	head_data = {
 		offset = {x = 0, y = 0.18, z = 0},
 		pitch_correction = -20,
 		pivot_h = 0.65,
 		pivot_v = 0.65
 	},
-    -- Function
-    activate_func = function(self)
+	-- Function
+	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.interact_sound_cooldown = 0
@@ -104,7 +104,7 @@ creatura.register_mob("animalia:cat", {
 				table.insert(animalia.pets[self.owner], self.object)
 			end
 		end
-    end,
+	end,
 	utility_stack = {
 		{
 			utility = "animalia:wander_skittish",
@@ -203,22 +203,23 @@ creatura.register_mob("animalia:cat", {
 			end
 		}
 	},
-    step_func = function(self)
+	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.75, 0.75)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
+		animalia.random_sound(self)
 		if self:timer(1) then
 			if self.interact_sound_cooldown > 0 then
 				self.interact_sound_cooldown = self.interact_sound_cooldown - 1
 			end
 		end
-    end,
-    death_func = function(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		local item_name = clicker:get_wielded_item():get_name()
 		if item_name == "animalia:net" then return end
@@ -252,7 +253,6 @@ creatura.register_mob("animalia:cat", {
 				self:play_sound("purr")
 			end
 		end
-		animalia.add_libri_page(self, clicker, {name = "cat", form = "pg_cat;Cats"})
 		if not self.owner
 		or clicker:get_player_name() ~= self.owner then
 			return

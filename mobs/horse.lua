@@ -7,13 +7,13 @@ local random = math.random
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-    for name in pairs(minetest.registered_items) do
-        if (name:match(":wheat")
+	for name in pairs(minetest.registered_items) do
+		if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
 			table.insert(follows, name)
-        end
-    end
+		end
+	end
 end)
 
 local patterns = {
@@ -72,24 +72,24 @@ local function set_pattern(self)
 end
 
 creatura.register_mob("animalia:horse", {
-    -- Stats
-    max_health = 40,
-    armor_groups = {fleshy = 100},
-    damage = 0,
-    speed = 10,
+	-- Stats
+	max_health = 40,
+	armor_groups = {fleshy = 100},
+	damage = 0,
+	speed = 10,
 	tracking_range = 24,
-    despawn_after = 2000,
+	despawn_after = 2000,
 	-- Entity Physics
 	stepheight = 1.1,
-	turn_rate = 6,
+	turn_rate = 8,
 	boid_seperation = 1.5,
-    -- Visuals
-    mesh = "animalia_horse.b3d",
+	-- Visuals
+	mesh = "animalia_horse.b3d",
 	hitbox = {
 		width = 0.65,
 		height = 1.95
 	},
-    visual_size = {x = 10, y = 10},
+	visual_size = {x = 10, y = 10},
 	textures = {
 		"animalia_horse_1.png",
 		"animalia_horse_2.png",
@@ -107,33 +107,33 @@ creatura.register_mob("animalia:horse", {
 		rear_constant = {range = {x = 121, y = 140}, speed = 20, frame_blend = 0.3, loop = false},
 		eat = {range = {x = 141, y = 160}, speed = 20, frame_blend = 0.3, loop = false}
 	},
-    -- Misc
-	step_delay = 0.25,
+	-- Misc
+	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
-    sounds = {
-        alter_child_pitch = true,
-        random = {
+	sounds = {
+		alter_child_pitch = true,
+		random = {
 			name = "animalia_horse_idle",
 			gain = 1.0,
 			distance = 8,
 			variations = 3,
 		},
-        hurt = {
-            name = "animalia_horse_hurt",
-            gain = 1.0,
-            distance = 8
-        },
-        death = {
-            name = "animalia_horse_death",
-            gain = 1.0,
-            distance = 8
-        }
-    },
-    drops = {
+		hurt = {
+			name = "animalia_horse_hurt",
+			gain = 1.0,
+			distance = 8
+		},
+		death = {
+			name = "animalia_horse_death",
+			gain = 1.0,
+			distance = 8
+		}
+	},
+	drops = {
 		{name = "animalia:leather", min = 1, max = 4, chance = 2}
-    },
-    follow = follows,
+	},
+	follow = follows,
 	consumable_nodes = {
 		["default:dirt_with_grass"] = "default:dirt",
 		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
@@ -145,7 +145,30 @@ creatura.register_mob("animalia:horse", {
 		pivot_h = 1,
 		pivot_v = 1.5
 	},
-    -- Function
+	-- Function
+	add_child = function(self, mate)
+		local pos = self.object:get_pos()
+		if not pos then return end
+		local obj = minetest.add_entity(pos, self.name)
+		local ent = obj and obj:get_luaentity()
+		if not ent then return end
+		ent.growth_scale = 0.7
+		local tex_no = self.texture_no
+		local mate_ent = mate and mate:get_luaentity()
+		if not mate_ent then return end
+		if random(2) < 2 then
+			tex_no = mate_ent.texture_no
+		end
+		ent:memorize("texture_no", tex_no)
+		ent:memorize("speed", random(mate_ent.speed, self.speed))
+		ent:memorize("jump_power", random(mate_ent.jump_power, self.jump_power))
+		ent:memorize("max_health", random(mate_ent.max_health, self.max_health))
+		ent.speed = ent:recall("speed")
+		ent.jump_power = ent:recall("jump_power")
+		ent.max_health = ent:recall("max_health")
+		animalia.initialize_api(ent)
+		animalia.protect_from_despawn(ent)
+	end,
 	wander_action = animalia.action_move_flock,
 	utility_stack = {
 		{
@@ -235,7 +258,7 @@ creatura.register_mob("animalia:horse", {
 			end
 		}
 	},
-    activate_func = function(self)
+	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		set_pattern(self)
@@ -262,18 +285,19 @@ creatura.register_mob("animalia:horse", {
 				{name = "animalia:saddle", chance = 1, min = 1, max = 1}
 			}
 		end
-    end,
-    step_func = function(self)
+	end,
+	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
-    end,
-    death_func = function(self)
+		animalia.random_sound(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, true) then
 			return
@@ -284,7 +308,7 @@ creatura.register_mob("animalia:horse", {
 		local tool = clicker:get_wielded_item()
 		local tool_name = clicker:get_wielded_item():get_name()
 		if self.owner
-        and self.owner == clicker:get_player_name() then
+		and self.owner == clicker:get_player_name() then
 			if self.saddled
 			and tool_name == "" then
 				animalia.mount(self, clicker, {rot = {x = -75, y = 180, z = 0}, pos = {x = 0, y = 0.6, z = 0.5}})
@@ -302,11 +326,10 @@ creatura.register_mob("animalia:horse", {
 				tool:take_item()
 				clicker:set_wielded_item(tool)
 			end
-        elseif not self.owner
+		elseif not self.owner
 		and tool_name == "" then
-			animalia.mount(self, clicker, {rot = {x = -60, y = 180, z = 0}, pos = {x = 0, y = 1.1, z = 0.5}})
+			animalia.mount(self, clicker, {rot = {x = -75, y = 180, z = 0}, pos = {x = 0, y = 0.6, z = 0.5}})
 		end
-		animalia.add_libri_page(self, clicker, {name = "horse", form = "pg_horse;Horses"})
 	end,
 	on_punch = function(self, puncher, ...)
 		if self.rider and puncher == self.rider then return end

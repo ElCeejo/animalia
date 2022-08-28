@@ -24,7 +24,7 @@ local vec_dist = vector.distance
 local vec_add = vector.add
 
 local function vec_raise(v, n)
-    return {x = v.x, y = v.y + n, z = v.z}
+	return {x = v.x, y = v.y + n, z = v.z}
 end
 
 ---------------
@@ -32,52 +32,52 @@ end
 ---------------
 
 local function get_roost(pos, range)
-    local walkable = minetest.find_nodes_in_area(
-        {x = pos.x + range, y = pos.y + range, z = pos.z + range},
-        {x = pos.x - range, y = pos.y, z = pos.z - range},
-        animalia.walkable_nodes
-    )
-    if #walkable < 1 then return end
-    local roosts = {}
-    for i = 1, #walkable do
-        local i_pos = walkable[i]
-        local n_pos = {
-            x = i_pos.x,
-            y = i_pos.y - 1,
-            z = i_pos.z
-        }
-        if creatura.get_node_def(n_pos).name == "air"
+	local walkable = minetest.find_nodes_in_area(
+		{x = pos.x + range, y = pos.y + range, z = pos.z + range},
+		{x = pos.x - range, y = pos.y, z = pos.z - range},
+		animalia.walkable_nodes
+	)
+	if #walkable < 1 then return end
+	local roosts = {}
+	for i = 1, #walkable do
+		local i_pos = walkable[i]
+		local n_pos = {
+			x = i_pos.x,
+			y = i_pos.y - 1,
+			z = i_pos.z
+		}
+		if creatura.get_node_def(n_pos).name == "air"
 		and minetest.line_of_sight(pos, n_pos) then
-            table.insert(roosts, n_pos)
-        end
-    end
-    return roosts[random(#roosts)]
+			table.insert(roosts, n_pos)
+		end
+	end
+	return roosts[random(#roosts)]
 end
 
 local function is_node_walkable(name)
-    local def = minetest.registered_nodes[name]
-    return def and def.walkable
+	local def = minetest.registered_nodes[name]
+	return def and def.walkable
 end
 
 creatura.register_mob("animalia:bat", {
-    -- Stats
-    max_health = 5,
-    armor_groups = {fleshy = 200},
-    damage = 0,
-    speed = 4,
+	-- Stats
+	max_health = 5,
+	armor_groups = {fleshy = 200},
+	damage = 0,
+	speed = 4,
 	tracking_range = 16,
-    despawn_after = 2500,
+	despawn_after = 2500,
 	-- Entity Physics
 	stepheight = 1.1,
 	max_fall = 100,
 	turn_rate = 12,
-    -- Visuals
-    mesh = "animalia_bat.b3d",
-    hitbox = {
+	-- Visuals
+	mesh = "animalia_bat.b3d",
+	hitbox = {
 		width = 0.15,
 		height = 0.3
 	},
-    visual_size = {x = 7, y = 7},
+	visual_size = {x = 7, y = 7},
 	textures = {
 		"animalia_bat_1.png",
 		"animalia_bat_2.png",
@@ -86,27 +86,26 @@ creatura.register_mob("animalia:bat", {
 	animations = {
 		stand = {range = {x = 1, y = 40}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 50, y = 90}, speed = 30, frame_blend = 0.3, loop = true},
-        fly = {range = {x = 100, y = 140}, speed = 80, frame_blend = 0.3, loop = true},
-        cling = {range = {x = 150, y = 150}, speed = 1, frame_blend = 0, loop = false}
+		fly = {range = {x = 100, y = 140}, speed = 80, frame_blend = 0.3, loop = true},
+		cling = {range = {x = 150, y = 150}, speed = 1, frame_blend = 0, loop = false}
 	},
-    -- Misc
+	-- Misc
 	sounds = {
 		random = {
-            name = "animalia_bat",
-            gain = 0.5,
-            distance = 16,
+			name = "animalia_bat",
+			gain = 0.5,
+			distance = 16,
 			variations = 2
-        },
-    },
+		},
+	},
 	catch_with_net = true,
 	catch_with_lasso = false,
-    follow = {
+	follow = {
 		"butterflies:butterfly_red",
 		"butterflies:butterfly_white",
 		"butterflies:butterfly_violet"
 	},
-    -- Function
-	step_delay = 0.25,
+	-- Function
 	roost_action = animalia.action_cling,
 	utility_stack = {
 		{
@@ -165,7 +164,7 @@ creatura.register_mob("animalia:bat", {
 			end
 		}
 	},
-    activate_func = function(self)
+	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.home_position = self:recall("home_position") or nil
@@ -177,8 +176,8 @@ creatura.register_mob("animalia:bat", {
 				self.home_position = self:memorize("home_position", roost)
 			end
 		end
-    end,
-    step_func = function(self)
+	end,
+	step_func = function(self)
 		animalia.step_timers(self)
 		--animalia.head_tracking(self, 0.75, 0.75)
 		animalia.do_growth(self, 60)
@@ -245,12 +244,12 @@ creatura.register_mob("animalia:bat", {
 				end
 			end
 		end
-    end,
-    death_func = function(self)
+	end,
+	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
-    end,
+	end,
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
 			animalia.add_trust(self, clicker, 1)
@@ -259,7 +258,6 @@ creatura.register_mob("animalia:bat", {
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
-		animalia.add_libri_page(self, clicker, {name = "bat", form = "pg_bat;Bats"})
 	end,
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
