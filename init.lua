@@ -97,4 +97,17 @@ minetest.register_on_mods_loaded(function()
 	end
 end)
 
-minetest.log("action", "[MOD] Animalia [0.3] loaded")
+local convert_mobs_redo = minetest.settings:get_bool("convert_redo_items", false)
+
+if convert_mobs_redo then
+	minetest.register_alias_force("mobs:leather", "animalia:leather")
+	minetest.register_alias_force("mobs:meat_raw", "animalia:beef_raw")
+	minetest.register_alias_force("mobs:meat", "animalia:beef_cooked")
+	minetest.register_alias_force("mobs:lasso", "animalia:lasso")
+	minetest.register_alias_force("mobs:net", "animalia:net")
+	minetest.register_alias_force("mobs:shears", "animalia:shears")
+	minetest.register_alias_force("mobs:saddles", "animalia:saddles")
+	minetest.register_alias_force("mobs:nametag", "animalia:nametag")
+end
+
+minetest.log("action", "[MOD] Animalia [0.4] loaded")

@@ -200,7 +200,7 @@ minetest.register_on_mods_loaded(function()
 				element_type = "label",
 				center_text = true,
 				font_size = 24,
-				offset = {x = 0.5, y = 1.5},
+				offset = {x = 1, y = 1.5},
 				file = "animalia_libri_home.txt"
 			},
 			{
@@ -375,13 +375,13 @@ function libri.render_element(def, meta, playername)
 				for line in file:lines() do
 					i = i + 1
 					local center_offset = 0
-					local max_length = (def.max_line or 48)
+					local max_length = 42
 					local line_length = line:len()
+					if line_length > max_length then line_length = max_length end
 					local total_line_area = font_size * line_length
 					local total_max_area = font_size * max_length
-					if def.center_text
-					and line_length < max_length then
-						center_offset = ((total_max_area - total_line_area) / 100) * 0.25
+					if def.center_text then
+						center_offset = ((total_max_area - total_line_area) / 100) * 0.3
 					end
 					local line_unit = (max_length * 0.075)
 					local align_x = (offset_x + line_unit - (line_unit * font_size_x)) + center_offset
