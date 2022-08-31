@@ -163,7 +163,7 @@ creatura.register_mob("animalia:turkey", {
 			self:set_gravity(-4.9)
 			self:animate("fall")
 		end
-		if (self.growth_scale or 1) < 0.8
+		if (self.growth_scale or 1) > 0.8
 		and self.gender == "female"
 		and self:timer(60) then
 			animalia.random_drop_item(self, "animalia:turkey_egg", 10)
