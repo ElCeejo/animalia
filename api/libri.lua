@@ -101,7 +101,7 @@ local function generate_page(mob)
 			element_type = "label",
 			center_text = true,
 			font_size = 20,
-			offset = {x = 9, y = 1.5},
+			offset = {x = 8, y = 1.5},
 			file = "animalia_libri_" .. name .. ".txt"
 		},
 		{ -- Image
@@ -200,7 +200,7 @@ minetest.register_on_mods_loaded(function()
 				element_type = "label",
 				center_text = true,
 				font_size = 24,
-				offset = {x = 1, y = 1.5},
+				offset = {x = 0, y = 1.5},
 				file = "animalia_libri_home.txt"
 			},
 			{
@@ -228,7 +228,7 @@ minetest.register_on_mods_loaded(function()
 				element_type = "label",
 				center_text = true,
 				font_size = 20,
-				offset = {x = 9, y = 1.5},
+				offset = {x = 8, y = 1.5},
 				file = "animalia_libri_tropical_fish.txt"
 			},
 			{ -- Image
@@ -366,31 +366,21 @@ function libri.render_element(def, meta, playername)
 	if def.element_type == "label" then
 		local font_size_x = (animalia.libri_font_size[playername] or 1)
 		local font_size = (def.font_size or 16) * font_size_x
-		form = form .. "style_type[label;font_size=" .. font_size .. "]"
 		if def.file then
 			local filename = path .. "/libri/" .. def.file
 			local file = io.open(filename)
 			if file then
 				local i = 0
+				local full_text = ""
 				for line in file:lines() do
-					i = i + 1
-					local center_offset = 0
-					local max_length = 42
-					local line_length = line:len()
-					if line_length > max_length then line_length = max_length end
-					local total_line_area = font_size * line_length
-					local total_max_area = font_size * max_length
-					if def.center_text then
-						center_offset = ((total_max_area - total_line_area) / 100) * 0.3
-					end
-					local line_unit = (max_length * 0.075)
-					local align_x = (offset_x + line_unit - (line_unit * font_size_x)) + center_offset
-					local align_y = offset_y + (page_spacing * font_size_x) * i
-					form = form .. "label[" .. align_x .. "," .. align_y .. ";" .. color("#000000", line .. "\n") .. "]"
+					full_text = full_text .. line .. "\n"
 				end
+				local total_offset = (offset_x + (0.35 - 0.35 * font_size_x)) .. "," .. offset_y
+				form = form .. "hypertext[" .. total_offset .. ";8,9;text;<global color=#000000 size=".. font_size .. " halign=center>" .. full_text .. "]"
 				file:close()
 			end
 		else
+			form = form .. "style_type[label;font_size=" .. font_size .. "]"
 			local line = def.text
 			form = form .. "label[" .. offset_x .. "," .. offset_y .. ";" .. color("#000000", line .. "\n") .. "]"
 		end

@@ -195,7 +195,9 @@ function animalia.head_tracking(self)
 		end
 		animalia.move_head(self, tyaw, dir.y)
 		return
-	elseif self:timer(random(6, 12)) then
+	elseif self:timer(6)
+	and random(4) < 2 then
+
 		local players = creatura.get_nearby_players(self, 6)
 		self.head_tracking = #players > 0 and players[random(#players)]
 	end
@@ -220,69 +222,16 @@ end
 ------------------------
 -- Environment Access --
 ------------------------
-
-function animalia.set_nametag(self, clicker)
-	local plyr_name = clicker and clicker:get_player_name()
-	if not plyr_name then return end
-	local item = clicker:get_wielded_item()
-	if item
-	and item:get_name() ~= "animalia:nametag" then
-		return
-	end
-	local name = item:get_meta():get_string("name")
-	if not name
-	or name == "" then
-		return
-	end
-	self.nametag = self:memorize("nametag", name)
-	self.despawn_after = self:memorize("despawn_after", nil)
-	activate_nametag(self)
-	if not minetest.is_creative_enabled(plyr_name) then
-		item:take_item()
-		clicker:set_wielded_item(item)
-	end
-	return true
-end
-
-function animalia.get_group_positions(name, pos, radius)
-	local objects = minetest.get_objects_in_area(vec_sub(pos, radius), vec_add(pos, radius))
-	local group = {}
-	for i = 1, #objects do
-		local object = objects[i]
-		if object
-		and object:get_luaentity()
-		and object:get_luaentity().name == name then
-			table.insert(group, object:get_pos())
-		end
-	end
-	return group
-end
-
-function animalia.get_group(self)
+function animalia.get_nearby_mate(self)
 	local pos = self.object:get_pos()
-	local radius = self.tracking_range
-	local objects = minetest.get_objects_in_area(vec_sub(pos, radius), vec_add(pos, radius))
-	local group = {}
-	for i = 1, #objects do
-		local object = objects[i]
-		if object
-		and object ~= self.object
-		and object:get_luaentity()
-		and object:get_luaentity().name == self.name then
-			table.insert(group, object)
-		end
-	end
-	return group
-end
-
-function animalia.get_nearby_mate(self, name)
-	local objects = minetest.get_objects_inside_radius(self:get_center_pos(), self.tracking_range)
+	if not pos then return end
+	local objects = creatura.get_nearby_objects(self, self.name)
 	for _, object in ipairs(objects) do
-		if creatura.is_alive(object)
-		and not object:is_player()
-		and object:get_luaentity().name == name
-		and object:get_luaentity().gender ~= self.gender
-		and object:get_luaentity().breeding then
+		local obj_pos = object and object:get_pos()
+		local ent = obj_pos and object:get_luaentity()
+		if obj_pos
+		and ent.gender ~= self.gender
+		and ent.breeding then
 			return object
 		end
 	end
@@ -311,11 +260,6 @@ function animalia.random_drop_item(self, item, chance)
 			z = random(-2, 2)
 		})
 	end
-end
-
-function animalia.protect_from_despawn(self)
-	self._despawn = self:memorize("_despawn", false)
-	self.despawn_after = self:memorize("despawn_after", false)
 end
 
 ---------------
@@ -367,9 +311,38 @@ function animalia.particle_spawner(pos, texture, type, min_pos, max_pos)
 	end
 end
 
---------------
--- Entities --
---------------
+----------
+-- Mobs --
+----------
+
+function animalia.protect_from_despawn(self)
+	self._despawn = self:memorize("_despawn", false)
+	self.despawn_after = self:memorize("despawn_after", false)
+end
+
+function animalia.set_nametag(self, clicker)
+	local plyr_name = clicker and clicker:get_player_name()
+	if not plyr_name then return end
+	local item = clicker:get_wielded_item()
+	if item
+	and item:get_name() ~= "animalia:nametag" then
+		return
+	end
+	local name = item:get_meta():get_string("name")
+	if not name
+	or name == "" then
+		return
+	end
+	self.nametag = self:memorize("nametag", name)
+	self.despawn_after = self:memorize("despawn_after", nil)
+	activate_nametag(self)
+	if not minetest.is_creative_enabled(plyr_name) then
+		item:take_item()
+		clicker:set_wielded_item(item)
+	end
+	return true
+end
+
 
 function animalia.initialize_api(self)
 	self.gender = self:recall("gender") or nil
@@ -467,55 +440,73 @@ function animalia.add_trust(self, player, amount)
 	self:memorize("trust", self.trust)
 end
 
-function animalia.feed(self, player, tame, breed)
-	local plyr_name = clicker and clicker:get_player_name()
-	if not plyr_name then return end
-	local item, item_name = self:follow_wielded_item(player)
+function animalia.feed(self, clicker, breed, tame)
+	local yaw = self.object:get_yaw()
+	local pos = self.object:get_pos()
+	if not pos then return end
+	local name = clicker:is_player() and clicker:get_player_name()
+	local item, item_name = self:follow_wielded_item(clicker)
 	if item_name then
-		if not minetest.is_creative_enabled(plyr_name) then
+		-- Eat Animation
+		local offset_h = self.head_data.pivot_h
+		local offset_v = self.head_data.pivot_v
+		local head_pos = {
+			x = pos.x + sin(yaw) * -offset_h,
+			y = pos.y + offset_v,
+			z = pos.z + cos(yaw) * offset_h
+		}
+		local def = minetest.registered_items[item_name]
+		if def.inventory_image then
+			minetest.add_particlespawner({
+				pos = head_pos,
+				time = 0.1,
+				amount = 3,
+				collisiondetection = true,
+				collision_removal = true,
+				vel = {min = {x = -1, y = 3, z = -1}, max = {x = 1, y = 4, z = 1}},
+				acc = {x = 0, y = -9.8, z = 0},
+				size = {min = 2, max = 4},
+				texture = def.inventory_image
+			})
+		end
+		-- Increase Health
+		local feed_no = (self.feed_no or 0) + 1
+		local max_hp = self.max_health
+		local hp = self.hp
+		hp = hp + (max_hp / 5)
+		if hp > max_hp then hp = max_hp end
+		self.hp = hp
+		-- Tame/Breed
+		if feed_no >= 5 then
+			feed_no = 0
+			if tame then
+				self.owner = self:memorize("owner", name)
+				minetest.add_particlespawner({
+					pos = {min = vec_sub(pos, self.width), max = vec_add(pos, self.width)},
+					time = 0.1,
+					amount = 12,
+					vel = {min = {x = 0, y = 3, z = 0}, max = {x = 0, y = 4, z = 0}},
+					size = {min = 4, max = 6},
+					glow = 16,
+					texture = "creatura_particle_green.png"
+				})
+			end
+			if breed
+			and self.owner
+			and self.owner == name then
+				-- TODO: Breeding
+			end
+			self._despawn = self:memorize("_despawn", false)
+			self.despawn_after = self:memorize("despawn_after", false)
+		end
+		self.feed_no = feed_no
+		-- Take item
+		if not minetest.is_creative_enabled(name) then
 			item:take_item()
-			player:set_wielded_item(item)
+			clicker:set_wielded_item(item)
 		end
-		if self.hp < self.max_health then
-			self:heal(self.max_health / 5)
-		end
-		self.food = self.food + 1
-		if self.food >= 5 then
-			local pos = self:get_center_pos()
-			local minp = vec_sub(pos, 1)
-			local maxp = vec_add(pos, 1)
-			self.food = 0
-			local follow = self.follow
-			if type(follow) == "table" then
-				follow = follow[1]
-			end
-			if tame
-			and not self.owner
-			and (follow == item_name) then
-				self.owner = self:memorize("owner", player:get_player_name())
-				local name = correct_name(self.name)
-				minetest.chat_send_player(player:get_player_name(), name .. " has been tamed!")
-				if self.logic then
-					self:clear_task()
-				end
-				animalia.particle_spawner(pos, "creatura_particle_green.png", "float", minp, maxp)
-				if not animalia.pets[self.owner][self.object] then
-					table.insert(animalia.pets[self.owner], self.object)
-				end
-			end
-			if breed then
-				if self.breeding then return false end
-				if self.breeding_cooldown <= 0 then
-					self.breeding = true
-					self.breeding_cooldown = 60
-					animalia.particle_spawner(pos, "heart.png", "float", minp, maxp)
-				end
-			end
-		end
-		animalia.protect_from_despawn(self)
 		return true
 	end
-	return false
 end
 
 function animalia.mount(self, player, params)
@@ -591,22 +582,6 @@ minetest.register_on_mods_loaded(function()
 		assign_biome_group(name)
 	end
 end)
-
-local spawn_biomes = {
-	["animalia:bat"] = "cave",
-	["animalia:bird"] = "temperate",
-	["animalia:cat"] = "urban",
-	["animalia:chicken"] = "tropical",
-	["animalia:cow"] = "grassland",
-	["animalia:tropical_fish"] = "ocean",
-	["animalia:frog"] = "swamp",
-	["animalia:horse"] = "grassland",
-	["animalia:pig"] = "temperate",
-	["animalia:reindeer"] = "boreal",
-	["animalia:sheep"] = "grassland",
-	["animalia:turkey"] = "boreal",
-	["animalia:wolf"] = "boreal",
-}
 
 animalia.register_biome_group("temperate", {
 	name_kw = "",

@@ -390,6 +390,7 @@ minetest.register_node("animalia:nest_song_bird", {
 	mesh = "animalia_nest.obj",
 	tiles = {"animalia_nest.png"},
 	sunlight_propagates = true,
+	walkable = false,
 	stack_max = 1,
 	groups = {snappy = 3, flammable = 3},
 	selection_box = {
@@ -579,119 +580,20 @@ minetest.register_node("animalia:guano", {
 		end
 	end
 })
-
------------
--- Libri --
------------
-
-animalia.libri_pages = {}
-
-function animalia.show_libri_main_form(player, pages, group)
-	group = group or 1
-	local basic_form = table.concat({
-		"formspec_version[3]",
-		"size[16,10]",
-		"background[-0.7,-0.5;17.5,11.5;animalia_libri_bg.png]"
-	}, "")
-	if group == 1 then
-		if pages[1] then
-			basic_form = basic_form .. "button[1.75,1.5;4,1;".. pages[1].form .."]"
-		end
-		if pages[2] then
-			basic_form = basic_form .. "button[1.75,3.5;4,1;".. pages[2].form .."]"
-		end
-		if pages[3] then
-			basic_form = basic_form .. "button[1.75,5.5;4,1;".. pages[3].form .."]"
-		end
-		if pages[4] then
-			basic_form = basic_form .. "button[1.75,7.5;4,1;".. pages[4].form .."]"
-		end
-		if pages[5] then
-			basic_form = basic_form .. "button[10.25,1.5;4,1;".. pages[5].form .."]"
-		end
-		if pages[6] then
-			basic_form = basic_form .. "button[10.25,3.5;4,1;".. pages[6].form .."]"
-		end
-		if pages[7] then
-			basic_form = basic_form .. "button[10.25,5.5;4,1;".. pages[7].form .."]"
-		end
-		if pages[8] then
-			basic_form = basic_form .. "button[10.25,7.5;4,1;".. pages[8].form .."]"
-		end
-		if pages[9] then
-			basic_form = basic_form .. "button[12.25,9;1.5,1;btn_next;Next Page]"
-		end
-	elseif group == 2 then
-		if pages[9] then
-			basic_form = basic_form .. "button[1.75,1.5;4,1;".. pages[9].form .."]"
-		end
-		if pages[10] then
-			basic_form = basic_form .. "button[1.75,3.5;4,1;".. pages[10].form .."]"
-		end
-		if pages[11] then
-			basic_form = basic_form .. "button[1.75,5.5;4,1;".. pages[11].form .."]"
-		end
-		if pages[12] then
-			basic_form = basic_form .. "button[1.75,7.5;4,1;".. pages[12].form .."]"
-		end
-		if pages[13] then
-			basic_form = basic_form .. "button[10.25,1.5;4,1;".. pages[13].form .."]"
-		end
-		if pages[14] then
-			basic_form = basic_form .. "button[10.25,3.5;4,1;".. pages[14].form .."]"
-		end
-		if pages[15] then
-			basic_form = basic_form .. "button[10.25,5.5;4,1;".. pages[15].form .."]"
-		end
-		if pages[16] then
-			basic_form = basic_form .. "button[10.25,7.5;4,1;".. pages[16].form .."]"
-		end
-	end
-	animalia.libri_pages[player:get_player_name()] = pages
-	minetest.show_formspec(player:get_player_name(), "animalia:libri_main", basic_form)
-end
-
---[[minetest.register_craftitem("animalia:libri_animalia", {
-	description = "Libri Animalia",
-	inventory_image = "animalia_libri_animalia.png",
-	stack_max = 1,
-	on_place = function(itemstack, player, pointed_thing)
-		if pointed_thing and pointed_thing.type == "object" then return end
-		local meta = itemstack:get_meta()
-		local pages = minetest.deserialize(meta:get_string("pages"))
-		if not pages
-		or #pages < 1 then return end
-		animalia.show_libri_main_form(player, pages)
-	end,
-	on_secondary_use = function(itemstack, player, pointed_thing)
-		if pointed_thing and pointed_thing.type == "object" then return end
-		local meta = itemstack:get_meta()
-		local pages = minetest.deserialize(meta:get_string("pages"))
-		if not pages
-		or #pages < 1 then return end
-		animalia.show_libri_main_form(player, pages)
-	end
-})]]
-
 --------------
 -- Crafting --
 --------------
 
+local steel_ingot = "default:steel_ingot"
+
 minetest.register_on_mods_loaded(function()
+	if minetest.registered_items[steel_ingot] then return end
 	for name, def in pairs(minetest.registered_items) do
-		if string.find(name, "ingot")
-		and string.find(name, "steel") then
-			if not def.groups then
-				def.groups = {}
-			end
-			def.groups["steel_ingot"] = 1
-			minetest.register_item(":" .. name, def)
-		elseif string.find(name, "string") then
-			if not def.groups then
-				def.groups = {}
-			end
-			def.groups["string"] = 1
-			minetest.register_item(":" .. name, def)
+		if name:find("ingot")
+		and (name:find("steel")
+		or name:find("iron")) then
+			steel_ingot = name
+			break
 		end
 	end
 end)
@@ -699,8 +601,17 @@ end)
 minetest.register_craft({
 	output = "animalia:cat_toy",
 	recipe = {
-		{"", "", "group:string"},
-		{"", "group:stick", "group:string"},
+		{"", "", "group:thread"},
+		{"", "group:stick", "group:thread"},
+		{"group:stick", "", "group:feather"}
+	}
+})
+
+minetest.register_craft({
+	output = "animalia:cat_toy",
+	recipe = {
+		{"", "", "farming:string"},
+		{"", "group:stick", "farming:string"},
 		{"group:stick", "", "group:feather"}
 	}
 })
@@ -708,36 +619,63 @@ minetest.register_craft({
 minetest.register_craft({
 	output = "animalia:lasso",
 	recipe = {
-		{"", "group:string", "group:string"},
-		{"", "group:leather", "group:string"},
-		{"group:string", "", ""}
+		{"", "group:thread", "group:thread"},
+		{"", "group:leather", "group:thread"},
+		{"group:thread", "", ""}
+	}
+})
+
+minetest.register_craft({
+	output = "animalia:lasso",
+	recipe = {
+		{"", "farming:string", "farming:string"},
+		{"", "group:leather", "farming:string"},
+		{"farming:string", "", ""}
 	}
 })
 
 minetest.register_craft({
 	output = "animalia:net",
 	recipe = {
-		{"group:string", "", "group:string"},
-		{"group:string", "", "group:string"},
-		{"group:stick", "group:string", ""}
+		{"group:thread", "", "group:thread"},
+		{"group:thread", "", "group:thread"},
+		{"group:stick", "group:thread", ""}
 	}
 })
 
+minetest.register_craft({
+	output = "animalia:net",
+	recipe = {
+		{"farming:string", "", "farming:string"},
+		{"farming:string", "", "farming:string"},
+		{"group:stick", "farming:string", ""}
+	}
+})
 
 minetest.register_craft({
 	output = "animalia:saddle",
 	recipe = {
 		{"group:leather", "group:leather", "group:leather"},
-		{"group:leather", "group:steel_ingot", "group:leather"},
-		{"group:string", "", "group:string"}
+		{"group:leather", steel_ingot, "group:leather"},
+		{"group:thread", "", "group:thread"}
 	}
 })
 
 minetest.register_craft({
+	output = "animalia:saddle",
+	recipe = {
+		{"group:leather", "group:leather", "group:leather"},
+		{"group:leather", steel_ingot, "group:leather"},
+		{"farming:string", "", "farming:string"}
+	}
+})
+
+
+minetest.register_craft({
 	output = "animalia:shears",
 	recipe = {
-		{"", "group:steel_ingot", ""},
-		{"", "group:leather", "group:steel_ingot"}
+		{"", steel_ingot, ""},
+		{"", "group:leather", steel_ingot}
 	}
 })
 
@@ -772,9 +710,9 @@ minetest.register_on_craft(function(itemstack, _, old_craft_grid)
 	if itemstack:get_name() == "animalia:libri_animalia"
 	and itemstack:get_count() > 1 then
 		for _, old_libri in pairs(old_craft_grid) do
-			if old_libri:get_meta():get_string("pages") then
-				local pages = old_libri:get_meta():get_string("pages")
-				itemstack:get_meta():set_string("pages", pages)
+			if old_libri:get_meta():get_string("chapters") then
+				local chapters = old_libri:get_meta():get_string("chapters")
+				itemstack:get_meta():set_string("chapters", chapters)
 				return itemstack
 			end
 		end

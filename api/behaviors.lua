@@ -972,10 +972,17 @@ creatura.register_utility("animalia:attack_target", function(self, target)
 		local tgt_alive, _, tgt_pos = _self:get_target(target)
 		if not tgt_alive then return true end
 		local dist = vec_dist(pos, tgt_pos)
-		if dist < width + 1
+		local punch_cooldown = self.punch_cooldown or 0
+		if punch_cooldown > 0 then
+			punch_cooldown = punch_cooldown - self.dtime
+		end
+		self.punch_cooldown = punch_cooldown
+		if punch_cooldown <= 0
+		and dist < width + 1
 		and not punch_init then
 			punch_init = true
 			animalia.action_punch(_self, target)
+			self.punch_cooldown = 3
 		end
 		if not _self:get_action() then
 			if punch_init then return true end
