@@ -69,7 +69,7 @@ creatura.register_mob("animalia:bat", {
 	despawn_after = 2500,
 	-- Entity Physics
 	stepheight = 1.1,
-	max_fall = 100,
+	max_fall = 0,
 	turn_rate = 12,
 	-- Visuals
 	mesh = "animalia_bat.b3d",
@@ -207,7 +207,7 @@ creatura.register_mob("animalia:bat", {
 				z = rot.z
 			})
 		end
-		if self:timer(random(3,4)) then
+		if self:timer(random(3, 4)) then
 			self:play_sound("random")
 			if guano_accumulation
 			and random(16) < 2

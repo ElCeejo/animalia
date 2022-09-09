@@ -533,10 +533,8 @@ function animalia.mount(self, player, params)
 		self.rider = nil
 		return
 	end
-	if player_api then
-		player_api.player_attached[player:get_player_name()] = true
-	end
 	if minetest.get_modpath("player_api") then
+		player_api.player_attached[player:get_player_name()] = true
 		animate_player(player, "sit", 30)
 	end
 	self.rider = player

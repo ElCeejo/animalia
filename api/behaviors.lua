@@ -373,6 +373,14 @@ end
 
 function animalia.action_cling(self, time)
 	local timer = time
+	local pos = self.object:get_pos()
+	if not pos then return end
+	pos.y = pos.y + 1
+	if not creatura.get_node_def(pos).walkable then
+		self:forget("home_position")
+		self.home_position = nil
+		return
+	end
 	local function func(_self)
 		_self:set_gravity(0)
 		_self:halt()
@@ -645,15 +653,22 @@ creatura.register_utility("animalia:fly_to_roost", function(self)
 	local home = self.home_position
 	local roost = self.roost_action or creatura.action_idle
 	local function func(_self)
-		local pos = self.object:get_pos()
+		local pos = _self.object:get_pos()
 		if not pos then return end
 		if not home then return true end
 		if not _self:get_action() then
 			if abs(pos.x - home.x) < 0.5
-			and abs(pos.y - home.y) < 0.7
 			and abs(pos.z - home.z) < 0.5 then
-				roost(_self, 1, "stand")
-				return
+				local y_diff = abs(pos.y - home.y)
+				if y_diff < 0.7 then
+					roost(_self, 1, "stand")
+					return
+				end
+				if y_diff <= 2
+				and not minetest.line_of_sight(pos, home) then
+					self.home_positon = nil
+					self:forget("home_position")
+				end
 			end
 			creatura.action_move(_self, home, 3, "animalia:fly_simple", 1, "fly")
 		end
