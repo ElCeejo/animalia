@@ -19,7 +19,9 @@ local destroyable_crops = {}
 minetest.register_on_mods_loaded(function()
 	for name in pairs(minetest.registered_nodes) do
 		if name:match("^crops:")
-		or name:match("^farming:") then
+		or name:match("^farming:")
+		or name:match("^hades_farming:")
+		or name:match("^hades_extrafarming:") then
 			table.insert(destroyable_crops, {name = name, replacement = "air"})
 		end
 	end

@@ -86,7 +86,9 @@ creatura.register_mob("animalia:cow", {
     follow = follows,
 	consumable_nodes = {
 		["default:dirt_with_grass"] = "default:dirt",
-		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
+		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt",
+		["hades_core:dirt_with_grass"] = "hades_core:dirt_with_grass_l3",
+		["hades_core:dirt_with_grass_l3"] = "hades_core:dirt_with_grass_l1",
 	},
 	head_data = {
 		offset = {x = 0, y = 0.7, z = 0.0},
