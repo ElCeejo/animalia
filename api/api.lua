@@ -513,6 +513,7 @@ function animalia.mount(self, player, params)
 	if not creatura.is_alive(player) then
 		return
 	end
+	local plyr_name = player:get_player_name()
 	if (player:get_attach()
 	and player:get_attach() == self.object)
 	or not params then
@@ -527,20 +528,22 @@ function animalia.mount(self, player, params)
 		if minetest.get_modpath("player_api") then
 			animate_player(player, "stand", 30)
 			if player_api.player_attached then
-				player_api.player_attached[player:get_player_name()] = false
+				player_api.player_attached[plyr_name] = false
 			end
 		end
 		self.rider = nil
 		return
 	end
 	if minetest.get_modpath("player_api") then
-		player_api.player_attached[player:get_player_name()] = true
-		animate_player(player, "sit", 30)
+		player_api.player_attached[plyr_name] = true
 	end
 	self.rider = player
 	player:set_attach(self.object, "Torso", params.pos, params.rot)
 	player:set_eye_offset({x = 0, y = 25, z = 0}, {x = 0, y = 15, z = 15})
 	self:clear_utility()
+	minetest.after(0.3, function()
+		animate_player(player, "sit" , 30)
+	end)
 end
 
 --------------
