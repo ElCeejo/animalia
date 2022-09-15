@@ -448,8 +448,8 @@ function animalia.feed(self, clicker, breed, tame)
 	local item, item_name = self:follow_wielded_item(clicker)
 	if item_name then
 		-- Eat Animation
-		local offset_h = self.head_data.pivot_h
-		local offset_v = self.head_data.pivot_v
+		local offset_h = self.head_data.pivot_h or 0.5
+		local offset_v = self.head_data.pivot_v or 0.5
 		local head_pos = {
 			x = pos.x + sin(yaw) * -offset_h,
 			y = pos.y + offset_v,
