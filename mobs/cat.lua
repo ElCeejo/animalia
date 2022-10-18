@@ -34,7 +34,7 @@ creatura.register_mob("animalia:cat", {
 		width = 0.2,
 		height = 0.4
 	},
-	visual_size = {x = 6, y = 6},
+	visual_size = {x = 10, y = 10},
 	textures = {
 		"animalia_cat_1.png",
 		"animalia_cat_2.png",
@@ -58,6 +58,7 @@ creatura.register_mob("animalia:cat", {
 	},
 	-- Misc
 	makes_footstep_sound = true,
+	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -179,7 +180,8 @@ creatura.register_mob("animalia:cat", {
 		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local lasso_tgt = self._lassod_to
+				local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
 				local trust = (self.owner and self.trust[self.owner]) or 0
 				local owner = self.owner and self.order == "follow" and trust > 4 and minetest.get_player_by_name(self.owner)
 				local force = (lasso and lasso ~= false) or (owner and owner ~= false)
@@ -192,12 +194,24 @@ creatura.register_mob("animalia:cat", {
 			end
 		},
 		{
+			utility = "animalia:attack_target",
+			get_score = function(self)
+				local target = self._target or creatura.get_nearby_object(self, "animalia:rat")
+				local tgt_pos = target and target:get_pos()
+				if tgt_pos
+				and self:is_pos_safe(tgt_pos) then
+					return 0.7, {self, target}
+				end
+				return 0
+			end
+		},
+		{
 			utility = "animalia:breed",
 			step_delay = 0.25,
 			get_score = function(self)
 				if self.breeding
 				and animalia.get_nearby_mate(self, self.name) then
-					return 0.7, {self}
+					return 0.8, {self}
 				end
 				return 0
 			end

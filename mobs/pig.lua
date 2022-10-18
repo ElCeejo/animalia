@@ -67,11 +67,12 @@ creatura.register_mob("animalia:pig", {
 	makes_footstep_sound = true,
 	consumable_nodes = destroyable_crops,
 	birth_count = 2,
+	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
 		random = {
-			name = "animalia_pig_idle",
+			name = "animalia_pig_random",
 			gain = 1.0,
 			distance = 8
 		},
@@ -92,14 +93,14 @@ creatura.register_mob("animalia:pig", {
 	follow = follows,
 	-- Function
 	utility_stack = {
-		[1] = {
+		{
 			utility = "animalia:wander",
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self, true}
 			end
 		},
-		[2] = {
+		{
 			utility = "animalia:eat_from_turf",
 			step_delay = 0.25,
 			get_score = function(self)
@@ -109,7 +110,7 @@ creatura.register_mob("animalia:pig", {
 				return 0
 			end
 		},
-		[3] = {
+		{
 			utility = "animalia:swim_to_land",
 			step_delay = 0.25,
 			get_score = function(self)
@@ -119,20 +120,8 @@ creatura.register_mob("animalia:pig", {
 				return 0
 			end
 		},
-		[4] = {
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
-				local force = lasso and lasso ~= false
-				local player = (force and lasso) or creatura.get_nearby_player(self)
-				if player
-				and self:follow_wielded_item(player) then
-					return 0.4, {self, player}
-				end
-				return 0
-			end
-		},
-		[5] = {
+		animalia.global_utils.basic_follow,
+		{
 			utility = "animalia:breed",
 			step_delay = 0.25,
 			get_score = function(self)
@@ -142,7 +131,8 @@ creatura.register_mob("animalia:pig", {
 				end
 				return 0
 			end
-		}
+		},
+		animalia.global_utils.basic_flee
 	},
 	activate_func = function(self)
 		animalia.initialize_api(self)
@@ -167,10 +157,7 @@ creatura.register_mob("animalia:pig", {
 			return
 		end
 	end,
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self._target = puncher
-	end
+	on_punch = animalia.punch
 })
 
 creatura.register_spawn_egg("animalia:pig", "e0b1a7" ,"cc9485")

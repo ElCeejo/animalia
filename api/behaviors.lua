@@ -36,6 +36,7 @@ end
 
 local vec_dir = vector.direction
 local vec_dist = vector.distance
+local vec_divide = vector.divide
 local vec_len = vector.length
 local vec_normal = vector.normalize
 local vec_round = vector.round
@@ -49,6 +50,22 @@ local yaw2dir = minetest.yaw_to_dir
 -----------------
 -- Local Tools --
 -----------------
+
+local farming_enabled = minetest.get_modpath("farming") and farming.registered_plants
+
+if farming_enabled then
+	minetest.register_on_mods_loaded(function()
+		for name, def in pairs(minetest.registered_nodes) do
+			local item_string = name:sub(1, #name - 2)
+			local item_name = item_string:split(":")[2]
+			if farming.registered_plants[item_string]
+			or farming.registered_plants[item_name] then
+				def.groups.crop = 2
+			end
+			minetest.register_node(":" .. name, def)
+		end
+	end)
+end
 
 local animate_player = {}
 
@@ -108,6 +125,38 @@ local function add_break_particle(pos)
 	})
 end
 
+local function add_eat_particle(self, item_name)
+	local pos, yaw = self.object:get_pos(), self.object:get_yaw()
+	if not pos then return end
+	local head = self.head_data
+	local offset_h = (head and head.pivot_h) or self.width
+	local offset_v = (head and head.pivot_v) or self.height
+	local head_pos = {
+		x = pos.x + sin(yaw) * -offset_h,
+		y = pos.y + offset_v,
+		z = pos.z + cos(yaw) * offset_h
+	}
+	local def = minetest.registered_items[item_name]
+	local image = def.inventory_image
+	if def.tiles then
+		image = def.tiles[1].name or def.tiles[1]
+	end
+	if image then
+		local crop = "^[sheet:4x4:" .. random(4) .. "," .. random(4)
+		minetest.add_particlespawner({
+			pos = head_pos,
+			time = 0.5,
+			amount = 12,
+			collisiondetection = true,
+			collision_removal = true,
+			vel = {min = {x = -1, y = 1, z = -1}, max = {x = 1, y = 2, z = 1}},
+			acc = {x = 0, y = -9.8, z = 0},
+			size = {min = 1, max = 2},
+			texture = image .. crop
+		})
+	end
+end
+
 local function get_group_positions(self)
     local objects = creatura.get_nearby_objects(self, self.name)
     local group = {}
@@ -116,6 +165,11 @@ local function get_group_positions(self)
 		if obj_pos then table.insert(group, obj_pos) end
 	end
     return group
+end
+
+local function reset_attack_vals(self)
+	self.punch_cooldown = 0
+	self.target = nil
 end
 
 --------------
@@ -157,46 +211,32 @@ creatura.register_movement_method("animalia:fly_simple", function(self)
 end)
 
 creatura.register_movement_method("animalia:fly_obstacle_avoidance", function(self)
-	local box = clamp(self.width, 0.5, 1.5)
 	local steer_to
 	local steer_timer = 0.25
+	local init_dist
 	self:set_gravity(0)
 	local function func(_self, goal, speed_factor)
 		local pos = _self.object:get_pos()
 		if not pos then return end
-		-- Return true when goal is reached
-		if vec_dist(pos, goal) < box * 1.33 then
+		local dist = vec_dist(pos, goal)
+		init_dist = dist
+		if dist < clamp(self.width, 0.5, 1) + 1.5 then
 			_self:halt()
 			return true
 		end
-		steer_timer = steer_timer - self.dtime
-		if steer_timer <= 0 then
-			steer_to = get_avoidance_dir(_self)
-		end
-		-- Get movement direction
-		local goal_dir = vec_dir(pos, goal)
-		if steer_to then
-			steer_to.y = goal_dir.y
-			goal_dir = steer_to
-		end
-		local yaw = _self.object:get_yaw()
-		local goal_yaw = dir2yaw(goal_dir)
+		-- Calculate Movement
+		steer_timer = (steer_timer > 0 and steer_timer - self.dtime) or 0.25
+		steer_to = (steer_timer <= 0 and creatura.get_context_steering(self, goal, 4, true)) or steer_to
 		local speed = abs(_self.speed or 2) * speed_factor or 0.5
 		local turn_rate = abs(_self.turn_rate or 5)
-		-- Movement
-		local yaw_diff = abs(diff(yaw, goal_yaw))
-		if yaw_diff < pi * 0.25
-		or steer_to then
-			_self:set_forward_velocity(speed)
-		else
-			_self:set_forward_velocity(speed * 0.33)
-		end
-		self:set_vertical_velocity(speed * goal_dir.y)
-		_self:turn_to(goal_yaw, turn_rate)
-		if _self.touching_ground
-		or _self.in_liquid then
-			_self.object:add_velocity({x = 0, y = 2, z = 0})
-		end
+		local dist_weight = (init_dist - dist) / init_dist
+		-- Apply Movement
+		local dir = (steer_to or vec_dir(pos, goal))
+		speed = speed - (speed * 0.75) * dist_weight
+		turn_rate = turn_rate + turn_rate * dist_weight
+		_self:set_forward_velocity(speed)
+		_self:set_vertical_velocity(speed * dir.y)
+		_self:turn_to(dir2yaw(dir), turn_rate)
 	end
 	return func
 end)
@@ -223,7 +263,7 @@ creatura.register_movement_method("animalia:swim_simple", function(self)
 		if yaw_diff < pi * 0.25 then
 			_self:set_forward_velocity(speed)
 		else
-			_self:set_forward_velocity(speed * 0.33)
+			_self:set_forward_velocity(speed * 0.66)
 		end
 		self:set_vertical_velocity(speed * goal_dir.y)
 		_self:turn_to(goal_yaw, turn_rate)
@@ -280,7 +320,7 @@ function animalia.action_pursue(self, target, timeout, method, speed_factor, ani
 	local timer = timeout or 4
 	local goal
 	local function func(_self)
-		local target_alive, line_of_sight, tgt_pos = self:get_target(target)
+		local target_alive, line_of_sight, tgt_pos = _self:get_target(target)
 		if not target_alive then
 			return true
 		end
@@ -303,6 +343,92 @@ function animalia.action_pursue(self, target, timeout, method, speed_factor, ani
 		or _self:move_to(goal, method or "creatura:obstacle_avoidance", speed_factor or 0.5) then
 			return true
 		end
+	end
+	self:set_action(func)
+end
+
+function animalia.action_pursue_glide(self, target, timeout, method, speed_factor, anim)
+	local timer = timeout or 4
+	local goal
+	local speed_x = speed_factor
+	local function func(_self)
+		local target_alive, line_of_sight, tgt_pos = _self:get_target(target)
+		if not target_alive then
+			return true
+		end
+		goal = goal or tgt_pos
+		timer = timer - _self.dtime
+		self:animate(anim or "walk")
+		if line_of_sight
+		and vec_dist(goal, tgt_pos) > 3 then
+			goal = tgt_pos
+		end
+		local vel = self.object:get_velocity()
+		if vel.y < 0 and speed_x < speed_factor + 0.5 then speed_x = speed_x + self.dtime * 0.5 end
+		if vel.y >= 0 and speed_x > speed_factor then speed_x = speed_x - self.dtime * 0.25 end
+		if timer <= 0
+		or _self:move_to(goal, method or "animalia:fly_obstacle_avoidance", speed_x) then
+			return true
+		end
+	end
+	self:set_action(func)
+end
+
+function animalia.action_flight_attack(self, target, timeout)
+	local anim = self.animations["fly_punch"]
+	local anim_len = (anim.range.y - anim.range.x) / anim.speed
+	local anim_time = 0
+	local timer = timeout or 12
+	local cooldown = 0
+	local speed_x = 0.5
+	local goal
+	local function func(_self)
+		local pos = _self.stand_pos
+		if timer <= 0 then return true end
+		local target_alive, los, tgt_pos = _self:get_target(target)
+		if not target_alive then return true end
+		local dist = vec_dist(pos, tgt_pos)
+
+		if dist > 32 then return true end
+
+		local vel = self.object:get_velocity()
+		if vel.y < 0 and speed_x < 1 then speed_x = speed_x + self.dtime * 0.5 end
+		if vel.y >= 0 and speed_x > 0.5 then speed_x = speed_x - self.dtime end
+
+		if anim_time > 0 then
+			_self:animate("fly_punch")
+			anim_time = anim_time - _self.dtime
+		else
+			if speed_x > 0.6 then
+				_self:animate("glide")
+			else
+				_self:animate("fly")
+			end
+		end
+
+		if cooldown > 0 then
+			goal = goal or _self:get_wander_pos_3d(3, 6, nil, 1)
+			cooldown = cooldown - _self.dtime
+		else
+			goal = nil
+			cooldown = 0
+		end
+
+		if goal
+		and _self:move_to(goal, "animalia:fly_obstacle_avoidance", speed_x) then
+			goal = nil
+		end
+		
+		if not goal
+		and _self:move_to(tgt_pos, "animalia:fly_obstacle_avoidance", speed_x) then
+			if dist < _self.width + 1 then
+				_self:punch_target(target)
+				cooldown = timeout / 3
+				anim_time = anim_len
+			end
+		end
+
+		timer = timer - _self.dtime
 	end
 	self:set_action(func)
 end
@@ -353,6 +479,55 @@ function animalia.action_move_flock(self, pos2, timeout, method, speed_factor, a
 			return true
 		end
 		self:animate(anim or "walk")
+	end
+	self:set_action(func)
+end
+
+function animalia.action_move_boid(self, pos2, timeout, method, speed_factor, anim, water)
+	local timer = timeout or 4
+	local goal
+	local function func(_self)
+		local pos, vel = self.object:get_pos(), self.object:get_velocity()
+		if not pos then return end
+		local move_data = self._movement_data or {}
+		-- Tick down timer
+		timer = timer - _self.dtime
+		-- Check if goal is safe
+		local safe = true
+		local max_fall = (_self.max_fall or 0) > 0 and _self.max_fall
+		if max_fall then
+			safe = _self:is_pos_safe(goal)
+		end
+		-- Boid calculation
+		local boid_dir, boids = move_data.boid_dir or creatura.get_boid_dir(self)
+		if boid_dir then
+			local heading = vec_dir(pos, pos2)
+			boid_dir.y = boid_dir.y + heading.y / 2
+			goal = vec_add(pos, vec_multi(boid_dir, self.width + 1))
+			if max_fall then
+				goal = creatura.get_ground_level(goal, 2)
+			end
+			if boids then
+				for _, obj in ipairs(boids) do
+					local ent = obj and obj:get_luaentity()
+					if ent then
+						ent._movement_data.boid_dir = boid_dir
+					end
+				end
+			end
+		else
+			goal = pos2
+		end
+		local steer_dir = creatura.get_context_steering(self, goal, 1, water)
+		goal = (steer_dir and vec_add(pos, steer_dir)) or goal
+		-- Main movement
+		if timer <= 0
+		or not safe
+		or _self:move_to(goal, method or "creatura:obstacle_avoidance", speed_factor or 0.5) then
+			return true
+		end
+		self:animate(anim or "walk")
+		self._movement_data.boid_dir = nil
 	end
 	self:set_action(func)
 end
@@ -528,7 +703,7 @@ creatura.register_utility("animalia:swim_to_land", function(self)
 			_self:set_gravity(-9.8)
 			_self:set_forward_velocity(_self.speed * 0.66)
 			_self:animate("walk")
-			if vector.distance(pos, tpos) < 1
+			if vec_dist(pos, tpos) < 1
 			or (not _self.in_liquid
 			and _self.touching_ground) then
 				return true
@@ -569,7 +744,7 @@ creatura.register_utility("animalia:wander_group", function(self)
 	local center = self.object:get_pos()
 	if not center then return end
 	local group_tick = 500
-	local move = self.wander_action or animalia.action_move_flock
+	local move = self.wander_action or animalia.action_move_boid
 	local function func(_self)
 		group_tick = group_tick - 1
 		if group_tick <= 0 then
@@ -631,6 +806,7 @@ creatura.register_utility("animalia:aerial_wander", function(self)
 	local center = self.object:get_pos()
 	if not center then return end
 	local height_tick = 0
+	local move = self.wander_action or creatura.action_move
 	local function func(_self)
 		local pos = self.object:get_pos()
 		if not pos then return end
@@ -643,7 +819,7 @@ creatura.register_utility("animalia:aerial_wander", function(self)
 		if not _self:get_action() then
 			local move_dir = (vec_dist(pos, center) > 8 and vec_dir(pos, center)) or nil
 			local pos2 = _self:get_wander_pos_3d(2, 5, move_dir)
-			animalia.action_move_flock(_self, pos2, 3, "animalia:fly_simple", 1, "fly", true)
+			move(_self, pos2, 3, "animalia:fly_simple", 1, "fly", true)
 		end
 	end
 	self:set_utility(func)
@@ -652,25 +828,24 @@ end)
 creatura.register_utility("animalia:fly_to_roost", function(self)
 	local home = self.home_position
 	local roost = self.roost_action or creatura.action_idle
+	local is_home = self.is_roost or function(pos, home_pos)
+		if abs(pos.x - home_pos.x) < 0.5
+		and abs(pos.z - home_pos.z) < 0.5
+		and abs(pos.y - home_pos.y) < 0.75 then
+			return true
+		end
+		return false
+	end
 	local function func(_self)
 		local pos = _self.object:get_pos()
 		if not pos then return end
 		if not home then return true end
 		if not _self:get_action() then
-			if abs(pos.x - home.x) < 0.5
-			and abs(pos.z - home.z) < 0.5 then
-				local y_diff = abs(pos.y - home.y)
-				if y_diff < 0.7 then
-					roost(_self, 1, "stand")
-					return
-				end
-				if y_diff <= 2
-				and not minetest.line_of_sight(pos, home) then
-					self.home_positon = nil
-					self:forget("home_position")
-				end
+			if is_home(pos, home) then
+				roost(_self, 1, "stand")
+				return
 			end
-			creatura.action_move(_self, home, 3, "animalia:fly_simple", 1, "fly")
+			creatura.action_move(_self, home, 3, "animalia:fly_obstacle_avoidance", 1, "fly")
 		end
 	end
 	self:set_utility(func)
@@ -714,7 +889,7 @@ creatura.register_utility("animalia:aquatic_wander_school", function(self)
 			water_nodes = minetest.find_nodes_in_area(vec_sub(center, 4), vec_add(center, 4), {"group:water"})
 		end
 		if not _self:get_action() then
-			animalia.action_move_flock(_self, water_nodes[random(#water_nodes)], 3, "animalia:swim_simple", 1, "swim", true)
+			animalia.action_move_boid(_self, water_nodes[random(#water_nodes)], 3, "animalia:swim_simple", 1, "swim")
 		end
 	end
 	self:set_utility(func)
@@ -844,7 +1019,7 @@ creatura.register_utility("animalia:follow_player", function(self, player, force
 		local dist = vec_dist(pos, plyr_pos)
 		if not _self:get_action() then
 			if dist > width + 1 then
-				animalia.action_pursue(_self, player, 3, "creatura:obstacle_avoidance", 0.75)
+				animalia.action_pursue(_self, player, 3, "creatura:context_based_steering", 0.75)
 			else
 				creatura.action_idle(_self, 1)
 			end
@@ -872,7 +1047,7 @@ creatura.register_utility("animalia:flee_from_target", function(self, target)
 			local flee_dir = vec_dir(tgt_pos, pos)
 			local pos2 = _self:get_wander_pos(2, 3, flee_dir)
 			local anim = (_self.animations["run"] and "run") or "walk"
-			creatura.action_move(_self, pos2, 2, "creatura:obstacle_avoidance", 1, anim)
+			creatura.action_move(_self, pos2, 2, "creatura:context_based_steering", 1, anim)
 		end
 	end
 	self:set_utility(func)
@@ -985,8 +1160,9 @@ creatura.register_utility("animalia:attack_target", function(self, target)
 		local pos = _self.object:get_pos()
 		if not pos then return end
 		local tgt_alive, _, tgt_pos = _self:get_target(target)
-		if not tgt_alive then return true end
+		if not tgt_alive then reset_attack_vals(self) return true end
 		local dist = vec_dist(pos, tgt_pos)
+		if dist > self.tracking_range then reset_attack_vals(self) return true end
 		local punch_cooldown = self.punch_cooldown or 0
 		if punch_cooldown > 0 then
 			punch_cooldown = punch_cooldown - self.dtime
@@ -997,11 +1173,35 @@ creatura.register_utility("animalia:attack_target", function(self, target)
 		and not punch_init then
 			punch_init = true
 			animalia.action_punch(_self, target)
-			self.punch_cooldown = 3
+			self.punch_cooldown = 1.5
 		end
 		if not _self:get_action() then
-			if punch_init then return true end
+			if punch_init then reset_attack_vals(self) return true end
 			animalia.action_pursue(_self, target, 3, "creatura:pathfind", 0.75)
+		end
+	end
+	self:set_utility(func)
+end)
+
+creatura.register_utility("animalia:glide_attack_target", function(self, target)
+	local hidden_timer = 1
+	local attack_init = false
+	local function func(_self)
+		local pos, yaw = _self.object:get_pos(), _self.object:get_yaw()
+		if not pos then return end
+		local target_alive, los, tgt_pos = _self:get_target(target)
+		if not target_alive then
+			_self._target = nil
+			return true
+		end
+		if not _self:get_action() then
+			if attack_init then return true end
+			local dist = vec_dist(pos, tgt_pos)
+			if dist > 14 then
+				creatura.action_move(_self, tgt_pos, 3, "animalia:fly_obstacle_avoidance", 0.5, "fly")
+			else
+				animalia.action_flight_attack(_self, target, 12)
+			end
 		end
 	end
 	self:set_utility(func)
@@ -1046,6 +1246,174 @@ creatura.register_utility("animalia:breed", function(self)
 		if not _self:get_action() then
 			creatura.action_move(_self, tgt_pos)
 		end
+	end
+	self:set_utility(func)
+end)
+
+creatura.register_utility("animalia:fly_to_food", function(self, food_item)
+	local eat_init = false
+	local function func(_self)
+		local pos, tgt_pos = _self.object:get_pos(), food_item and food_item:get_pos()
+		if not pos then return end
+		if not tgt_pos and not eat_init then return true end
+		local dist = vec_dist(pos, tgt_pos or pos)
+		if dist < 1
+		and not eat_init then
+			eat_init = true
+			local food_ent = food_item:get_luaentity()
+			local stack = ItemStack(food_ent.itemstring)
+			if stack
+			and stack:get_count() > 1 then
+				stack:take_item()
+				food_ent.itemstring = stack:to_string()
+			else
+				food_item:remove()
+			end
+			self.object:get_yaw(dir2yaw(vec_dir(pos, tgt_pos)))
+			add_eat_particle(self, "animalia:rat_raw")
+			creatura.action_idle(_self, 1, "eat")
+			self.eat_cooldown = 60
+			if self.on_eat_drop then
+				self:on_eat_drop()
+			end
+		end
+		if not _self:get_action() then
+			if eat_init then return true end
+			creatura.action_move(_self, tgt_pos, 3, "animalia:fly_simple", 1, "fly")
+		end
+	end
+	self:set_utility(func)
+end)
+
+creatura.register_utility("animalia:walk_to_food", function(self, food_item)
+	local eat_init = false
+	local function func(_self)
+		local pos, tgt_pos = _self.object:get_pos(), food_item and food_item:get_pos()
+		if not pos then return end
+		if not tgt_pos and not eat_init then return true end
+		local dist = vec_dist(pos, tgt_pos or pos)
+		if dist < 1
+		and not eat_init then
+			eat_init = true
+			local food_ent = food_item:get_luaentity()
+			local stack = ItemStack(food_ent.itemstring)
+			if stack
+			and stack:get_count() > 1 then
+				stack:take_item()
+				food_ent.itemstring = stack:to_string()
+			else
+				food_item:remove()
+			end
+			self.object:get_yaw(dir2yaw(vec_dir(pos, tgt_pos)))
+			add_eat_particle(self, "animalia:rat_raw")
+			local anim = (self.animations["eat"] and "eat") or "stand"
+			creatura.action_idle(_self, 1, anim)
+			self.eat_cooldown = 60
+			if self.on_eat_drop then
+				self:on_eat_drop()
+			end
+		end
+		if not _self:get_action() then
+			if eat_init then return true end
+			creatura.action_move(_self, tgt_pos, 3, "creatura:context_based_steering", 0.5, "walk")
+		end
+	end
+	self:set_utility(func)
+end)
+
+-- Pest Behavior
+
+creatura.register_utility("animalia:eat_crop", function(self)
+	local center = self.object:get_pos()
+	if not center then return end
+	local width = self.width
+	local timeout = 8
+	local nodes = minetest.find_nodes_in_area(vec_sub(center, 6), vec_add(center, 6), "group:crop") or {}
+	local pos2
+	local anim_init = false
+	local function func(_self)
+		local pos = _self.object:get_pos()
+		if not pos then return end
+		if #nodes < 1 then return true end
+		if not _self:get_action() then
+			if anim_init then return true end
+			pos2 = pos2 or nodes[random(#nodes)]
+			local node_name = minetest.get_node(pos2).name
+			local dist = vec_dist(pos, pos2)
+			if dist < width + 0.5 then
+				local new_name = node_name:sub(1, #node_name - 1) .. (tonumber(node_name:sub(-1)) or 2) - 1
+				local new_def = minetest.registered_nodes[new_name]
+				if not new_def then return true end
+				local p2 = new_def.place_param2 or 1
+				minetest.set_node(pos2, {name = new_name, param2 = p2})
+				add_eat_particle(self, new_name)
+				anim_init = true
+				creatura.action_idle(_self, 0.5, "eat")
+			else
+				creatura.action_move(_self, pos2, 4, "creatura:context_based_steering")
+			end
+		end
+		timeout = timeout - _self.dtime
+		if timeout <= 0 then return true end
+	end
+	self:set_utility(func)
+end)
+
+local function take_food_from_chest(self, pos)
+	local inv = minetest.get_inventory({type = "node", pos = pos})
+	if inv
+	and inv:get_list("main") then
+		for i, stack in ipairs(inv:get_list("main")) do
+			local item_name = stack:get_name()
+			local def = minetest.registered_items[item_name]
+			for group in pairs(def.groups) do
+				if group:match("food_") then
+					stack:take_item()
+					inv:set_stack("main", i, stack)
+					add_eat_particle(self, item_name)
+					return true
+				end
+			end
+		end
+	end
+end
+
+creatura.register_utility("animalia:steal_from_chest", function(self)
+	local center = self.object:get_pos()
+	if not center then return end
+	local width = self.width
+	local timeout = 8
+	local nodes = minetest.find_nodes_with_meta(vec_sub(center, 6), vec_add(center, 6)) or {}
+	local pos2
+	for _, node_pos in ipairs(nodes) do
+		local meta = minetest.get_meta(node_pos)
+		if meta:get_string("owner") == "" then
+			local inv = minetest.get_inventory({type = "node", pos = node_pos})
+			if inv
+			and inv:get_list("main") then
+				pos2 = node_pos
+			end
+		end
+	end
+	local anim_init = false
+	local function func(_self)
+		local pos = _self.object:get_pos()
+		if not pos then return end
+		if not pos2 then return true end
+		if not _self:get_action() then
+			if anim_init then return true end
+			local dist = vec_dist(pos, pos2)
+			if dist < width + 1.1 then
+				anim_init = true
+				if take_food_from_chest(self, pos2) then
+					creatura.action_idle(_self, 0.5, "eat")
+				end
+			else
+				creatura.action_move(_self, pos2, 2, "creatura:context_based_steering")
+			end
+		end
+		timeout = timeout - _self.dtime
+		if timeout <= 0 then return true end
 	end
 	self:set_utility(func)
 end)
@@ -1189,7 +1557,7 @@ creatura.register_utility("animalia:mount_horse", function(self, player)
 		and vel.y < 1 then
 			_self.object:add_velocity({
 				x = 0,
-				y = _self.jump_power + (abs(_self._movement_data.gravity) * 0.33),
+				y = _self.jump_power,
 				z = 0
 			})
 		elseif not _self.touching_ground then
@@ -1230,3 +1598,35 @@ creatura.register_utility("animalia:flop", function(self)
 	end
 	self:set_utility(func)
 end)
+
+-- Global Utilities
+
+animalia.global_utils = {
+	["basic_follow"] = {
+		utility = "animalia:follow_player",
+		get_score = function(self)
+			local lasso_tgt = self._lassod_to
+			local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
+			local force = lasso and lasso ~= false
+			local player = (force and lasso) or creatura.get_nearby_player(self)
+			if player
+			and (self:follow_wielded_item(player)
+			or force) then
+				return 0.4, {self, player, force}
+			end
+			return 0
+		end
+	},
+	["basic_flee"] = {
+		utility = "animalia:flee_from_target",
+		get_score = function(self)
+			local puncher = self._puncher
+			if puncher
+			and puncher:get_pos() then
+				return 0.6, {self, puncher}
+			end
+			self._puncher = nil
+			return 0
+		end
+	}
+}

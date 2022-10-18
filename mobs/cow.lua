@@ -59,7 +59,7 @@ creatura.register_mob("animalia:cow", {
 		run = {range = {x = 61, y = 79}, speed = 30, frame_blend = 0.3, loop = true},
 	},
 	-- Misc
-	step_delay = 0.25,
+	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -123,19 +123,7 @@ creatura.register_mob("animalia:cow", {
 				return 0
 			end
 		},
-		{
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
-				local force = lasso and lasso ~= false
-				local player = (force and lasso) or creatura.get_nearby_player(self)
-				if player
-				and self:follow_wielded_item(player) then
-					return 0.4, {self, player}
-				end
-				return 0
-			end
-		},
+		animalia.global_utils.basic_follow,
 		{
 			utility = "animalia:breed",
 			step_delay = 0.25,
@@ -147,18 +135,7 @@ creatura.register_mob("animalia:cow", {
 				return 0
 			end
 		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				local puncher = self._target
-				if puncher
-				and puncher:get_pos() then
-					return 0.6, {self, puncher}
-				end
-				self._target = nil
-				return 0
-			end
-		}
+		animalia.global_utils.basic_flee
 	},
 	activate_func = function(self)
 		animalia.initialize_api(self)
@@ -215,10 +192,7 @@ creatura.register_mob("animalia:cow", {
 			return
 		end
 	end,
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		self._target = puncher
-	end
+	on_punch = animalia.punch
 })
 
 creatura.register_spawn_egg("animalia:cow", "cac3a1" ,"464438")

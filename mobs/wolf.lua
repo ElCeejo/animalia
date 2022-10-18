@@ -45,7 +45,7 @@ end
 
 creatura.register_mob("animalia:wolf", {
 	-- Stats
-	max_health = 15,
+	max_health = 25,
 	armor_groups = {fleshy = 100},
 	damage = 4,
 	speed = 5,
@@ -60,7 +60,7 @@ creatura.register_mob("animalia:wolf", {
 		width = 0.35,
 		height = 0.7
 	},
-	visual_size = {x = 9, y = 9},
+	visual_size = {x = 10, y = 10},
 	textures = {
 		"animalia_wolf_1.png",
 		"animalia_wolf_2.png",
@@ -131,7 +131,8 @@ creatura.register_mob("animalia:wolf", {
 		{
 			utility = "animalia:follow_player",
 			get_score = function(self)
-				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
+				local lasso_tgt = self._lassod_to
+				local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
 				local owner = self.owner and self.order == "follow" and minetest.get_player_by_name(self.owner)
 				local force = (lasso and lasso ~= false) or owner
 				local player = (force and (owner or lasso)) or creatura.get_nearby_player(self)

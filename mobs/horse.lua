@@ -100,15 +100,15 @@ creatura.register_mob("animalia:horse", {
 	},
 	animations = {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
-		run = {range = {x = 81, y = 99}, speed = 30, frame_blend = 0.3, loop = true},
-		punch_aoe = {range = {x = 101, y = 119}, speed = 30, frame_blend = 0.2, loop = false},
-		rear = {range = {x = 121, y = 140}, speed = 20, frame_blend = 0.2, loop = false},
-		rear_constant = {range = {x = 121, y = 140}, speed = 20, frame_blend = 0.3, loop = false},
-		eat = {range = {x = 141, y = 160}, speed = 20, frame_blend = 0.3, loop = false}
+		walk = {range = {x = 71, y = 89}, speed = 25, frame_blend = 0.3, loop = true},
+		run = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
+		punch_aoe = {range = {x = 161, y = 180}, speed = 30, frame_blend = 0.2, loop = false},
+		rear = {range = {x = 131, y = 150}, speed = 20, frame_blend = 0.2, loop = false},
+		eat = {range = {x = 191, y = 220}, speed = 30, frame_blend = 0.3, loop = false}
 	},
 	-- Misc
 	makes_footstep_sound = true,
+	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -116,8 +116,7 @@ creatura.register_mob("animalia:horse", {
 		random = {
 			name = "animalia_horse_idle",
 			gain = 1.0,
-			distance = 8,
-			variations = 3,
+			distance = 8
 		},
 		hurt = {
 			name = "animalia_horse_hurt",
@@ -140,10 +139,10 @@ creatura.register_mob("animalia:horse", {
 	},
 	head_data = {
 		bone = "Neck.CTRL",
-		offset = {x = 0, y = 1.45, z = 0.0},
-		pitch_correction = 25,
+		offset = {x = 0, y = 1.05, z = 0.0},
+		pitch_correction = 35,
 		pivot_h = 1,
-		pivot_v = 1.5
+		pivot_v = 1.75
 	},
 	-- Function
 	add_child = function(self, mate)
@@ -198,19 +197,7 @@ creatura.register_mob("animalia:horse", {
 				return 0
 			end
 		},
-		{
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso = type(self.lasso_origin or {}) == "userdata" and self.lasso_origin
-				local force = lasso and lasso ~= false
-				local player = (force and lasso) or creatura.get_nearby_player(self)
-				if player
-				and self:follow_wielded_item(player) then
-					return 0.4, {self, player}
-				end
-				return 0
-			end
-		},
+		animalia.global_utils.basic_follow,
 		{
 			utility = "animalia:breed",
 			step_delay = 0.25,
@@ -263,10 +250,6 @@ creatura.register_mob("animalia:horse", {
 		animalia.initialize_lasso(self)
 		set_pattern(self)
 		self.owner = self:recall("owner") or nil
-		if self.owner then
-			self._despawn = nil
-			self.despawn_after = nil
-		end
 		self.rider = nil
 		self.saddled = self:recall("saddled") or false
 		self.max_health = self:recall("max_health") or random(30, 45)
@@ -333,9 +316,7 @@ creatura.register_mob("animalia:horse", {
 	end,
 	on_punch = function(self, puncher, ...)
 		if self.rider and puncher == self.rider then return end
-		creatura.basic_punch_func(self, puncher, ...)
-		if self.hp < 0 then return end
-		self._puncher = puncher
+		animalia.punch(self, puncher, ...)
 	end
 })
 

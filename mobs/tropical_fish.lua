@@ -5,6 +5,7 @@
 creatura.register_mob("animalia:tropical_fish", {
 	-- Stats
 	max_health = 5,
+	max_breath = 0,
 	armor_groups = {fleshy = 150},
 	damage = 0,
 	speed = 2,
@@ -33,7 +34,6 @@ creatura.register_mob("animalia:tropical_fish", {
 		flop = {range = {x = 30, y = 40}, speed = 20, frame_blend = 0.3, loop = true},
 	},
 	-- Misc
-	step_delay = 0.25,
 	catch_with_net = true,
 	catch_with_lasso = false,
 	makes_footstep_sound = false,
@@ -82,9 +82,7 @@ creatura.register_mob("animalia:tropical_fish", {
 			return
 		end
 	end,
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-	end
+	on_punch = animalia.punch
 })
 
 creatura.register_spawn_egg("animalia:tropical_fish", "e28821", "f6e5d2")

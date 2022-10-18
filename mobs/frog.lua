@@ -45,6 +45,7 @@ creatura.register_mob("animalia:frog", {
 	},
 	-- Misc
 	makes_footstep_sound = true,
+	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	sounds = {
@@ -128,7 +129,7 @@ creatura.register_mob("animalia:frog", {
 				if self.in_liquid then return 0 end
 				local pos = self.object:get_pos()
 				if not pos then return end
-				local target = self._target or creatura.get_nearby_player(self)
+				local target = self._puncher or self._target or creatura.get_nearby_player(self)
 				local tgt_pos = target and target:get_pos()
 				local plyr_name = (target and target:is_player() and target:get_player_name()) or ""
 				if tgt_pos then

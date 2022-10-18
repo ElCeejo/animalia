@@ -315,6 +315,22 @@ end
 -- Mobs --
 ----------
 
+function animalia.get_dropped_food(self, item)
+	local pos = self.object:get_pos()
+	if not pos then return end
+	local objects = minetest.get_objects_inside_radius(pos, self.tracking_range)
+	for _, object in ipairs(objects) do
+		local ent = object:get_luaentity()
+		if ent
+		and ent.name == "__builtin:item"
+		and ent.itemstring
+		and ((item and ent.itemstring:match(item))
+		or self:follow_item(ItemStack(ent.itemstring))) then
+			return object, object:get_pos()
+		end
+	end
+end
+
 function animalia.protect_from_despawn(self)
 	self._despawn = self:memorize("_despawn", false)
 	self.despawn_after = self:memorize("despawn_after", false)
@@ -334,7 +350,7 @@ function animalia.set_nametag(self, clicker)
 		return
 	end
 	self.nametag = self:memorize("nametag", name)
-	self.despawn_after = self:memorize("despawn_after", nil)
+	self.despawn_after = self:memorize("despawn_after", false)
 	activate_nametag(self)
 	if not minetest.is_creative_enabled(plyr_name) then
 		item:take_item()
@@ -342,7 +358,6 @@ function animalia.set_nametag(self, clicker)
 	end
 	return true
 end
-
 
 function animalia.initialize_api(self)
 	self.gender = self:recall("gender") or nil
@@ -448,8 +463,9 @@ function animalia.feed(self, clicker, breed, tame)
 	local item, item_name = self:follow_wielded_item(clicker)
 	if item_name then
 		-- Eat Animation
-		local offset_h = self.head_data.pivot_h or 0.5
-		local offset_v = self.head_data.pivot_v or 0.5
+		local head = self.head_data
+		local offset_h = (head and head.pivot_h) or 0.5
+		local offset_v = (head and head.pivot_v) or 0.5
 		local head_pos = {
 			x = pos.x + sin(yaw) * -offset_h,
 			y = pos.y + offset_v,
@@ -544,6 +560,15 @@ function animalia.mount(self, player, params)
 	minetest.after(0.3, function()
 		animate_player(player, "sit" , 30)
 	end)
+end
+
+function animalia.punch(self, puncher, ...)
+	creatura.basic_punch_func(self, puncher, ...)
+	self._puncher = puncher
+	if self.flee_puncher
+	and (self:get_utility() or "") ~= "animalia:flee_from_target" then
+		self:clear_utility()
+	end
 end
 
 --------------

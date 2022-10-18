@@ -27,7 +27,7 @@ end
 
 local function register_egg(name, def)
 
-	minetest.register_entity(def.mob .. "_egg_sprite", {
+	minetest.register_entity(def.mob .. "_egg_entity", {
 		hp_max = 1,
 		physical = true,
 		collisionbox = {0, 0, 0, 0, 0, 0},
@@ -36,94 +36,75 @@ local function register_egg(name, def)
 		textures = {"animalia_egg.png"},
 		initial_sprite_basepos = {x = 0, y = 0},
 		is_visible = true,
-		on_step = function(self)
+		on_step = function(self, _, moveresult)
 			local pos = self.object:get_pos()
-			local objects = minetest.get_objects_inside_radius(pos, 1.5)
-			local cube = minetest.find_nodes_in_area(
-				vector.new(pos.x - 0.5, pos.y - 0.5, pos.z - 0.5),
-				vector.new(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5),
-				walkable_nodes)
-			if #objects >= 2 then
-				if objects[2]:get_armor_groups().fleshy then
-					objects[2]:punch(self.object, 2.0, {full_punch_interval = 0.1, damage_groups = {fleshy = 1}}, nil)
+			if not pos then return end
+			if moveresult.collides then
+				for _, collision in ipairs(moveresult.collision) do
+					if collision.type == "nodes" then
+						minetest.add_particlespawner({
+							amount = 6,
+							time = 0.1,
+							minpos = {x = pos.x - 7/16, y = pos.y - 5/16, z = pos.z - 7/16},
+							maxpos = {x = pos.x + 7/16, y = pos.y - 5/16, z = pos.z + 7/16},
+							minvel = {x = -1, y = 2, z = -1},
+							maxvel = {x = 1, y = 5, z = 1},
+							minacc = {x = 0, y = -9.8, z = 0},
+							maxacc = {x = 0, y = -9.8, z = 0},
+							collisiondetection = true,
+							collision_removal = true,
+							texture = "animalia_egg_fragment.png"
+						})
+						break
+					elseif collision.type == "object" then
+						collision.object:punch(self.object, 2.0, {full_punch_interval = 0.1, damage_groups = {fleshy = 1}}, nil)
+						break
+					end
 				end
-			end
-			if #cube >= 1 then
-				minetest.add_particlespawner({
-					amount = 6,
-					time = 0.25,
-					minpos = {x = pos.x - 7/16, y = pos.y - 5/16, z = pos.z - 7/16},
-					maxpos = {x = pos.x + 7/16, y = pos.y - 5/16, z = pos.z + 7/16},
-					minvel = vector.new(-1, 2, -1),
-					maxvel = vector.new(1, 5, 1),
-					minacc = vector.new(0, -9.81, 0),
-					maxacc = vector.new(0, -9.81, 0),
-					collisiondetection = true,
-					texture = "animalia_egg_fragment.png",
-				})
 				if random(1, 3) < 2 then
 					local object = minetest.add_entity(pos, def.mob)
-					local ent = object:get_luaentity()
+					local ent = object and object:get_luaentity()
 					ent.growth_scale = 0.7
 					animalia.initialize_api(ent)
 					animalia.protect_from_despawn(ent)
-					self.object:remove()
-				else
-					self.object:remove()
 				end
+				self.object:remove()
 			end
 		end
 	})
 
-	local function mobs_shoot_egg(item, player)
-		local pos = player:get_pos()
-
-		minetest.sound_play("default_place_node_hard", {
-			pos = pos,
-			gain = 1.0,
-			max_hear_distance = 5,
-		})
-
-		local vel = 19
-		local gravity = 9
-
-		local obj = minetest.add_entity({
-			x = pos.x,
-			y = pos.y +1.5,
-			z = pos.z
-		}, def.mob .. "_egg_sprite")
-
-		local ent = obj:get_luaentity()
-		local dir = player:get_look_dir()
-
-		ent.velocity = vel -- needed for api internal timing
-		ent.switch = 1 -- needed so that egg doesn't despawn straight away
-
-		obj:set_velocity({
-			x = dir.x * vel,
-			y = dir.y * vel,
-			z = dir.z * vel
-		})
-
-		obj:set_acceleration({
-			x = dir.x * -3,
-			y = -gravity,
-			z = dir.z * -3
-		})
-
-		-- pass player name to egg for chick ownership
-		local ent2 = obj:get_luaentity()
-		ent2.playername = player:get_player_name()
-
-		item:take_item()
-
-		return item
-	end
-
 	minetest.register_craftitem(name, {
 		description = def.description,
 		inventory_image = def.inventory_image .. ".png",
-		on_use = mobs_shoot_egg,
+		on_use = function(itemstack, player)
+			local pos = player:get_pos()
+			minetest.sound_play("default_place_node_hard", {
+				pos = pos,
+				gain = 1.0,
+				max_hear_distance = 5,
+			})
+			local vel = 19
+			local gravity = 9
+			local object = minetest.add_entity({
+				x = pos.x,
+				y = pos.y + 1.5,
+				z = pos.z
+			}, def.mob .. "_egg_entity")
+			local ent = object and object:get_luaentity()
+			local dir = player:get_look_dir()
+			obj:set_velocity({
+				x = dir.x * vel,
+				y = dir.y * vel,
+				z = dir.z * vel
+			})
+			obj:set_acceleration({
+				x = dir.x * -3,
+				y = -gravity,
+				z = dir.z * -3
+			})
+			itemstack:take_item()
+			return itemstack
+		end,
 		groups = {food_egg = 1, flammable = 2},
 	})
 
@@ -139,6 +120,47 @@ local function register_egg(name, def)
 		recipe  = name,
 		output = name .. "_fried",
 	})
+end
+
+local function mob_storage_use(itemstack, player, pointed)
+	local ent = pointed.ref and pointed.ref:get_luaentity()
+	if ent
+	and (ent.name:match("^animalia:")
+	or ent.name:match("^monstrum:")) then
+		local desc = itemstack:get_short_description()
+		if itemstack:get_count() > 1 then
+			local name = itemstack:get_name()
+			local inv = player:get_inventory()
+			if inv:room_for_item("main", {name = name}) then
+				itemstack:take_item(1)
+				inv:add_item("main", name)
+			end
+			return itemstack
+		end
+		local plyr_name = player:get_player_name()
+		local meta = itemstack:get_meta()
+		local mob = meta:get_string("mob") or ""
+		local staticdata = meta:get_string("staticdata") or ""
+		if mob == "" then
+			animalia.protect_from_despawn(ent)
+			meta:set_string("mob", ent.name)
+			meta:set_string("staticdata", ent:get_staticdata())
+			local ent_name = correct_name(ent.name)
+			local ent_gender = correct_name(ent.gender)
+			desc = desc .. " \n" .. color("#a9a9a9", ent_name) .. "\n" .. color("#a9a9a9", ent_gender)
+			if ent.trust
+			and ent.trust[plyr_name] then
+				desc = desc .. "\n Trust: " .. color("#a9a9a9", ent.trust[plyr_name])
+			end
+			meta:set_string("description", desc)
+			player:set_wielded_item(itemstack)
+			ent.object:remove()
+			return itemstack
+		else
+			minetest.chat_send_player(plyr_name,
+				"This " .. desc .. " already contains a " .. correct_name(mob))
+		end
+	end
 end
 
 -----------
@@ -197,6 +219,26 @@ minetest.register_craft({
 	type  =  "cooking",
 	recipe  = "animalia:mutton_raw",
 	output = "animalia:mutton_cooked",
+})
+
+minetest.register_craftitem("animalia:rat_raw", {
+	description = "Raw Rat",
+	inventory_image = "animalia_rat_raw.png",
+	on_use = minetest.item_eat(1),
+	groups = {flammable = 2, meat = 1, food_meat = 1},
+})
+
+minetest.register_craftitem("animalia:rat_cooked", {
+	description = "Cooked Rat",
+	inventory_image = "animalia_rat_cooked.png",
+	on_use = minetest.item_eat(2),
+	groups = {flammable = 2, meat = 1, food_meat = 1},
+})
+
+minetest.register_craft({
+	type  =  "cooking",
+	recipe  = "animalia:rat_raw",
+	output = "animalia:rat_cooked",
 })
 
 minetest.register_craftitem("animalia:porkchop_raw", {
@@ -480,48 +522,7 @@ minetest.register_craftitem("animalia:net", {
 	description = "Animal Net",
 	inventory_image = "animalia_net.png",
 	stack_max = 1,
-	on_secondary_use = function(itemstack, placer, pointed_thing)
-		if pointed_thing.type == "object" then
-			if pointed_thing.ref:is_player() then return end
-			local ent = pointed_thing.ref:get_luaentity()
-			if not ent.name:match("^animalia:") or not ent.catch_with_net then
-				return
-			end
-			local ent_name = correct_name(ent.name)
-			local ent_gender = correct_name(ent.gender)
-			local meta = itemstack:get_meta()
-			if not meta:get_string("mob") or meta:get_string("mob") == "" then
-				if placer:get_wielded_item():get_count() > 1 then
-					if placer:get_inventory():room_for_item("main", {name = "animalia:net"}) then
-						itemstack:take_item(1)
-						placer:get_inventory():add_item("main", "animalia:net")
-						return itemstack
-					else
-						return
-					end
-				end
-				meta:set_string("mob", ent.name)
-				meta:set_string("staticdata", ent:get_staticdata())
-				local desc = "Animal Net \n" .. color("#a9a9a9", ent_name) .. "\n" .. color("#a9a9a9", ent_gender)
-				if ent.name == "animalia:cat"
-				and ent.trust
-				and ent.trust[placer:get_player_name()] then
-					desc = desc .. "\n Trust: " .. color("#a9a9a9", ent.trust[placer:get_player_name()])
-				end
-				meta:set_string("description", desc)
-				placer:set_wielded_item(itemstack)
-				animalia.protect_from_despawn(ent)
-				ent.object:remove()
-				return itemstack
-			else
-				minetest.chat_send_player(placer:get_player_name(),
-										  "This Net already contains a " ..
-											  correct_name(
-												  meta:get_string("mob")))
-				return
-			end
-		end
-	end,
+	on_secondary_use = mob_storage_use,
 	on_place = function(itemstack, placer, pointed_thing)
 		local pos = pointed_thing.above
 		if pos then
@@ -580,6 +581,61 @@ minetest.register_node("animalia:guano", {
 		end
 	end
 })
+
+minetest.register_node("animalia:crate", {
+	description = "Animal Crate",
+	tiles = {"animalia_crate.png", "animalia_crate.png", "animalia_crate_side.png"},
+	groups = {choppy = 2},
+	stack_max = 1,
+	on_secondary_use = mob_storage_use,
+	preserve_metadata = function(_, _, oldmeta, drops)
+		for _, stack in pairs(drops) do
+			if stack:get_name() == "animalia:crate" then
+				local meta = stack:get_meta()
+				meta:set_string("mob", oldmeta["mob"])
+				meta:set_string("staticdata", oldmeta["staticdata"])
+				meta:set_string("description", oldmeta["description"])
+			end
+		end
+	end,
+	after_place_node = function(pos, placer, itemstack)
+		local meta = itemstack:get_meta()
+		local mob = meta:get_string("mob")
+		if mob ~= "" then
+			local nmeta = minetest.get_meta(pos)
+			nmeta:set_string("mob", mob)
+			nmeta:set_string("infotext", "Contains a " .. correct_name((mob)))
+			nmeta:set_string("staticdata", meta:get_string("staticdata"))
+			nmeta:set_string("description", meta:get_string("description"))
+			itemstack:take_item()
+			placer:set_wielded_item(itemstack)
+		end
+	end,
+	on_rightclick = function(pos, _, clicker)
+		if minetest.is_protected(pos, clicker:get_player_name()) then
+			return
+		end
+		local meta = minetest.get_meta(pos)
+		local mob = meta:get_string("mob")
+		local staticdata = meta:get_string("staticdata")
+		if mob ~= "" then
+			local above = {
+				x = pos.x,
+				y = pos.y + 1,
+				z = pos.z
+			}
+			if creatura.get_node_def(above).walkable then
+				return
+			end
+			minetest.add_entity(above, mob, staticdata)
+			meta:set_string("mob", nil)
+			meta:set_string("infotext", nil)
+			meta:set_string("staticdata", nil)
+			meta:set_string("description", "Animal Crate")
+		end
+	end
+})
+
 --------------
 -- Crafting --
 --------------
@@ -649,6 +705,15 @@ minetest.register_craft({
 		{"farming:string", "", "farming:string"},
 		{"farming:string", "", "farming:string"},
 		{"group:stick", "farming:string", ""}
+	}
+})
+
+minetest.register_craft({
+	output = "animalia:crate",
+	recipe = {
+		{"group:wood", "group:wood", "group:wood"},
+		{"group:wood", "animalia:net", "group:wood"},
+		{"group:wood", "group:wood", "group:wood"}
 	}
 })
 

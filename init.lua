@@ -42,13 +42,16 @@ animalia.animals = {
 	"animalia:cat",
 	"animalia:chicken",
 	"animalia:cow",
-	"animalia:tropical_fish",
+	"animalia:fox",
 	"animalia:frog",
 	"animalia:horse",
+	"animalia:owl",
 	"animalia:pig",
+	"animalia:rat",
 	"animalia:reindeer",
 	"animalia:sheep",
 	"animalia:turkey",
+	"animalia:tropical_fish",
 	"animalia:wolf",
 }
 

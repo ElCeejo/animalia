@@ -24,7 +24,7 @@ creatura.register_mob("animalia:bird", {
 	damage = 0,
 	speed = 4,
 	tracking_range = 16,
-	despawn_after = 100,
+	despawn_after = 750,
 	-- Entity Physics
 	stepheight = 1.1,
 	max_fall = 0,
@@ -48,6 +48,7 @@ creatura.register_mob("animalia:bird", {
 		fly = {range = {x = 120, y = 140}, speed = 80, frame_blend = 0.3, loop = true}
 	},
 	-- Misc
+	max_boids = 12,
 	makes_footstep_sound = true,
 	catch_with_net = true,
 	catch_with_lasso = false,
@@ -73,7 +74,7 @@ creatura.register_mob("animalia:bird", {
 	},
 	follow = follows,
 	-- Function
-	wander_action = animalia.action_move_flock,
+	wander_action = animalia.action_move_boid,
 	utility_stack = {
 		{
 			utility = "animalia:wander_group",
@@ -155,7 +156,7 @@ creatura.register_mob("animalia:bird", {
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 		animalia.rotate_to_pitch(self)
-		if self:timer(random(10,15)) then
+		if self:timer(random(6,12)) then
 			if animalia.is_day then
 				if self.texture_no == 1 then
 					self:play_sound("cardinal")
@@ -213,9 +214,7 @@ creatura.register_mob("animalia:bird", {
 			return
 		end
 	end,
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-	end
+	on_punch = animalia.punch
 })
 
 creatura.register_spawn_egg("animalia:bird", "ae2f2f", "f3ac1c")
