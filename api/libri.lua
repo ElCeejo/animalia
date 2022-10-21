@@ -573,6 +573,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		if fields.drp_font_scale then
 			animalia.libri_font_size[plyr_name] = fields.drp_font_scale
 			local page = libri_players[plyr_name]
+			if not page then return end
 			minetest.show_formspec(plyr_name, "animalia:libri_" .. page, get_page(page, meta, plyr_name))
 		end
 		if fields.quit or fields.key_enter then

@@ -92,12 +92,12 @@ local function register_egg(name, def)
 			}, def.mob .. "_egg_entity")
 			local ent = object and object:get_luaentity()
 			local dir = player:get_look_dir()
-			obj:set_velocity({
+			object:set_velocity({
 				x = dir.x * vel,
 				y = dir.y * vel,
 				z = dir.z * vel
 			})
-			obj:set_acceleration({
+			object:set_acceleration({
 				x = dir.x * -3,
 				y = -gravity,
 				z = dir.z * -3

@@ -238,7 +238,9 @@ creatura.register_mob("animalia:cat", {
 		local item_name = clicker:get_wielded_item():get_name()
 		if item_name == "animalia:net" then return end
 		local trust = self.trust[clicker:get_player_name()] or 0
-		local pos = self:get_center_pos()
+		local pos = self.object:get_pos()
+		if not pos then return end
+		pos.y = pos.y + self.height * 0.5
 		local minppos = vector.add(pos, 1)
 		local maxppos = vector.subtract(pos, 1)
 		if animalia.feed(self, clicker, true, true) then

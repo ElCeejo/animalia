@@ -7,7 +7,7 @@ local random = math.random
 local follows = {}
 
 minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_items) do
+	for name in pairs(minetest.registered_craftitems) do
 		if (name:match(":wheat")
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not tonumber(name:sub(-1))
@@ -18,83 +18,73 @@ minetest.register_on_mods_loaded(function()
 end)
 
 creatura.register_mob("animalia:cow", {
-	-- Stats
-	max_health = 20,
-	armor_groups = {fleshy = 150},
-	damage = 0,
-	speed = 3,
-	tracking_range = 16,
-	despawn_after = 1500,
-	-- Entity Physics
-	stepheight = 1.1,
-	turn_rate = 6,
-	-- Visuals
-	mesh = "animalia_cow.b3d",
-	hitbox = {
-		width = 0.65,
-		height = 1.5
-	},
+	-- Engine Props
 	visual_size = {x = 10, y = 10},
+	mesh = "animalia_cow.b3d",
 	female_textures = {
 		"animalia_cow_1.png^animalia_cow_udder.png",
 		"animalia_cow_2.png^animalia_cow_udder.png",
 		"animalia_cow_3.png^animalia_cow_udder.png",
-		"animalia_cow_4.png^animalia_cow_udder.png"
+		"animalia_cow_4.png^animalia_cow_udder.png",
+		"animalia_cow_5.png^animalia_cow_udder.png"
 	},
 	male_textures = {
 		"animalia_cow_1.png",
 		"animalia_cow_2.png",
 		"animalia_cow_3.png",
-		"animalia_cow_4.png"
+		"animalia_cow_4.png",
+		"animalia_cow_5.png"
 	},
 	child_textures = {
 		"animalia_cow_1.png",
 		"animalia_cow_2.png",
 		"animalia_cow_3.png",
-		"animalia_cow_4.png"
+		"animalia_cow_4.png",
+		"animalia_cow_5.png"
+	},
+	stepheight = 1.1,
+	-- Creatura Props
+	max_health = 20,
+	armor_groups = {fleshy = 100},
+	damage = 0,
+	speed = 4,
+	tracking_range = 16,
+	despawn_after = 1000,
+	max_fall = 3,
+	stepheight = 1.1,
+	sound = {},
+	hitbox = {
+		width = 0.5,
+		height = 1
 	},
 	animations = {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
-		run = {range = {x = 61, y = 79}, speed = 30, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 71, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
+		run = {range = {x = 71, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
 	},
-	-- Misc
-	flee_puncher = true,
-	catch_with_net = true,
-	catch_with_lasso = true,
-	sounds = {
-		random = {
-			name = "animalia_cow_random",
-			gain = 0.4,
-			distance = 8
-		},
-		hurt = {
-			name = "animalia_cow_hurt",
-			gain = 0.4,
-			distance = 8
-		},
-		death = {
-			name = "animalia_cow_death",
-			gain = 0.4,
-			distance = 8
-		}
-	},
+	follow = follows,
 	drops = {
 		{name = "animalia:beef_raw", min = 1, max = 3, chance = 1},
 		{name = "animalia:leather", min = 1, max = 3, chance = 2}
 	},
-	follow = follows,
+	fancy_collide = false,
+	bouyancy_multiplier = 1,
+	hydrodynamics_multiplier = 1,
+	-- Animalia Props
+	flee_puncher = true,
+	catch_with_net = true,
+	catch_with_lasso = true,
 	consumable_nodes = {
 		["default:dirt_with_grass"] = "default:dirt",
 		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
 	},
 	head_data = {
-		offset = {x = 0, y = 0.7, z = 0.0},
+		offset = {x = 0, y = 0.8, z = 0.0},
 		pitch_correction = -65,
 		pivot_h = 0.75,
 		pivot_v = 1
 	},
-	-- Function
+
 	utility_stack = {
 		{
 			utility = "animalia:wander",
@@ -137,6 +127,7 @@ creatura.register_mob("animalia:cow", {
 		},
 		animalia.global_utils.basic_flee
 	},
+	-- Functions
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)

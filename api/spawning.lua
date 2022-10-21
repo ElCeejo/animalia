@@ -25,56 +25,51 @@ minetest.register_on_mods_loaded(function()
 	insert_all(frog_biomes, animalia.registered_biome_groups["tropical"].biomes)
 end)
 
-creatura.register_mob_spawn("animalia:bat", {
-	chance = 2,
-	min_radius = 4,
-	max_radius = 16,
-	min_light = 0,
-	min_height = -512,
-	max_height = 0,
+creatura.register_abm_spawn("animalia:chicken", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 3,
 	max_group = 5,
-	biomes = animalia.registered_biome_groups["cave"].biomes,
-	spawn_in_nodes = true,
-	spawn_on_gen = true,
-	nodes = {"air", "ignore"}
+	biomes = chicken_biomes,
+	nodes = {"group:soil"},
 })
 
-creatura.register_mob_spawn("animalia:chicken", {
-	chance = 3,
-	min_group = 3,
-	max_group = 5,
-	spawn_on_gen = true,
-	biomes = chicken_biomes
-})
-
-creatura.register_mob_spawn("animalia:cow", {
-	chance = 3,
+creatura.register_abm_spawn("animalia:cow", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 3,
 	max_group = 4,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["grassland"].biomes
+	biomes = animalia.registered_biome_groups["grassland"].biomes,
+	nodes = {"group:soil"},
+	neighbors = {"air", "group:grass", "group:flora"}
 })
 
-creatura.register_mob_spawn("animalia:fox", {
-	chance = 4,
+creatura.register_abm_spawn("animalia:fox", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 1,
 	max_group = 2,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["boreal"].biomes
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:soil"},
 })
 
-creatura.register_mob_spawn("animalia:horse", {
-	chance = 3,
-	min_group = 4,
-	max_group = 5,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["grassland"].biomes
+creatura.register_abm_spawn("animalia:horse", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
+	min_group = 3,
+	max_group = 4,
+	biomes = animalia.registered_biome_groups["grassland"].biomes,
+	nodes = {"group:soil"},
+	neighbors = {"air", "group:grass", "group:flora"}
 })
 
 creatura.register_abm_spawn("animalia:rat", {
 	chance = 2000,
-	interval = 30,
+	interval = 60,
 	min_height = -1,
 	max_height = 1024,
 	min_group = 1,
@@ -94,35 +89,45 @@ creatura.register_abm_spawn("animalia:owl", {
 	nodes = {"group:leaves"}
 })
 
-creatura.register_mob_spawn("animalia:pig", {
-	chance = 3,
+creatura.register_abm_spawn("animalia:pig", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 2,
-	max_group = 4,
-	spawn_on_gen = true,
-	biomes = pig_biomes
+	max_group = 3,
+	biomes = pig_biomes,
+	nodes = {"group:soil"},
 })
 
-creatura.register_mob_spawn("animalia:reindeer", {
-	chance = 4,
+creatura.register_abm_spawn("animalia:reindeer", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 6,
-	max_group = 12,
-	biomes = animalia.registered_biome_groups["boreal"].biomes
+	max_group = 8,
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:soil"},
 })
 
-creatura.register_mob_spawn("animalia:sheep", {
-	chance = 3,
+creatura.register_abm_spawn("animalia:sheep", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 3,
 	max_group = 6,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["grassland"].biomes
+	biomes = animalia.registered_biome_groups["grassland"].biomes,
+	nodes = {"group:soil"},
+	neighbors = {"air", "group:grass", "group:flora"}
 })
 
-creatura.register_mob_spawn("animalia:turkey", {
-	chance = 2,
+creatura.register_abm_spawn("animalia:turkey", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
 	min_group = 3,
 	max_group = 4,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["boreal"].biomes
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:soil"},
 })
 
 creatura.register_mob_spawn("animalia:wolf", {
@@ -133,16 +138,14 @@ creatura.register_mob_spawn("animalia:wolf", {
 	biomes = animalia.registered_biome_groups["boreal"].biomes
 })
 
-creatura.register_mob_spawn("animalia:tropical_fish", {
-	chance = 3,
-	min_height = -128,
-	max_height = 256,
-	min_group = 8,
-	max_group = 12,
-	spawn_cluster = true,
-	spawn_in_nodes = true,
-	spawn_on_gen = true,
-	nodes = {"default:water_source"}
+creatura.register_abm_spawn("animalia:wolf", {
+	chance = 10000,
+	min_height = 0,
+	max_height = 1024,
+	min_group = 2,
+	max_group = 3,
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:soil"},
 })
 
 -- Ambient Spawning
@@ -209,4 +212,14 @@ creatura.register_abm_spawn("animalia:frog", {
 	max_group = 4,
 	neighbors = {"group:water"},
 	nodes = {"group:soil"}
+})
+
+creatura.register_abm_spawn("animalia:tropical_fish", {
+	chance = 2000,
+	min_height = -128,
+	max_height = 1,
+	min_group = 6,
+	max_group = 12,
+	nodes = {"group:water"},
+	neighbors = {"group:coral"}
 })
