@@ -2,6 +2,14 @@
 -- Spawning --
 --------------
 
+local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 20000
+
+local ambient_spawn_chance = tonumber(minetest.settings:get("animalia_ambient_chance")) or 6000
+
+local pest_spawn_chance = tonumber(minetest.settings:get("animalia_pest_chance")) or 4000
+
+local predator_spawn_chance = tonumber(minetest.settings:get("animalia_predator_chance")) or 30000
+
 -- Get Biomes --
 
 local chicken_biomes = {}
@@ -26,7 +34,7 @@ minetest.register_on_mods_loaded(function()
 end)
 
 creatura.register_abm_spawn("animalia:chicken", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
@@ -36,7 +44,7 @@ creatura.register_abm_spawn("animalia:chicken", {
 })
 
 creatura.register_abm_spawn("animalia:cow", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
@@ -47,7 +55,7 @@ creatura.register_abm_spawn("animalia:cow", {
 })
 
 creatura.register_abm_spawn("animalia:fox", {
-	chance = 10000,
+	chance = predator_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 1,
@@ -57,7 +65,7 @@ creatura.register_abm_spawn("animalia:fox", {
 })
 
 creatura.register_abm_spawn("animalia:horse", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
@@ -79,7 +87,7 @@ creatura.register_abm_spawn("animalia:rat", {
 })
 
 creatura.register_abm_spawn("animalia:owl", {
-	chance = 30000,
+	chance = predator_spawn_chance,
 	interval = 60,
 	min_height = 3,
 	max_height = 1024,
@@ -90,7 +98,7 @@ creatura.register_abm_spawn("animalia:owl", {
 })
 
 creatura.register_abm_spawn("animalia:pig", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 2,
@@ -100,7 +108,7 @@ creatura.register_abm_spawn("animalia:pig", {
 })
 
 creatura.register_abm_spawn("animalia:reindeer", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 6,
@@ -110,7 +118,7 @@ creatura.register_abm_spawn("animalia:reindeer", {
 })
 
 creatura.register_abm_spawn("animalia:sheep", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
@@ -121,7 +129,7 @@ creatura.register_abm_spawn("animalia:sheep", {
 })
 
 creatura.register_abm_spawn("animalia:turkey", {
-	chance = 10000,
+	chance = common_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
@@ -130,16 +138,8 @@ creatura.register_abm_spawn("animalia:turkey", {
 	nodes = {"group:soil"},
 })
 
-creatura.register_mob_spawn("animalia:wolf", {
-	chance = 3,
-	min_group = 2,
-	max_group = 3,
-	spawn_on_gen = true,
-	biomes = animalia.registered_biome_groups["boreal"].biomes
-})
-
 creatura.register_abm_spawn("animalia:wolf", {
-	chance = 10000,
+	chance = predator_spawn_chance,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 2,
@@ -151,7 +151,7 @@ creatura.register_abm_spawn("animalia:wolf", {
 -- Ambient Spawning
 
 creatura.register_abm_spawn("animalia:bat", {
-	chance = 10000,
+	chance = ambient_spawn_chance,
 	interval = 30,
 	min_light = 0,
 	min_height = -31000,
@@ -163,7 +163,7 @@ creatura.register_abm_spawn("animalia:bat", {
 })
 
 creatura.register_abm_spawn("animalia:bird", {
-	chance = 15000,
+	chance = ambient_spawn_chance,
 	interval = 60,
 	min_light = 0,
 	min_height = 1,
@@ -203,7 +203,7 @@ creatura.register_on_spawn("animalia:bird", function(self, pos)
 end)
 
 creatura.register_abm_spawn("animalia:frog", {
-	chance = 7500,
+	chance = ambient_spawn_chance,
 	interval = 60,
 	min_light = 0,
 	min_height = -1,
@@ -215,7 +215,7 @@ creatura.register_abm_spawn("animalia:frog", {
 })
 
 creatura.register_abm_spawn("animalia:tropical_fish", {
-	chance = 2000,
+	chance = ambient_spawn_chance,
 	min_height = -128,
 	max_height = 1,
 	min_group = 6,

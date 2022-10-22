@@ -15,3 +15,15 @@ guano_accumulation (Guano Accumulation) bool true
 
 #    If true, Guano can be used as fertilizer
 guano_fertilization (Guano Fertilization) bool true
+
+#    Chance for Common Mobs to spawn (1 in x nodes will spawn a mob every minute)
+animalia_common_chance (Common Mob Spawn Chance) int 40000 20000 60000
+
+#    Chance for Ambient Mobs to spawn (1 in x nodes will spawn a mob every minute)
+animalia_ambient_chance (Ambient Mob Spawn Chance) int 15000 5000 25000
+
+#    Chance for Pest Mobs to spawn (1 in x nodes will spawn a mob every minute)
+animalia_pest_chance (Pest Mob Spawn Chance) int 5000 100 15000
+
+#    Chance for Common Mobs to spawn (1 in x nodes will spawn a mob every minute)
+animalia_predator_chance (Predator Mob Spawn Chance) int 40000 20000 50000
