@@ -238,7 +238,7 @@ creatura.register_mob("animalia:wolf", {
 		if self.owner then
 			for i, object in ipairs(animalia.pets[self.owner]) do
 				if object == self.object then
-					animalia.pets[self.owner][i]
+					animalia.pets[self.owner][i] = nil
 				end
 			end
 		end
