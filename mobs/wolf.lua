@@ -236,9 +236,9 @@ creatura.register_mob("animalia:wolf", {
 	end,
 	deactivate_func = function(self)
 		if self.owner then
-			for i = 1, #animalia.pets[self.owner] do
-				if animalia.pets[self.owner][i] == self.object then
-					animalia.pets[self.owner][i] = nil
+			for i, object in ipairs(animalia.pets[self.owner]) do
+				if object == self.object then
+					animalia.pets[self.owner][i]
 				end
 			end
 		end
