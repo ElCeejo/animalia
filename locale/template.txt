@@ -1,0 +1,27 @@
+# textdomain: animalia
+Leather=
+Feather=
+Raw Beef=
+Steak=
+Raw Mutton=
+Cooked Mutton=
+Raw Rat=
+Cooked Rat=
+Raw Porkchop=
+Cooked Porkchop=
+Raw Poultry=
+Cooked Poultry=
+Raw Venison=
+Venison Steak=
+Chicken Egg=
+Turkey Egg=
+Bucket of Milk=
+Bucket of Guano=
+Song Bird Nest=
+Cat Toy=
+Nametag=
+Saddle=
+Shears=
+Animal Net=
+Guano=
+Animal Crate=

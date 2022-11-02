@@ -2,6 +2,8 @@
 -- Craftitems --
 ----------------
 
+local S = minetest.get_translator(minetest.get_current_modname())
+
 local random = math.random
 
 local walkable_nodes = {}
@@ -168,13 +170,13 @@ end
 -----------
 
 minetest.register_craftitem("animalia:leather", {
-	description = "Leather",
+	description = S("Leather"),
 	inventory_image = "animalia_leather.png",
 	groups = {flammable = 2, leather = 1},
 })
 
 minetest.register_craftitem("animalia:feather", {
-	description = "Feather",
+	description = S("Feather"),
 	inventory_image = "animalia_feather.png",
 	groups = {flammable = 2, feather = 1},
 })
@@ -182,14 +184,14 @@ minetest.register_craftitem("animalia:feather", {
 -- Meat --
 
 minetest.register_craftitem("animalia:beef_raw", {
-	description = "Raw Beef",
+	description = S("Raw Beef"),
 	inventory_image = "animalia_beef_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:beef_cooked", {
-	description = "Steak",
+	description = S("Steak"),
 	inventory_image = "animalia_beef_cooked.png",
 	on_use = minetest.item_eat(8),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -202,14 +204,14 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("animalia:mutton_raw", {
-	description = "Raw Mutton",
+	description = S("Raw Mutton"),
 	inventory_image = "animalia_mutton_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:mutton_cooked", {
-	description = "Cooked Mutton",
+	description = S("Cooked Mutton"),
 	inventory_image = "animalia_mutton_cooked.png",
 	on_use = minetest.item_eat(6),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -222,14 +224,14 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("animalia:rat_raw", {
-	description = "Raw Rat",
+	description = S("Raw Rat"),
 	inventory_image = "animalia_rat_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:rat_cooked", {
-	description = "Cooked Rat",
+	description = S("Cooked Rat"),
 	inventory_image = "animalia_rat_cooked.png",
 	on_use = minetest.item_eat(2),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -242,14 +244,14 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("animalia:porkchop_raw", {
-	description = "Raw Porkchop",
+	description = S("Raw Porkchop"),
 	inventory_image = "animalia_porkchop_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:porkchop_cooked", {
-	description = "Cooked Porkchop",
+	description = S("Cooked Porkchop"),
 	inventory_image = "animalia_porkchop_cooked.png",
 	on_use = minetest.item_eat(7),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -262,14 +264,14 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("animalia:poultry_raw", {
-	description = "Raw Poultry",
+	description = S("Raw Poultry"),
 	inventory_image = "animalia_poultry_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:poultry_cooked", {
-	description = "Cooked Poultry",
+	description = S("Cooked Poultry"),
 	inventory_image = "animalia_poultry_cooked.png",
 	on_use = minetest.item_eat(6),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -282,14 +284,14 @@ minetest.register_craft({
 })
 
 minetest.register_craftitem("animalia:venison_raw", {
-	description = "Raw Venison",
+	description = S("Raw Venison"),
 	inventory_image = "animalia_venison_raw.png",
 	on_use = minetest.item_eat(1),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
 minetest.register_craftitem("animalia:venison_raw_cooked", {
-	description = "Venison Steak",
+	description = S("Venison Steak"),
 	inventory_image = "animalia_venison_cooked.png",
 	on_use = minetest.item_eat(10),
 	groups = {flammable = 2, meat = 1, food_meat = 1},
@@ -302,13 +304,13 @@ minetest.register_craft({
 })
 
 register_egg("animalia:chicken_egg", {
-	description = "Chicken Egg",
+	description = S("Chicken Egg"),
 	inventory_image = "animalia_egg",
 	mob = "animalia:chicken"
 })
 
 register_egg("animalia:turkey_egg", {
-	description = "Turkey Egg",
+	description = S("Turkey Egg"),
 	inventory_image = "animalia_egg",
 	mob = "animalia:turkey"
 })
@@ -318,7 +320,7 @@ register_egg("animalia:turkey_egg", {
 ----------
 
 minetest.register_craftitem("animalia:bucket_milk", {
-	description = "Bucket of Milk",
+	description = S("Bucket of Milk"),
 	inventory_image = "animalia_milk_bucket.png",
 	stack_max = 1,
 	on_use = minetest.item_eat(8, "bucket:bucket_empty"),
@@ -378,7 +380,7 @@ end
 local guano_fert = minetest.settings:get_bool("guano_fertilization")
 
 minetest.register_craftitem("animalia:bucket_guano", {
-	description = "Bucket of Guano",
+	description = S("Bucket of Guano"),
 	inventory_image = "animalia_guano_bucket.png",
 	stack_max = 1,
 	groups = {flammable = 3},
@@ -426,7 +428,7 @@ minetest.register_craftitem("animalia:bucket_guano", {
 })
 
 minetest.register_node("animalia:nest_song_bird", {
-	description = "Song Bird Nest",
+	description = S("Song Bird Nest"),
 	paramtype = "light",
 	drawtype = "mesh",
 	mesh = "animalia_nest.obj",
@@ -451,7 +453,7 @@ minetest.register_node("animalia:nest_song_bird", {
 -----------
 
 minetest.register_craftitem("animalia:cat_toy", {
-	description = "Cat Toy",
+	description = S("Cat Toy"),
 	inventory_image = "animalia_cat_toy.png",
 	wield_image = "animalia_cat_toy.png^[transformFYR90",
 	stack_max = 1
@@ -501,25 +503,25 @@ local function nametag_rightclick(itemstack, player, pointed_thing)
 end
 
 minetest.register_craftitem("animalia:nametag", {
-	description = "Nametag",
+	description = S("Nametag"),
 	inventory_image = "animalia_nametag.png",
 	on_rightclick = nametag_rightclick,
 	on_secondary_use = nametag_rightclick
 })
 
 minetest.register_craftitem("animalia:saddle", {
-	description = "Saddle",
+	description = S("Saddle"),
 	inventory_image = "animalia_saddle.png",
 })
 
 minetest.register_tool("animalia:shears", {
-	description = "Shears",
+	description = S("Shears"),
 	inventory_image = "animalia_shears.png",
 	groups = {flammable = 2}
 })
 
 minetest.register_craftitem("animalia:net", {
-	description = "Animal Net",
+	description = S("Animal Net"),
 	inventory_image = "animalia_net.png",
 	stack_max = 1,
 	on_secondary_use = mob_storage_use,
@@ -556,7 +558,7 @@ minetest.register_craftitem("animalia:net", {
 -----------
 
 minetest.register_node("animalia:guano", {
-	description = "Guano",
+	description = S("Guano"),
 	tiles = {"animalia_guano.png"},
 	paramtype = "light",
 	buildable_to = true,
@@ -583,7 +585,7 @@ minetest.register_node("animalia:guano", {
 })
 
 minetest.register_node("animalia:crate", {
-	description = "Animal Crate",
+	description = S("Animal Crate"),
 	tiles = {"animalia_crate.png", "animalia_crate.png", "animalia_crate_side.png"},
 	groups = {choppy = 2},
 	stack_max = 1,
