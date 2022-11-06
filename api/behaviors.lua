@@ -496,7 +496,7 @@ function animalia.action_move_boid(self, pos2, timeout, method, speed_factor, an
 		local safe = true
 		local max_fall = (_self.max_fall or 0) > 0 and _self.max_fall
 		if max_fall then
-			safe = _self:is_pos_safe(goal)
+			safe = _self:is_pos_safe(pos2)
 		end
 		-- Boid calculation
 		local boid_dir, boids = move_data.boid_dir or creatura.get_boid_dir(self)
@@ -743,22 +743,25 @@ creatura.register_utility("animalia:wander_group", function(self)
 	local idle_duration = self.idle_time or 3
 	local center = self.object:get_pos()
 	if not center then return end
-	local group_tick = 500
+	local cntr_timer = 30
 	local move = self.wander_action or animalia.action_move_boid
 	local function func(_self)
-		group_tick = group_tick - 1
-		if group_tick <= 0 then
-			local pos = _self.object:get_pos()
-			if not pos then return end
+		local pos = _self.object:get_pos()
+		if not pos then return end
+		cntr_timer = cntr_timer - _self.dtime
+		if cntr_timer <= 0 then
 			local grp_pos = get_group_positions(_self)
 			center = animalia.get_average_pos(grp_pos) or pos
-			group_tick = 500
+			cntr_timer = 30
 		end
 		if not _self:get_action() then
-			local pos2 = _self:get_wander_pos(2, 3)
-			if random(move_chance) < 2
-			and vec_dist(pos2, center) < _self.tracking_range * 0.5 then
-				move(_self, pos2, 2, "creatura:obstacle_avoidance", 0.5, "walk", true)
+			if random(move_chance) < 2 then
+				local move_dir
+				if vec_dist(pos, center) > _self.tracking_range * 0.25 then
+					move_dir = vec_dir(pos, center)
+				end
+				local pos2 = _self:get_wander_pos(2, 3, move_dir)
+				move(_self, pos2, 2)
 			else
 				creatura.action_idle(_self, random(idle_duration))
 			end

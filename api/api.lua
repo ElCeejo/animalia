@@ -455,7 +455,7 @@ function animalia.add_trust(self, player, amount)
 	self:memorize("trust", self.trust)
 end
 
-function animalia.feed(self, clicker, breed, tame)
+function animalia.feed(self, clicker, tame, breed)
 	local yaw = self.object:get_yaw()
 	local pos = self.object:get_pos()
 	if not pos then return end
@@ -507,10 +507,13 @@ function animalia.feed(self, clicker, breed, tame)
 					texture = "creatura_particle_green.png"
 				})
 			end
-			if breed
-			and self.owner
-			and self.owner == name then
-				-- TODO: Breeding
+			if breed then
+				if self.breeding then return false end
+                if self.breeding_cooldown <= 0 then
+                    self.breeding = true
+                    self.breeding_cooldown = 60
+                    animalia.particle_spawner(pos, "heart.png", "float", minp, maxp)
+                end
 			end
 			self._despawn = self:memorize("_despawn", false)
 			self.despawn_after = self:memorize("despawn_after", false)

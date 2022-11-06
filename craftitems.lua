@@ -30,17 +30,17 @@ local function register_egg(name, def)
 	minetest.register_entity(def.mob .. "_egg_entity", {
 		hp_max = 1,
 		physical = true,
-		collisionbox = {0, 0, 0, 0, 0, 0},
+		collisionbox = {-0.1, -0.1, -0.1, 0.1, 0.1, 0.1},
 		visual = "sprite",
 		visual_size = {x = 0.5, y = 0.5},
-		textures = {"animalia_egg.png"},
+		textures = {def.inventory_image .. ".png"},
 		initial_sprite_basepos = {x = 0, y = 0},
 		is_visible = true,
 		on_step = function(self, _, moveresult)
 			local pos = self.object:get_pos()
 			if not pos then return end
 			if moveresult.collides then
-				for _, collision in ipairs(moveresult.collision) do
+				for _, collision in ipairs(moveresult.collisions) do
 					if collision.type == "nodes" then
 						minetest.add_particlespawner({
 							amount = 6,
@@ -61,7 +61,7 @@ local function register_egg(name, def)
 						break
 					end
 				end
-				if random(1, 3) < 2 then
+				if random(3) < 2 then
 					local object = minetest.add_entity(pos, def.mob)
 					local ent = object and object:get_luaentity()
 					ent.growth_scale = 0.7
@@ -313,6 +313,12 @@ register_egg("animalia:turkey_egg", {
 	mob = "animalia:turkey"
 })
 
+register_egg("animalia:song_bird_egg", {
+	description = "Song Bird Egg",
+	inventory_image = "animalia_song_bird_egg",
+	mob = "animalia:bird"
+})
+
 ----------
 -- Misc --
 ----------
@@ -434,7 +440,7 @@ minetest.register_node("animalia:nest_song_bird", {
 	sunlight_propagates = true,
 	walkable = false,
 	stack_max = 1,
-	groups = {snappy = 3, flammable = 3},
+	groups = {snappy = 3, flammable = 3, falling_node = 1},
 	selection_box = {
 		type = "fixed",
 		fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
@@ -443,7 +449,21 @@ minetest.register_node("animalia:nest_song_bird", {
 		type = "fixed",
 		fixed = {-5 / 16, -0.5, -5 / 16, 5 / 16, -0.31, 5 / 16},
 	},
-	drops = "default:stick"
+	drop = {
+		items = {
+			{
+				items = {"animalia:song_bird_egg"},
+				rarity = 2,
+			},
+			{
+				items = {"animalia:song_bird_egg 2"},
+				rarity = 4,
+			},
+			{
+				items = {"default:stick"},
+			}
+		}
+	},
 })
 
 -----------

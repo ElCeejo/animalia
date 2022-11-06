@@ -168,10 +168,11 @@ creatura.register_abm_spawn("animalia:bird", {
 	min_light = 0,
 	min_height = 1,
 	max_height = 1024,
-	min_group = 12,
-	max_group = 16,
+	min_group = 6,
+	max_group = 12,
 	spawn_cap = 12,
-	nodes = {"group:leaves"}
+	nodes = {"group:leaves"},
+	neighbors = {"group:leaves"}
 })
 
 creatura.register_on_spawn("animalia:bird", function(self, pos)

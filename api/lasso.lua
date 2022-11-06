@@ -37,6 +37,8 @@ minetest.register_entity("animalia:lasso_entity", {
 		if type(parent) == "string" then
 			parent = minetest.get_player_by_name(parent)
 			local tgt_pos = parent:get_pos()
+			tgt_pos.y = tgt_pos.y + 1
+			point_to.y = point_to.y + pointed_ent.height * 0.5
 			local dist = vec_dist(pos, tgt_pos)
 			if dist > 0.5 then
 				self.object:set_pos(tgt_pos)

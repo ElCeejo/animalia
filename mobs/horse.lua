@@ -168,7 +168,6 @@ creatura.register_mob("animalia:horse", {
 		animalia.initialize_api(ent)
 		animalia.protect_from_despawn(ent)
 	end,
-	wander_action = animalia.action_move_flock,
 	utility_stack = {
 		{
 			utility = "animalia:wander_group",
