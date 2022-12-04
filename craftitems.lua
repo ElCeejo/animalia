@@ -4,19 +4,9 @@
 
 local random = math.random
 
-local walkable_nodes = {}
+local vec_add, vec_sub = vector.add, vector.subtract
 
 local color = minetest.colorize
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_nodes) do
-		if name ~= "air" and name ~= "ignore" then
-			if minetest.registered_nodes[name].walkable then
-				table.insert(walkable_nodes, name)
-			end
-		end
-	end
-end)
 
 local function correct_name(str)
 	if str then
@@ -288,7 +278,7 @@ minetest.register_craftitem("animalia:venison_raw", {
 	groups = {flammable = 2, meat = 1, food_meat = 1},
 })
 
-minetest.register_craftitem("animalia:venison_raw_cooked", {
+minetest.register_craftitem("animalia:venison_cooked", {
 	description = "Venison Steak",
 	inventory_image = "animalia_venison_cooked.png",
 	on_use = minetest.item_eat(10),
@@ -388,45 +378,38 @@ minetest.register_craftitem("animalia:bucket_guano", {
 	inventory_image = "animalia_guano_bucket.png",
 	stack_max = 1,
 	groups = {flammable = 3},
-	on_place = function(itemstack, placer, pointed_thing)
-		local pos = pointed_thing.above
-		if pos then
-			local under = minetest.get_node(pointed_thing.under)
-			local node = minetest.registered_nodes[under.name]
-			if node and node.on_rightclick then
-				return node.on_rightclick(pointed_thing.under, under, placer,
-										  itemstack)
-			end
-			if pos
-			and not minetest.is_protected(pos, placer:get_player_name()) then
-				if guano_fert then
-					local nodes = minetest.find_nodes_in_area_under_air(
-						vector.subtract(pos, 5),
-						vector.add(pos, 5),
-						{"group:grass", "group:plant", "group:flora"}
-					)
-					if #nodes > 0 then
-						for n = 1, #nodes do
-							grow_crops(nodes[n], minetest.get_node(nodes[n]).name)
-						end
-						local replace = itemstack:get_meta():get_string("original_item")
-						if not replace
-						or replace == "" then
-							replace = "bucket:bucket_empty"
-						end
-						itemstack:set_name(replace)
-					end
-				else
-					minetest.set_node(pos, {name = "animalia:guano"})
-					local replace = itemstack:get_meta():get_string("original_item")
-					if not replace
-					or replace == "" then
-						replace = "bucket:bucket_empty"
-					end
-					itemstack:set_name(replace)
-				end
+	on_place = function(itemstack, placer, pointed)
+		local pos = pointed.under
+		local node = minetest.get_node(pos)
+		if node
+		and node.on_rightclick then
+			return node.on_rightclick(pointed_thing.under, under, placer, itemstack)
+		end
+		if minetest.is_protected(pos, placer:get_player_name()) then
+			return
+		end
+		local crops = minetest.find_nodes_in_area_under_air(
+			vec_sub(pos, 5),
+			vec_add(pos, 5),
+			{"group:grass", "group:plant", "group:flora", "group:crop"}
+		) or {}
+		local crops_grown = 0
+		for _, crop in ipairs(crops) do
+			local crop_name = minetest.get_node(crop).name
+			local growth_stage = tonumber(crop_name:sub(-1)) or 1
+			local new_name = crop_name:sub(1, #crop_name - 1) .. (growth_stage + 1)
+			local new_def = minetest.registered_nodes[new_name]
+			if new_def then
+				local p2 = new_def.place_param2 or 1
+				minetest.set_node(crop, {name = new_name, param2 = p2})
+				crops_grown = crops_grown + 1
 			end
 		end
+		if crops_grown < 1 then minetest.set_node(pointed.above, {name = "animalia:guano"}) end
+		local meta = itemstack:get_meta()
+		local og_item = meta:get_string("original_item")
+		if og_item == "" then og_item = "bucket:bucket_empty" end
+		itemstack:replace(ItemStack(og_item))
 		return itemstack
 	end
 })
@@ -591,12 +574,16 @@ minetest.register_node("animalia:guano", {
 	},
 	groups = {crumbly = 3, falling_node = 1, not_in_creative_inventory = 1},
 	on_punch = function(pos, _, player)
-		local item_name = player:get_wielded_item():get_name()
-		if item_name:find("bucket")
-		and item_name:find("empty") then
-			local stack = ItemStack("animalia:bucket_guano")
+		local inv = player:get_inventory()
+		local stack = ItemStack("animalia:bucket_guano")
+		if not inv:room_for_item("main", stack) then return end
+		local item = player:get_wielded_item()
+		local item_name = item:get_name()
+		if item_name:match("bucket_empty") then
+			item:take_item()
 			stack:get_meta():set_string("original_item", item_name)
-			player:set_wielded_item(stack)
+			inv:add_item("main", stack)
+			player:set_wielded_item(item)
 			minetest.remove_node(pos)
 		end
 	end

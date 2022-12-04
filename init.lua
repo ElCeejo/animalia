@@ -79,18 +79,13 @@ minetest.register_on_mods_loaded(function()
 			local on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
 				old_punch(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
 				local pos = self.object:get_pos()
-				if not pos then
-					return
-				end
-				if puncher:is_player()
-				and animalia.pets[puncher:get_player_name()] then
-					local pets = animalia.pets[puncher:get_player_name()]
-					if #pets < 1 then return end
-					for i = 1, #pets do
-						local ent = pets[i]:get_luaentity()
-						if ent.assist_owner then
-							ent.owner_target = self
-						end
+				if not pos then return end
+				local name = puncher:is_player() and puncher:get_player_name()
+				local pets = (name and animalia.pets[name]) or {}
+				for _, obj in ipairs(pets) do
+					local ent = obj and obj:get_luaentity()
+					if ent.assist_owner then
+						ent.owner_target = self
 					end
 				end
 			end

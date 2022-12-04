@@ -36,6 +36,7 @@ minetest.register_entity("animalia:lasso_entity", {
 		if not pos or not parent or not point_to then self.object:remove() return end
 		if type(parent) == "string" then
 			parent = minetest.get_player_by_name(parent)
+			if not parent then self.object:remove() return end
 			local tgt_pos = parent:get_pos()
 			tgt_pos.y = tgt_pos.y + 1
 			point_to.y = point_to.y + pointed_ent.height * 0.5
@@ -126,7 +127,7 @@ local function add_lasso(self, origin)
 	-- Attachment point of entity
 	ent._attached = origin
 	if type(origin) == "string" then
-		local player = minetest.get_player_by_name(origin)
+		--local player = minetest.get_player_by_name(origin)
 		--object:set_attach(player)
 	else
 		object:set_pos(origin)
@@ -171,22 +172,24 @@ function animalia.update_lasso_effects(self)
 			using_lasso[lasso] = self
 			local name = lasso
 			lasso = minetest.get_player_by_name(lasso)
-			if lasso:get_wielded_item():get_name() ~= "animalia:lasso" then
-				using_lasso[name] = nil
-				self._lasso_ent:remove()
-				self._lasso_ent = nil
-				self._lassod_to = nil
-				self:forget("_lassod_to")
+			if lasso then
+				if lasso:get_wielded_item():get_name() ~= "animalia:lasso" then
+					using_lasso[name] = nil
+					self._lasso_ent:remove()
+					self._lasso_ent = nil
+					self._lassod_to = nil
+					self:forget("_lassod_to")
+					return
+				end
+				local lasso_pos = lasso:get_pos()
+				local dist = vec_dist(pos, lasso_pos)
+				local vel = self.object:get_velocity()
+				if not vel or dist < 8 and self.touching_ground then return end
+				if vec_len(vel) < 8 then
+					self.object:add_velocity(get_rope_velocity(pos, lasso_pos, dist))
+				end
 				return
 			end
-			local lasso_pos = lasso:get_pos()
-			local dist = vec_dist(pos, lasso_pos)
-			local vel = self.object:get_velocity()
-			if not vel or dist < 8 and self.touching_ground then return end
-			if vec_len(vel) < 8 then
-				self.object:add_velocity(get_rope_velocity(pos, lasso_pos, dist))
-			end
-			return
 		elseif type(lasso) == "table" then
 			local dist = vec_dist(pos, lasso)
 			local vel = self.object:get_velocity()

@@ -58,9 +58,10 @@ if farming_enabled then
 		for name, def in pairs(minetest.registered_nodes) do
 			local item_string = name:sub(1, #name - 2)
 			local item_name = item_string:split(":")[2]
+			local growth_stage = tonumber(name:sub(-1)) or 1
 			if farming.registered_plants[item_string]
 			or farming.registered_plants[item_name] then
-				def.groups.crop = 2
+				def.groups.crop = growth_stage
 			end
 			minetest.register_node(":" .. name, def)
 		end
@@ -1032,7 +1033,7 @@ creatura.register_utility("animalia:follow_player", function(self, player, force
 end)
 
 creatura.register_utility("animalia:flee_from_target", function(self, target)
-	local los_timeout = 3
+	local los_timeout = 5
 	local function func(_self)
 		local pos = _self.object:get_pos()
 		if not pos then return end
@@ -1041,16 +1042,16 @@ creatura.register_utility("animalia:flee_from_target", function(self, target)
 		if not los then
 			los_timeout = los_timeout - _self.dtime
 		else
-			los_timeout = 3
+			los_timeout = 5
 		end
 		if los_timeout <= 0 then self._puncher = nil return true end
 		local dist = vec_dist(pos, tgt_pos)
 		if dist > _self.tracking_range then self._puncher = nil return true end
 		if not _self:get_action() then
 			local flee_dir = vec_dir(tgt_pos, pos)
-			local pos2 = _self:get_wander_pos(2, 3, flee_dir)
+			local pos2 = _self:get_wander_pos(1, 2, flee_dir)
 			local anim = (_self.animations["run"] and "run") or "walk"
-			creatura.action_move(_self, pos2, 2, "creatura:context_based_steering", 1, anim)
+			creatura.action_move(_self, pos2, 1, "creatura:context_based_steering", 1, anim)
 		end
 	end
 	self:set_utility(func)
@@ -1560,7 +1561,7 @@ creatura.register_utility("animalia:mount_horse", function(self, player)
 		and vel.y < 1 then
 			_self.object:add_velocity({
 				x = 0,
-				y = _self.jump_power,
+				y = _self.jump_power * 2,
 				z = 0
 			})
 		elseif not _self.touching_ground then

@@ -28,7 +28,7 @@ creatura.register_mob("animalia:bird", {
 	-- Entity Physics
 	stepheight = 1.1,
 	max_fall = 0,
-	turn_rate = 6,
+	turn_rate = 3,
 	boid_seperation = 0.4,
 	-- Visuals
 	mesh = "animalia_bird.b3d",
