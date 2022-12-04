@@ -201,8 +201,6 @@ creatura.register_mob("animalia:bat", {
 	on_punch = animalia.punch
 })
 
-creatura.register_spawn_egg("animalia:bat", "392517", "321b0b")
-
 creatura.register_spawn_item("animalia:bat", {
 	col1 = "392517",
 	col2 = "321b0b"
