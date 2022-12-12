@@ -38,7 +38,7 @@ local generate_mobs = {
 	["animalia:chicken"] = "Chicken",
 	["animalia:cow"] = "Cow",
 	["animalia:owl"] = "Owl",
-	--["animalia:tropical_fish"] = "Tropical Fish",
+	["animalia:tropical_fish"] = "Tropical Fish",
 	["animalia:fox"] = "Fox",
 	["animalia:frog"] = "Frog",
 	["animalia:horse"] = "Horse",
@@ -93,15 +93,24 @@ local function max_health(name)
 	return minetest.registered_entities[name].max_health or 20
 end
 
-local function mob_textures(name)
+local function mob_textures(name, mesh_no)
 	local def = minetest.registered_entities[name]
-	return def.textures or {unpack(def.male_textures), unpack(def.female_textures)}
+	local textures = def.textures
+	if def.male_textures
+	or def.female_textures then
+		textures = {unpack(def.male_textures), unpack(def.female_textures)}
+	end
+	if def.mesh_textures then
+		textures = def.mesh_textures[mesh_no or 1]
+	end
+	return textures
 end
 
 local biome_cubes = {}
 
 local function generate_page(mob)
 	local name = mob:split(":")[2]
+	local def = minetest.registered_entities[mob]
 	local page = {
 		{ -- Info
 			element_type = "label",
@@ -114,8 +123,9 @@ local function generate_page(mob)
 			element_type = "model",
 			offset = {x = 1.5, y = 1.5},
 			size = {x = 5, y = 5},
+			mesh_iter = def.meshes and 1,
 			texture_iter = 1,
-			text = "mesh;animalia_bat.b3d;" .. mob_textures(mob)[1] .. ";-30,225;false;false;0,0;0"
+			text = "mesh;" .. def.mesh .. ";" .. mob_textures(mob)[1] .. ";-30,225;false;false;0,0;0"
 		},
 		{ -- Spawn Biome
 			element_type = "image",
@@ -228,82 +238,6 @@ minetest.register_on_mods_loaded(function()
 				start_iter = 12,
 				offset = {x = 1.75, y = 1.5}
 			}
-		},
-		["animalia:tropical_fish"] = {
-			{ -- Info
-				element_type = "label",
-				center_text = true,
-				font_size = 20,
-				offset = {x = 8, y = 1.5},
-				file = "animalia_libri_tropical_fish.txt"
-			},
-			{ -- Image
-				element_type = "model",
-				offset = {x = 1.5, y = 1.5},
-				size = {x = 5, y = 5},
-				texture_iter = 1,
-				models = {
-					"animalia_clownfish.b3d",
-					"animalia_clownfish.b3d",
-					"animalia_angelfish.b3d"
-				},
-				text = "mesh;animalia_clownfish.b3d;" .. mob_textures("animalia:tropical_fish")[1] .. ";-30,225;false;false;0,0;0"
-			},
-			{ -- Spawn Biome
-				element_type = "image",
-				offset = {x = 0.825, y = 8.15},
-				size = {x = 1, y = 1},
-				biome_iter = 1,
-				text = biome_cubes[get_spawn_biomes("animalia:tropical_fish")[1]]
-			},
-			{ -- Biome Label
-				element_type = "tooltip",
-				offset = {x = 0.825, y = 8.15},
-				size = {x = 1, y = 1},
-				biome_iter = 1,
-				text = correct_string(get_spawn_biomes("animalia:tropical_fish")[1])
-			},
-			libri.render_element({ -- Health Icon
-				element_type = "image",
-				offset = {x = 2.535, y = 8.15},
-				size = {x = 1, y = 1},
-				text = "animalia_libri_health_fg.png"
-			}),
-			libri.render_element({ -- Health Amount
-				element_type = "label",
-				offset = {x = 3.25, y = 9},
-				text = "x" .. max_health("animalia:tropical_fish") / 2
-			}),
-			libri.render_element({ -- Lasso Icon
-				element_type = "item_image",
-				offset = {x = 4.25, y = 8.15},
-				size = {x = 1, y = 1},
-				text = "animalia:lasso"
-			}),
-			libri.render_element({ -- Lasso Indication Icon
-				element_type = "image",
-				offset = {x = 4.75, y = 8.75},
-				size = {x = 0.5, y = 0.5},
-				text = "animalia_libri_" .. can_lasso("animalia:tropical_fish") .. "_icon.png"
-			}),
-			libri.render_element({ -- Net Icon
-				element_type = "item_image",
-				offset = {x = 6, y = 8.15},
-				size = {x = 1, y = 1},
-				text = "animalia:net"
-			}),
-			libri.render_element({ -- Net Indication Icon
-				element_type = "image",
-				offset = {x = 6.5, y = 8.75},
-				size = {x = 0.5, y = 0.5},
-				text = "animalia_libri_" .. can_net("animalia:tropical_fish") .. "_icon.png"
-			}),
-			libri.render_element({ -- Styling
-				element_type = "image",
-				offset = {x = -0.7, y = -0.5},
-				size = {x = 17.5, y = 11.5},
-				text = "animalia_libri_info_fg.png"
-			})
 		}
 	}
 	for mob in pairs(generate_mobs) do
@@ -462,13 +396,19 @@ local function iterate_libri_images()
 		if page ~= "home" then
 			for _, info in ipairs(elements) do
 				if info.texture_iter then
-					local textures = mob_textures(page)
-					if textures[info.texture_iter + 1] then
-						info.texture_iter = info.texture_iter + 1
-					else
-						info.texture_iter = 1
+					local def = minetest.registered_entities[page]
+					local textures = mob_textures(page, info.mesh_iter)
+
+					local tex_i = info.texture_iter
+					info.texture_iter = (textures[tex_i + 1] and tex_i + 1) or 1
+
+					local mesh_i = info.mesh_iter
+					if info.texture_iter < 2 then -- Only iterate mesh if all textures have been shown
+						info.mesh_iter = def.meshes and ((def.meshes[mesh_i + 1] and mesh_i + 1) or 1)
+						textures = mob_textures(page, info.mesh_iter)
 					end
-					local mesh = (info.models and info.models[info.texture_iter]) or minetest.registered_entities[page].mesh
+
+					local mesh = (info.mesh_iter and def.meshes[info.mesh_iter]) or def.mesh
 					info.text = "mesh;" .. mesh .. ";" .. textures[info.texture_iter] .. ";-30,225;false;false;0,0;0]"
 				end
 				if info.biome_iter then

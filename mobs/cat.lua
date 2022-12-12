@@ -323,9 +323,12 @@ creatura.register_mob("animalia:cat", {
 		self:memorize("trust", self.trust)
 	end,
 	deactivate_func = function(self)
-		if self.owner
-		and animalia.pets[self.owner][self.object] then
-			animalia.pets[self.owner][self.object] = nil
+		if self.owner then
+			for i, object in ipairs(animalia.pets[self.owner] or {}) do
+				if object == self.object then
+					animalia.pets[self.owner][i] = nil
+				end
+			end
 		end
 	end
 })

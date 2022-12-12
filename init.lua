@@ -84,7 +84,8 @@ minetest.register_on_mods_loaded(function()
 				local pets = (name and animalia.pets[name]) or {}
 				for _, obj in ipairs(pets) do
 					local ent = obj and obj:get_luaentity()
-					if ent.assist_owner then
+					if ent
+					and ent.assist_owner then
 						ent.owner_target = self
 					end
 				end

@@ -222,6 +222,7 @@ end
 ------------------------
 -- Environment Access --
 ------------------------
+
 function animalia.get_nearby_mate(self)
 	local pos = self.object:get_pos()
 	if not pos then return end

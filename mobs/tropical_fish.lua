@@ -18,16 +18,23 @@ creatura.register_mob("animalia:tropical_fish", {
 	boid_seperation = 0.3,
 	bouyancy_multiplier = 0,
 	-- Visuals
-	mesh = "animalia_clownfish.b3d",
+	meshes = {
+		"animalia_clownfish.b3d",
+		"animalia_angelfish.b3d"
+	},
 	hitbox = {
 		width = 0.15,
 		height = 0.3
 	},
-	visual_size = {x = 7, y = 7},
-	textures = {
-		"animalia_clownfish.png",
-		"animalia_blue_tang.png",
-		"animalia_angelfish.png"
+	visual_size = {x = 10, y = 10},
+	mesh_textures = {
+		{
+			"animalia_clownfish.png",
+			"animalia_blue_tang.png"
+		},
+		{
+			"animalia_angelfish.png"
+		}
 	},
 	animations = {
 		swim = {range = {x = 1, y = 20}, speed = 20, frame_blend = 0.3, loop = true},
@@ -61,11 +68,6 @@ creatura.register_mob("animalia:tropical_fish", {
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
-		if self.texture_no == 3 then
-			self.object:set_properties({
-				mesh = "animalia_angelfish.b3d",
-			})
-		end
 	end,
 	step_func = function(self)
 		animalia.step_timers(self)
