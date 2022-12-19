@@ -42,7 +42,6 @@ creatura.register_mob("animalia:cow", {
 		"animalia_cow_4.png",
 		"animalia_cow_5.png"
 	},
-	stepheight = 1.1,
 	-- Creatura Props
 	max_health = 20,
 	armor_groups = {fleshy = 100},
