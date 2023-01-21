@@ -109,7 +109,7 @@ if minetest.get_modpath("default")
 and minetest.get_modpath("player_api") then
 	animate_player = player_api.set_animation
 elseif minetest.get_modpath("mcl_player") then
-	animate_player = mcl_player.set_animation
+	animate_player = mcl_player.player_set_animation
 end
 
 -----------------------
