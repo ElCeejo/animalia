@@ -8,8 +8,6 @@ local path = minetest.get_modpath(minetest.get_current_modname())
 
 local color = minetest.colorize
 
-local page_spacing = 0.5
-
 local libri_bg = {
 	"formspec_version[3]",
 	"size[16,10]",
@@ -33,7 +31,6 @@ local pages = {}
 
 local generate_mobs = {
 	["animalia:bat"] = "Bat",
-	["animalia:bird"] = "Song Bird",
 	["animalia:cat"] = "Cat",
 	["animalia:chicken"] = "Chicken",
 	["animalia:cow"] = "Cow",
@@ -46,6 +43,7 @@ local generate_mobs = {
 	["animalia:rat"] = "Rat",
 	["animalia:reindeer"] = "Reindeer",
 	["animalia:sheep"] = "Sheep",
+	["animalia:song_bird"] = "Song Bird",
 	["animalia:turkey"] = "Turkey",
 	["animalia:wolf"] = "Wolf",
 }
@@ -53,7 +51,6 @@ local generate_mobs = {
 
 local spawn_biomes = {
 	["animalia:bat"] = "cave",
-	["animalia:bird"] = "temperate",
 	["animalia:cat"] = "urban",
 	["animalia:chicken"] = "tropical",
 	["animalia:cow"] = "grassland",
@@ -66,6 +63,7 @@ local spawn_biomes = {
 	["animalia:rat"] = "urban",
 	["animalia:reindeer"] = "boreal",
 	["animalia:sheep"] = "grassland",
+	["animalia:song_bird"] = "temperate",
 	["animalia:turkey"] = "boreal",
 	["animalia:wolf"] = "boreal",
 }
@@ -310,13 +308,14 @@ function libri.render_element(def, meta, playername)
 			local filename = path .. "/libri/" .. def.file
 			local file = io.open(filename)
 			if file then
-				local i = 0
-				local full_text = ""
+				local text = ""
 				for line in file:lines() do
-					full_text = full_text .. line .. "\n"
+					text = text .. line .. "\n"
 				end
 				local total_offset = (offset_x + (0.35 - 0.35 * font_size_x)) .. "," .. offset_y
-				form = form .. "hypertext[" .. total_offset .. ";8,9;text;<global color=#000000 size=".. font_size .. " halign=center>" .. full_text .. "]"
+				form = form ..
+					"hypertext[" ..	total_offset .. ";8,9;text;<global color=#000000 size="..
+						font_size .. " halign=center>" .. text .. "]"
 				file:close()
 			end
 		else

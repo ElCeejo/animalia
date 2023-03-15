@@ -1,38 +1,74 @@
-----------
--- Wolf --
-----------
+---------
+-- Fox --
+---------
+
+local vec_dir, vec_dist = vector.direction, vector.direction
+local dir2yaw = minetest.dir_to_yaw
+
+local function get_food_pos(self)
+	local _, pos = animalia.get_dropped_food(self)
+
+	return pos
+end
+
+local function eat_dropped_food(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local food = animalia.get_dropped_food(self, nil, self.width + 1)
+
+	local food_ent = food and food:get_luaentity()
+	if food_ent then
+		local food_pos = food:get_pos()
+
+		local stack = ItemStack(food_ent.itemstring)
+		if stack
+		and stack:get_count() > 1 then
+			stack:take_item()
+			food_ent.itemstring = stack:to_string()
+		else
+			food:remove()
+		end
+
+		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
+		animalia.add_food_particle(self, stack:get_name())
+
+		if self.on_eat_drop then
+			self:on_eat_drop()
+		end
+		return true
+	end
+end
+
 
 creatura.register_mob("animalia:fox", {
-	-- Stats
-	max_health = 15,
-	armor_groups = {fleshy = 100},
-	damage = 4,
-	speed = 5,
-	tracking_range = 24,
-	despawn_after = 2000,
-	-- Entity Physics
-	stepheight = 1.1,
-	max_fall = 3,
-	-- Visuals
+	-- Engine Props
+	visual_size = {x = 10, y = 10},
 	mesh = "animalia_fox.b3d",
+	textures = {
+		"animalia_fox_1.png"
+	},
+	makes_footstep_sound = false,
+
+	-- Creatura Props
+	max_health = 10,
+	armor_groups = {fleshy = 100},
+	damage = 2,
+	speed = 4,
+	tracking_range = 16,
+	max_boids = 0,
+	despawn_after = 500,
+	stepheight = 1.1,
+	sound = {},
 	hitbox = {
 		width = 0.35,
-		height = 0.7
-	},
-	visual_size = {x = 10, y = 10},
-	textures = {
-		"animalia_fox_1.png",
+		height = 0.5
 	},
 	animations = {
 		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 41, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
 		run = {range = {x = 41, y = 59}, speed = 45, frame_blend = 0.3, loop = true},
 	},
-	-- Misc
-	makes_footstep_sound = true,
-	flee_puncher = true,
-	catch_with_net = true,
-	catch_with_lasso = true,
 	follow = {
 		"animalia:rat_raw",
 		"animalia:mutton_raw",
@@ -40,19 +76,23 @@ creatura.register_mob("animalia:fox", {
 		"animalia:porkchop_raw",
 		"animalia:poultry_raw"
 	},
+
+	-- Animalia Props
+	skittish_wander = true,
+	flee_puncher = true,
+	catch_with_net = true,
+	catch_with_lasso = true,
 	head_data = {
 		offset = {x = 0, y = 0.18, z = 0},
 		pitch_correction = -67,
 		pivot_h = 0.65,
 		pivot_v = 0.65
 	},
-	-- Function
-	on_eat_drop = function(self)
-		animalia.protect_from_despawn(self)
-	end,
+
+	-- Functions
 	utility_stack = {
 		{
-			utility = "animalia:wander_skittish",
+			utility = "animalia:wander",
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
@@ -89,7 +129,7 @@ creatura.register_mob("animalia:fox", {
 				if not tgt_pos then self._puncher = nil return 0 end
 				local sneaking = target:get_player_control().sneak
 				if not sneaking then
-					local dist = vector.distance(pos, tgt_pos)
+					local dist = vec_dist(pos, tgt_pos)
 					local score = (self.tracking_range - dist) / self.tracking_range
 					self._puncher = target
 					return score / 2, {self, target}
@@ -99,16 +139,10 @@ creatura.register_mob("animalia:fox", {
 			end
 		},
 		{
-			utility = "animalia:walk_to_food",
+			utility = "animalia:walk_to_pos_and_interact",
 			get_score = function(self)
-				local cooldown = self.eat_cooldown or 0
-				if cooldown > 0 then
-					self.eat_cooldown = cooldown - 1
-					return 0
-				end
-				local food_item = animalia.get_dropped_food(self)
-				if food_item then
-					return 0.7, {self, food_item}
+				if math.random(14) < 2 then
+					return 0.7, {self, get_food_pos, eat_dropped_food, nil, 12}
 				end
 				return 0
 			end
@@ -137,33 +171,38 @@ creatura.register_mob("animalia:fox", {
 			end
 		}
 	},
+
+	on_eat_drop = function(self)
+		animalia.protect_from_despawn(self)
+	end,
+
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.5, 0.75)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 	end,
-	death_func = function(self)
-		if self:get_utility() ~= "animalia:die" then
-			self:initiate_utility("animalia:die", self)
-		end
-	end,
+
+	death_func = animalia.death_func,
+
 	on_rightclick = function(self, clicker)
-		if not clicker:is_player() then return end
-		local name = clicker:get_player_name()
-		local passive = true
-		if animalia.feed(self, clicker, passive, passive) then
+		if animalia.feed(self, clicker, true, true) then
 			return
 		end
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
 	end,
+
 	on_punch = animalia.punch
 })
 
-creatura.register_spawn_egg("animalia:fox", "d0602d" ,"c9c9c9")
+creatura.register_spawn_item("animalia:fox", {
+	col1 = "d0602d",
+	col2 = "c9c9c9"
+})

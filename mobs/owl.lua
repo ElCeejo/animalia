@@ -2,18 +2,7 @@
 -- Owl --
 ---------
 
-local follows = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_items) do
-		if name:match(":seed_")
-		or name:match("_seed") then
-			table.insert(follows, name)
-		end
-	end
-end)
-
-local random = math.random
+local abs = math.abs
 
 local vec_dist = vector.distance
 
@@ -42,26 +31,26 @@ local function get_home_pos(self)
 end
 
 creatura.register_mob("animalia:owl", {
-	-- Stats
-	max_health = 10,
-	armor_groups = {fleshy = 100},
-	damage = 2,
-	speed = 5,
-	tracking_range = 32,
-	despawn_after = 1000,
-	-- Entity Physics
-	stepheight = 1.1,
-	max_fall = 0,
-	turn_rate = 4,
-	-- Visuals
+	-- Engine Props
+	visual_size = {x = 10, y = 10},
 	mesh = "animalia_owl.b3d",
+	textures = {
+		"animalia_owl.png"
+	},
+	makes_footstep_sound = false,
+
+	-- Creatura Props
+	max_health = 10,
+	damage = 2,
+	speed = 4,
+	tracking_range = 16,
+	max_boids = 0,
+	despawn_after = 500,
+	max_fall = 0,
+	sound = {}, -- TODO
 	hitbox = {
 		width = 0.15,
 		height = 0.3
-	},
-	visual_size = {x = 10, y = 10},
-	textures = {
-		"animalia_owl.png"
 	},
 	animations = {
 		stand = {range = {x = 1, y = 60}, speed = 20, frame_blend = 0.3, loop = true},
@@ -69,19 +58,24 @@ creatura.register_mob("animalia:owl", {
 		glide = {range = {x = 101, y = 119}, speed = 20, frame_blend = 0.2, loop = true},
 		fly_punch = {range = {x = 131, y = 149}, speed = 20, frame_blend = 0.1, loop = false},
 		eat = {range = {x = 161, y = 179}, speed = 20, frame_blend = 0.1, loop = false}
-
 	},
-	-- Misc
-	makes_footstep_sound = true,
+	follow = {"animalia:rat_raw"},
+	drops = {
+		{name = "animalia:feather", min = 1, max = 2, chance = 1}
+	},
+
+	-- Animalia Props
+	flee_puncher = true, -- TODO
 	catch_with_net = true,
 	catch_with_lasso = false,
-	--sounds = {},
-	follow = {"animalia:rat_raw"},
-	-- Function
+	roost_action = animalia.action_roost,
+
+	-- Functions
 	on_eat_drop = function(self)
 		animalia.protect_from_despawn(self)
 		get_home_pos(self)
 	end,
+
 	is_home = function(pos, home_pos)
 		if abs(pos.x - home_pos.x) < 0.5
 		and abs(pos.z - home_pos.z) < 0.5 then
@@ -97,11 +91,13 @@ creatura.register_mob("animalia:owl", {
 		end
 		return false
 	end,
+
 	wander_action = creatura.action_move,
+
 	utility_stack = {
 		{
 			utility = "animalia:aerial_wander",
-			step_delay = 0.25,
+			--step_delay = 0.25,
 			get_score = function(self)
 				if not self.is_landed
 				or self.in_liquid then
@@ -126,7 +122,7 @@ creatura.register_mob("animalia:owl", {
 				local home = animalia.is_day and self.home_position
 				if home
 				and vec_dist(pos, home) < 8 then
-					return 0.6, {self}
+					return 0.2, {self}
 				end
 				return 0
 			end
@@ -141,15 +137,19 @@ creatura.register_mob("animalia:owl", {
 				end
 				local food_item = animalia.get_dropped_food(self, "animalia:rat_raw")
 				if food_item then
-					return 0.7, {self, food_item}
+					return 0.3, {self, food_item}
 				end
 				return 0
 			end
 		},
 		{
-			utility = "animalia:glide_attack_target",
+			utility = "animalia:raptor_hunt",
 			get_score = function(self)
-				local target = self._target or creatura.get_nearby_object(self, {"animalia:rat", "animalia:bird"})
+				if math.random(12) > 1
+				and (self:get_utility() or "") ~= "animalia:raptor_hunt" then
+					return 0
+				end
+				local target = self._target or creatura.get_nearby_object(self, {"animalia:rat", "animalia:song_bird"})
 				local tgt_pos = target and target:get_pos()
 				if tgt_pos then
 					return 0.4, {self, target}
@@ -158,6 +158,7 @@ creatura.register_mob("animalia:owl", {
 			end
 		},
 	},
+
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
@@ -174,6 +175,7 @@ creatura.register_mob("animalia:owl", {
 			get_home_pos(self)
 		end
 	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.do_growth(self, 60)
@@ -186,11 +188,13 @@ creatura.register_mob("animalia:owl", {
 			self.speed = 1
 		end
 	end,
+
 	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
 	end,
+
 	deactivate_func = function(self)
 		if self:get_utility()
 		and self:get_utility() == "animalia:fly_to_roost" then
@@ -203,6 +207,7 @@ creatura.register_mob("animalia:owl", {
 			end
 		end
 	end,
+
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
 			return
@@ -211,7 +216,11 @@ creatura.register_mob("animalia:owl", {
 			return
 		end
 	end,
+
 	on_punch = animalia.punch
 })
 
-creatura.register_spawn_egg("animalia:owl", "412918", "735b46")
+creatura.register_spawn_item("animalia:owl", {
+	col1 = "412918",
+	col2 = "735b46"
+})

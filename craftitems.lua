@@ -54,6 +54,7 @@ local function register_egg(name, def)
 				if random(3) < 2 then
 					local object = minetest.add_entity(pos, def.mob)
 					local ent = object and object:get_luaentity()
+					if not ent then return end
 					ent.growth_scale = 0.7
 					animalia.initialize_api(ent)
 					animalia.protect_from_despawn(ent)
@@ -80,7 +81,6 @@ local function register_egg(name, def)
 				y = pos.y + 1.5,
 				z = pos.z
 			}, def.mob .. "_egg_entity")
-			local ent = object and object:get_luaentity()
 			local dir = player:get_look_dir()
 			object:set_velocity({
 				x = dir.x * vel,
@@ -130,7 +130,6 @@ local function mob_storage_use(itemstack, player, pointed)
 		local plyr_name = player:get_player_name()
 		local meta = itemstack:get_meta()
 		local mob = meta:get_string("mob") or ""
-		local staticdata = meta:get_string("staticdata") or ""
 		if mob == "" then
 			animalia.protect_from_despawn(ent)
 			meta:set_string("mob", ent.name)
@@ -321,58 +320,6 @@ minetest.register_craftitem("animalia:bucket_milk", {
 	groups = {food_milk = 1, flammable = 3},
 })
 
-local function grow_crops(pos, nodename)
-	local checkname = nodename:sub(1, string.len(nodename) - 1)
-	if minetest.registered_nodes[checkname .. "1"]
-	and minetest.registered_nodes[checkname .. "2"]
-	and minetest.registered_nodes[checkname .. "2"].drawtype == "plantlike" then -- node is more than likely a plant
-		local stage = tonumber(string.sub(nodename, -1)) or 0
-		local newname = checkname .. (stage + 1)
-		if minetest.registered_nodes[newname] then
-			local def = minetest.registered_nodes[newname]
-			def = def and def.place_param2 or 0
-			minetest.set_node(pos, {name = newname, param2 = def})
-			minetest.add_particlespawner({
-				amount = 6,
-				time = 0.1,
-				minpos = vector.subtract(pos, 0.5),
-				maxpos = vector.add(pos, 0.5),
-				minvel = {
-					x = -0.5,
-					y = 0.5,
-					z = -0.5
-				},
-				maxvel = {
-					x = 0.5,
-					y = 1,
-					z = 0.5
-				},
-				minacc = {
-					x = 0,
-					y = 2,
-					z = 0
-				},
-				maxacc = {
-					x = 0,
-					y = 4,
-					z = 0
-				},
-				minexptime = 0.5,
-				maxexptime = 1,
-				minsize = 1,
-				maxsize = 2,
-				collisiondetection = false,
-				vertical = false,
-				use_texture_alpha = true,
-				texture = "creatura_particle_green.png",
-				glow = 6
-			})
-		end
-	end
-end
-
-local guano_fert = minetest.settings:get_bool("guano_fertilization")
-
 minetest.register_craftitem("animalia:bucket_guano", {
 	description = "Bucket of Guano",
 	inventory_image = "animalia_guano_bucket.png",
@@ -383,7 +330,7 @@ minetest.register_craftitem("animalia:bucket_guano", {
 		local node = minetest.get_node(pos)
 		if node
 		and node.on_rightclick then
-			return node.on_rightclick(pointed_thing.under, under, placer, itemstack)
+			return node.on_rightclick(pos, node, placer, itemstack)
 		end
 		if minetest.is_protected(pos, placer:get_player_name()) then
 			return
@@ -651,7 +598,7 @@ local steel_ingot = "default:steel_ingot"
 
 minetest.register_on_mods_loaded(function()
 	if minetest.registered_items[steel_ingot] then return end
-	for name, def in pairs(minetest.registered_items) do
+	for name, _ in pairs(minetest.registered_items) do
 		if name:find("ingot")
 		and (name:find("steel")
 		or name:find("iron")) then

@@ -32,7 +32,6 @@ end
 
 creatura.register_mob("animalia:bat", {
 	-- Engine Props
-	visual = "mesh",
 	visual_size = {x = 10, y = 10},
 	mesh = "animalia_bat.b3d",
 	textures = {
@@ -41,16 +40,23 @@ creatura.register_mob("animalia:bat", {
 		"animalia_bat_3.png",
 	},
 	makes_footstep_sound = false,
-	stepheight = 1.1,
+
 	-- Creatura Props
-	max_health = 5,
+	max_health = 2,
 	armor_groups = {fleshy = 100},
 	damage = 0,
-	speed = 6,
-	tracking_range = 8,
-	max_boids = 2,
-	despawn_after = 500,
+	speed = 4,
+	tracking_range = 12,
+	max_boids = 3,
+	despawn_after = 200,
 	max_fall = 0,
+	sounds = {
+		random = {
+			name = "animalia_bat",
+			gain = 0.5,
+			distance = 16
+		}
+	},
 	hitbox = {
 		width = 0.15,
 		height = 0.3
@@ -66,11 +72,14 @@ creatura.register_mob("animalia:bat", {
 		"butterflies:butterfly_white",
 		"butterflies:butterfly_violet"
 	},
-	fancy_collide = false,
-	bouyancy_multiplier = 1,
-	hydrodynamics_multiplier = 1,
 
+	-- Animalia Props
+	flee_puncher = true,
+	catch_with_net = true,
+	catch_with_lasso = false,
 	roost_action = animalia.action_cling,
+
+	-- Functions
 	utility_stack = {
 		{
 			utility = "animalia:aerial_wander",
@@ -81,7 +90,6 @@ creatura.register_mob("animalia:bat", {
 				local player = creatura.get_nearby_player(self)
 				local plyr_pos = player and not player:get_player_control().sneak and player:get_pos()
 				if plyr_pos then
-					local trust = self.trust[player:get_player_name() or ""] or 0
 					local dist = vec_dist(pos, plyr_pos)
 					self._target = player
 					self.is_landed = false
@@ -116,10 +124,7 @@ creatura.register_mob("animalia:bat", {
 			end
 		}
 	},
-	-- Animalia Props
-	catch_with_net = true,
-	catch_with_lasso = false,
-	-- Functions
+
 	is_home = function(pos, home_pos)
 		local dist = vec_dist(pos, home_pos)
 		if dist < 4 then
@@ -131,6 +136,7 @@ creatura.register_mob("animalia:bat", {
 		end
 		return false
 	end,
+
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		self.home_position = self:recall("home_position") or nil
@@ -142,6 +148,7 @@ creatura.register_mob("animalia:bat", {
 			get_home_pos(self)
 		end
 	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.do_growth(self, 60)
@@ -184,11 +191,13 @@ creatura.register_mob("animalia:bat", {
 			end
 		end
 	end,
+
 	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
 	end,
+
 	on_rightclick = function(self, clicker)
 		if animalia.feed(self, clicker, false, false) then
 			animalia.add_trust(self, clicker, 1)
@@ -198,6 +207,7 @@ creatura.register_mob("animalia:bat", {
 			return
 		end
 	end,
+
 	on_punch = animalia.punch
 })
 

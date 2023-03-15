@@ -4,18 +4,6 @@
 
 local random = math.random
 
-local follows = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_craftitems) do
-		if (name:match(":wheat")
-		or minetest.get_item_group(name, "food_wheat") > 0)
-		and not tonumber(name:sub(-1))
-		and not name:find("seed") then
-			table.insert(follows, name)
-		end
-	end
-end)
 
 creatura.register_mob("animalia:cow", {
 	-- Engine Props
@@ -42,17 +30,35 @@ creatura.register_mob("animalia:cow", {
 		"animalia_cow_4.png",
 		"animalia_cow_5.png"
 	},
-	stepheight = 1.1,
+	makes_footstep_sound = true,
+
 	-- Creatura Props
 	max_health = 20,
 	armor_groups = {fleshy = 100},
 	damage = 0,
-	speed = 4,
-	tracking_range = 16,
-	despawn_after = 1000,
+	speed = 2,
+	tracking_range = 10,
+	max_boids = 0,
+	despawn_after = 500,
 	max_fall = 3,
 	stepheight = 1.1,
-	sound = {},
+	sounds = {
+		random = {
+			name = "animalia_cow",
+			gain = 0.5,
+			distance = 8
+		},
+		hurt = {
+			name = "animalia_cow_hurt",
+			gain = 0.5,
+			distance = 8
+		},
+		death = {
+			name = "animalia_cow_death",
+			gain = 0.5,
+			distance = 8
+		}
+	},
 	hitbox = {
 		width = 0.5,
 		height = 1
@@ -62,14 +68,13 @@ creatura.register_mob("animalia:cow", {
 		walk = {range = {x = 71, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
 		run = {range = {x = 71, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
 	},
-	follow = follows,
+	follow = animalia.food_wheat,
 	drops = {
 		{name = "animalia:beef_raw", min = 1, max = 3, chance = 1},
 		{name = "animalia:leather", min = 1, max = 3, chance = 2}
 	},
 	fancy_collide = false,
-	bouyancy_multiplier = 1,
-	hydrodynamics_multiplier = 1,
+
 	-- Animalia Props
 	flee_puncher = true,
 	catch_with_net = true,
@@ -79,12 +84,14 @@ creatura.register_mob("animalia:cow", {
 		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
 	},
 	head_data = {
-		offset = {x = 0, y = 0.8, z = 0.0},
-		pitch_correction = -65,
+		offset = {x = 0, y = 0.5, z = 0.0},
+		pitch_correction = -40,
 		pivot_h = 0.75,
 		pivot_v = 1
 	},
+	wander_action = animalia.action_boid_move,
 
+	-- Functions
 	utility_stack = {
 		{
 			utility = "animalia:wander",
@@ -127,12 +134,13 @@ creatura.register_mob("animalia:cow", {
 		},
 		animalia.global_utils.basic_flee
 	},
-	-- Functions
+
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		self.collected = self:recall("collected") or false
 	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.75, 0.75)
@@ -140,18 +148,19 @@ creatura.register_mob("animalia:cow", {
 		animalia.update_lasso_effects(self)
 		animalia.random_sound(self)
 	end,
+
 	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
 	end,
+
 	on_rightclick = function(self, clicker)
-		if animalia.feed(self, clicker, false, true) then
+		if animalia.feed(self, clicker, false, true)
+		or animalia.set_nametag(self, clicker) then
 			return
 		end
-		if animalia.set_nametag(self, clicker) then
-			return
-		end
+
 		local tool = clicker:get_wielded_item()
 		local name = clicker:get_player_name()
 
@@ -183,7 +192,11 @@ creatura.register_mob("animalia:cow", {
 			return
 		end
 	end,
+
 	on_punch = animalia.punch
 })
 
-creatura.register_spawn_egg("animalia:cow", "cac3a1" ,"464438")
+creatura.register_spawn_item("animalia:cow", {
+	col1 = "cac3a1",
+	col2 = "464438"
+})

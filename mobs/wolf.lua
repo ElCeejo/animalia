@@ -44,48 +44,51 @@ local function is_value_in_table(tbl, val)
 end
 
 creatura.register_mob("animalia:wolf", {
-	-- Stats
-	max_health = 25,
-	armor_groups = {fleshy = 100},
-	damage = 4,
-	speed = 5,
-	tracking_range = 24,
-	despawn_after = 2000,
-	-- Entity Physics
-	stepheight = 1.1,
-	max_fall = 3,
-	-- Visuals
-	mesh = "animalia_wolf.b3d",
-	hitbox = {
-		width = 0.35,
-		height = 0.7
-	},
+	-- Engine Props
 	visual_size = {x = 10, y = 10},
+	mesh = "animalia_wolf.b3d",
 	textures = {
 		"animalia_wolf_1.png",
 		"animalia_wolf_2.png",
 		"animalia_wolf_3.png",
 		"animalia_wolf_4.png"
 	},
-	animations = {
-		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 41, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
-		run = {range = {x = 41, y = 59}, speed = 45, frame_blend = 0.3, loop = true},
-		sit = {range = {x = 61, y = 79}, speed = 20, frame_blend = 0.3, loop = true},
-	},
-	-- Misc
 	makes_footstep_sound = true,
+
+	-- Creatura Props
+	max_health = 20,
+	damage = 4,
+	speed = 4,
+	tracking_range = 24,
+	despawn_after = 500,
+	stepheight = 1.1,
+	sound = {},
+	hitbox = {
+		width = 0.35,
+		height = 0.7
+	},
+	animations = {
+		stand = {range = {x = 1, y = 60}, speed = 20, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 70, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 100, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
+		sit = {range = {x = 130, y = 139}, speed = 10, frame_blend = 0.3, loop = true},
+	},
+	follow = follow,
+
+	-- Animalia Props
+	assist_owner = true,
+	flee_puncher = false,
 	catch_with_net = true,
 	catch_with_lasso = true,
-	assist_owner = true,
-	follow = follow,
+	consumable_nodes = {},
 	head_data = {
-		offset = {x = 0, y = 0.33, z = 0},
-		pitch_correction = -67,
-		pivot_h = 0.65,
-		pivot_v = 0.65
+		offset = {x = 0, y = 0.22, z = 0},
+		pitch_correction = -35,
+		pivot_h = 0.45,
+		pivot_v = 0.45
 	},
-	-- Function
+
+	-- Functions
 	utility_stack = {
 		{
 			utility = "animalia:wander_skittish",
@@ -156,6 +159,7 @@ creatura.register_mob("animalia:wolf", {
 			end
 		}
 	},
+
 	activate_func = function(self)
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
@@ -169,17 +173,36 @@ creatura.register_mob("animalia:wolf", {
 			end
 		end
 	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
-		animalia.head_tracking(self, 0.5, 0.75)
+		animalia.head_tracking(self)
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 	end,
+
 	death_func = function(self)
 		if self:get_utility() ~= "animalia:die" then
 			self:initiate_utility("animalia:die", self)
 		end
 	end,
+
+	deactivate_func = function(self)
+		if self.owner then
+			for i, object in ipairs(animalia.pets[self.owner] or {}) do
+				if object == self.object then
+					animalia.pets[self.owner][i] = nil
+				end
+			end
+		end
+		if self.enemies
+		and self.enemies[1]
+		and self.memorize then
+			self.enemies[1] = nil
+			self.enemies = self:memorize("enemies", self.enemies)
+		end
+	end,
+
 	on_rightclick = function(self, clicker)
 		if not clicker:is_player() then return end
 		local name = clicker:get_player_name()
@@ -213,6 +236,7 @@ creatura.register_mob("animalia:wolf", {
 			self:memorize("order", self.order)
 		end
 	end,
+
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		local name = puncher:is_player() and puncher:get_player_name()
@@ -234,21 +258,9 @@ creatura.register_mob("animalia:wolf", {
 		end
 		self._target = puncher
 	end,
-	deactivate_func = function(self)
-		if self.owner then
-			for i, object in ipairs(animalia.pets[self.owner] or {}) do
-				if object == self.object then
-					animalia.pets[self.owner][i] = nil
-				end
-			end
-		end
-		if self.enemies
-		and self.enemies[1]
-		and self.memorize then
-			self.enemies[1] = nil
-			self.enemies = self:memorize("enemies", self.enemies)
-		end
-	end
 })
 
-creatura.register_spawn_egg("animalia:wolf", "a19678" ,"231b13")
+creatura.register_spawn_item("animalia:wolf", {
+	col1 = "a19678",
+	col2 = "231b13"
+})

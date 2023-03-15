@@ -2,11 +2,20 @@
 -- Spawning --
 --------------
 
+local function is_value_in_table(tbl, val)
+	for _, v in pairs(tbl) do
+		if v == val then
+			return true
+		end
+	end
+	return false
+end
+
 local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 20000
 
 local ambient_spawn_chance = tonumber(minetest.settings:get("animalia_ambient_chance")) or 6000
 
-local pest_spawn_chance = tonumber(minetest.settings:get("animalia_pest_chance")) or 4000
+local pest_spawn_chance = tonumber(minetest.settings:get("animalia_pest_chance")) or 2000
 
 local predator_spawn_chance = tonumber(minetest.settings:get("animalia_predator_chance")) or 30000
 
@@ -43,6 +52,17 @@ creatura.register_abm_spawn("animalia:chicken", {
 	nodes = {"group:soil"},
 })
 
+creatura.register_abm_spawn("animalia:cat", {
+	chance = common_spawn_chance,
+	min_height = 0,
+	max_height = 1024,
+	min_group = 1,
+	max_group = 2,
+	nodes = {"group:soil"},
+	neighbors = {"group:wood"}
+})
+
+
 creatura.register_abm_spawn("animalia:cow", {
 	chance = common_spawn_chance,
 	min_height = 0,
@@ -76,7 +96,7 @@ creatura.register_abm_spawn("animalia:horse", {
 })
 
 creatura.register_abm_spawn("animalia:rat", {
-	chance = 2000,
+	chance = pest_spawn_chance,
 	interval = 60,
 	min_height = -1,
 	max_height = 1024,
@@ -162,7 +182,7 @@ creatura.register_abm_spawn("animalia:bat", {
 	nodes = {"group:stone"}
 })
 
-creatura.register_abm_spawn("animalia:bird", {
+creatura.register_abm_spawn("animalia:song_bird", {
 	chance = ambient_spawn_chance,
 	interval = 60,
 	min_light = 0,
@@ -170,25 +190,21 @@ creatura.register_abm_spawn("animalia:bird", {
 	max_height = 1024,
 	min_group = 6,
 	max_group = 12,
-	spawn_cap = 12,
-	nodes = {"group:leaves"},
+	spawn_cap = 6,
+	nodes = {"group:leaves", "animalia:nest_song_bird"},
 	neighbors = {"group:leaves"}
 })
 
-creatura.register_on_spawn("animalia:bird", function(self, pos)
+creatura.register_on_spawn("animalia:song_bird", function(self, pos)
 	local nests = minetest.find_nodes_in_area_under_air(
-		{x = pos.x - 12, y = pos.y - 12, z = pos.z - 12},
-		{x = pos.x + 12, y = pos.y + 12, z = pos.z + 12},
+		{x = pos.x - 16, y = pos.y - 16, z = pos.z - 16},
+		{x = pos.x + 16, y = pos.y + 16, z = pos.z + 16},
 		"animalia:nest_song_bird"
 	)
-	if nests[1] then
-		self.home_position = self:memorize("home_position", nests[1])
-		return
-	end
+	if nests[1] then return end
 	local node = minetest.get_node(pos)
 	if node.name == "air" then
 		minetest.set_node(pos, {name = "animalia:nest_song_bird"})
-		self.home_position = self:memorize("home_position", pos)
 	else
 		local nodes = minetest.find_nodes_in_area_under_air(
 			{x = pos.x - 3, y = pos.y - 3, z = pos.z - 3},
@@ -198,22 +214,41 @@ creatura.register_on_spawn("animalia:bird", function(self, pos)
 		if nodes[1] then
 			pos = nodes[1]
 			minetest.set_node({x = pos.x, y = pos.y + 1, z = pos.z}, {name = "animalia:nest_song_bird"})
-			self.home_position = self:memorize("home_position", {x = pos.x, y = pos.y + 1, z = pos.z})
 		end
 	end
 end)
 
 creatura.register_abm_spawn("animalia:frog", {
-	chance = ambient_spawn_chance,
+	chance = ambient_spawn_chance * 0.75,
 	interval = 60,
 	min_light = 0,
 	min_height = -1,
 	max_height = 8,
-	min_group = 2,
-	max_group = 4,
+	min_group = 1,
+	max_group = 2,
 	neighbors = {"group:water"},
 	nodes = {"group:soil"}
 })
+
+creatura.register_on_spawn("animalia:frog", function(self, pos)
+	local biome_data = minetest.get_biome_data(pos)
+	local biome_name = minetest.get_biome_name(biome_data.biome)
+
+	if is_value_in_table(animalia.registered_biome_groups["tropical"].biomes, biome_name) then
+		self:set_mesh(3)
+	elseif is_value_in_table(animalia.registered_biome_groups["temperate"].biomes, biome_name)
+	or is_value_in_table(animalia.registered_biome_groups["boreal"].biomes, biome_name) then
+		self:set_mesh(1)
+	elseif is_value_in_table(animalia.registered_biome_groups["grassland"].biomes, biome_name) then
+		self:set_mesh(2)
+	else
+		self.object:remove()
+	end
+
+	local activate = self.activate_func
+
+	activate(self)
+end)
 
 creatura.register_abm_spawn("animalia:tropical_fish", {
 	chance = ambient_spawn_chance,

@@ -4,7 +4,7 @@
 
 local random = math.random
 
-local vec_dist = vector.distance
+local vec_dist, vec_add, vec_sub = vector.distance, vector.add, vector.subtract
 
 local follow = {
 	"animalia:poultry_raw"
@@ -17,24 +17,28 @@ if minetest.registered_items["ethereal:fish_raw"] then
 	}
 end
 
+local function find_glass_vessel(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local nodes = minetest.find_nodes_in_area(vec_sub(pos, 6), vec_add(pos, 6),
+												{"vessels:glass_bottle", "vessels:drinking_glass"}) or {}
+	if #nodes < 1 then return end
+	return nodes[math.random(#nodes)]
+end
+
+local function destroy_glass_vessel(self, pos)
+	if not minetest.is_protected(pos, "") then
+		minetest.remove_node(pos)
+		minetest.add_item(pos, "vessels:glass_fragments")
+		return true
+	end
+end
+
 creatura.register_mob("animalia:cat", {
-	-- Stats
-	max_health = 10,
-	armor_groups = {fleshy = 200},
-	damage = 1,
-	speed = 5,
-	tracking_range = 24,
-	turn_rate = 9,
-	despawn_after = 2000,
-	-- Entity Physics
-	stepheight = 1.1,
-	-- Visuals
-	mesh = "animalia_cat.b3d",
-	hitbox = {
-		width = 0.2,
-		height = 0.4
-	},
+	-- Engine Props
 	visual_size = {x = 10, y = 10},
+	mesh = "animalia_cat.b3d",
 	textures = {
 		"animalia_cat_1.png",
 		"animalia_cat_2.png",
@@ -48,22 +52,23 @@ creatura.register_mob("animalia:cat", {
 		"animalia_cat_ash.png",
 		"animalia_cat_birch.png",
 	},
-	animations = {
-		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 41, y = 59}, speed = 20, frame_blend = 0.3, loop = true},
-		run = {range = {x = 42, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
-		play = {range = {x = 61, y = 79}, speed = 30, frame_blend = 0.3, loop = false},
-		sit = {range = {x = 81, y = 99}, speed = 10, frame_blend = 0.3, loop = true},
-		smack = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.1, loop = true},
-	},
-	-- Misc
-	makes_footstep_sound = true,
-	flee_puncher = true,
-	catch_with_net = true,
-	catch_with_lasso = true,
+	use_texture_alpha = false,
+	makes_footstep_sound = false,
+	backface_culling = true,
+	glow = 0,
+
+	-- Creatura Props
+	max_health = 10,
+	damage = 1,
+	speed = 3,
+	tracking_range = 16,
+	max_boids = 0,
+	despawn_after = 500,
+	max_fall = 0,
+	stepheight = 1.1,
 	sounds = {
 		random = {
-			name = "animalia_cat_idle",
+			name = "animalia_cat",
 			gain = 0.25,
 			distance = 8
 		},
@@ -83,32 +88,35 @@ creatura.register_mob("animalia:cat", {
 			distance = 8
 		}
 	},
-	follow = follow,
-	head_data = {
-		offset = {x = 0, y = 0.18, z = 0},
-		pitch_correction = -20,
-		pivot_h = 0.65,
-		pivot_v = 0.65
+	hitbox = {
+		width = 0.2,
+		height = 0.4
 	},
-	-- Function
-	activate_func = function(self)
-		animalia.initialize_api(self)
-		animalia.initialize_lasso(self)
-		self.interact_sound_cooldown = 0
-		self.trust_cooldown = self:recall("trust_cooldown") or 0
-		self.order = self:recall("order") or "wander"
-		self.owner = self:recall("owner") or nil
-		self.trust = self:recall("trust") or {}
-		if self.owner
-		and minetest.get_player_by_name(self.owner) then
-			if not animalia.pets[self.owner][self.object] then
-				table.insert(animalia.pets[self.owner], self.object)
-			end
-		end
-	end,
+	animations = {
+		stand = {range = {x = 1, y = 60}, speed = 20, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 70, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 100, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
+		sit = {range = {x = 130, y = 139}, speed = 10, frame_blend = 0.3, loop = true},
+	},
+	follow = follow,
+	drops = {},
+
+	-- Animalia Props
+	flee_puncher = true,
+	catch_with_net = true,
+	catch_with_lasso = true,
+	head_data = {
+		offset = {x = 0, y = 0.14, z = 0},
+		pitch_correction = -25,
+		pivot_h = 0.4,
+		pivot_v = 0.4
+	},
+	skittish_wander = true,
+
+	-- Functions
 	utility_stack = {
 		{
-			utility = "animalia:wander_skittish",
+			utility = "animalia:wander",
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
@@ -125,11 +133,11 @@ creatura.register_mob("animalia:cat", {
 			end
 		},
 		{
-			utility = "animalia:destroy_nearby_vessel",
+			utility = "animalia:walk_to_pos_and_interact",
 			step_delay = 0.25,
 			get_score = function(self)
-				if random(24) < 2 then
-					return 0.2, {self}
+				if random(2) < 2 then
+					return 0.2, {self, find_glass_vessel, destroy_glass_vessel, nil, 10}
 				end
 				return 0
 			end
@@ -217,6 +225,23 @@ creatura.register_mob("animalia:cat", {
 			end
 		}
 	},
+
+	activate_func = function(self)
+		animalia.initialize_api(self)
+		animalia.initialize_lasso(self)
+		self.interact_sound_cooldown = 0
+		self.trust_cooldown = self:recall("trust_cooldown") or 0
+		self.order = self:recall("order") or "wander"
+		self.owner = self:recall("owner") or nil
+		self.trust = self:recall("trust") or {}
+		if self.owner
+		and minetest.get_player_by_name(self.owner) then
+			if not animalia.pets[self.owner][self.object] then
+				table.insert(animalia.pets[self.owner], self.object)
+			end
+		end
+	end,
+
 	step_func = function(self)
 		animalia.step_timers(self)
 		animalia.head_tracking(self, 0.75, 0.75)
@@ -229,37 +254,38 @@ creatura.register_mob("animalia:cat", {
 			end
 		end
 	end,
-	death_func = function(self)
-		if self:get_utility() ~= "animalia:die" then
-			self:initiate_utility("animalia:die", self)
+
+	death_func = animalia.death_func,
+
+	deactivate_func = function(self)
+		if self.owner then
+			for i, object in ipairs(animalia.pets[self.owner] or {}) do
+				if object == self.object then
+					animalia.pets[self.owner][i] = nil
+				end
+			end
+		end
+		if self.enemies
+		and self.enemies[1]
+		and self.memorize then
+			self.enemies[1] = nil
+			self.enemies = self:memorize("enemies", self.enemies)
 		end
 	end,
+
 	on_rightclick = function(self, clicker)
 		local item_name = clicker:get_wielded_item():get_name()
 		if item_name == "animalia:net" then return end
 		local trust = self.trust[clicker:get_player_name()] or 0
 		local pos = self.object:get_pos()
 		if not pos then return end
-		pos.y = pos.y + self.height * 0.5
-		local minppos = vector.add(pos, 1)
-		local maxppos = vector.subtract(pos, 1)
 		if animalia.feed(self, clicker, true, true) then
-			if self.trust_cooldown <= 0
-			and trust < 10 then
-				self.trust[clicker:get_player_name()] = trust + 1
-				self.trust_cooldown = self:memorize("trust_cooldown", 60)
-				self:memorize("trust", self.trust)
-				animalia.particle_spawner(pos, "creatura_particle_green.png", "float", minppos, maxppos)
-			end
+			animalia.add_trust(self, clicker, 1)
+			animalia.particle_spawner(pos, "creatura_particle_green.png", "float")
 			return
 		end
 		if animalia.set_nametag(self, clicker) then
 			return
-		end
-		-- Initiate trust
-		if not self.trust[clicker:get_player_name()] then
-			self.trust[clicker:get_player_name()] = 0
-			self:memorize("trust", self.trust)
 		end
 		-- Purr to indicate trust level (louder = more trust)
 		if clicker:get_player_control().sneak then
@@ -288,49 +314,35 @@ creatura.register_mob("animalia:cat", {
 			end
 			local order = self.order
 			if order == "wander" then
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is following")
+				minetest.chat_send_player(clicker:get_player_name(), "Cat is following")
 				self.order = "follow"
 				self:initiate_utility("animalia:follow_player", self, clicker, true)
 				self:set_utility_score(0.7)
 			elseif order == "follow" then
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is sitting")
+				minetest.chat_send_player(clicker:get_player_name(), "Cat is sitting")
 				self.order = "sit"
 				self:initiate_utility("animalia:stay", self)
 				self:set_utility_score(0.5)
 			else
-				minetest.chat_send_player(clicker:get_player_name(), "Wolf is wandering")
+				minetest.chat_send_player(clicker:get_player_name(), "Cat is wandering")
 				self.order = "wander"
 				self:set_utility_score(0)
 			end
 			self:memorize("order", self.order)
 		end
 	end,
+
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		self:initiate_utility("animalia:flee_from_player", self, puncher)
 		self:set_utility_score(1)
-		if not self.trust[puncher:get_player_name()] then
-			self.trust[puncher:get_player_name()] = 0
-		else
-			local trust = self.trust[puncher:get_player_name()]
-			self.trust[puncher:get_player_name()] = trust - 1
-		end
+		animalia.add_trust(self, puncher, -1)
 		local pos = self.object:get_pos()
-		pos = vector.new(pos.x, pos.y + 0.5, pos.z)
-		local minppos = vector.add(pos, 1)
-		local maxppos = vector.subtract(pos, 1)
-		animalia.particle_spawner(pos, "creatura_particle_red.png", "float", minppos, maxppos)
-		self:memorize("trust", self.trust)
-	end,
-	deactivate_func = function(self)
-		if self.owner then
-			for i, object in ipairs(animalia.pets[self.owner] or {}) do
-				if object == self.object then
-					animalia.pets[self.owner][i] = nil
-				end
-			end
-		end
+		animalia.particle_spawner(pos, "creatura_particle_red.png", "float")
 	end
 })
 
-creatura.register_spawn_egg("animalia:cat", "db9764" ,"cf8d5a")
+creatura.register_spawn_item("animalia:cat", {
+	col1 = "db9764",
+	col2 = "cf8d5a"
+})

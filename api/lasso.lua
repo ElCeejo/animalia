@@ -3,18 +3,9 @@
 -----------
 
 local abs = math.abs
-local asin = math.asin
-local atan2 = math.atan2
-local cos = math.cos
-local deg = math.deg
-local sin = math.sin
-
-local function diff(a, b) -- Get difference between 2 angles
-	return atan2(sin(b - a), cos(b - a))
-end
 
 local vec_add, vec_dir, vec_dist, vec_len = vector.add, vector.direction, vector.distance, vector.length
-local dir2yaw, dir2rot = minetest.dir_to_yaw, vector.dir_to_rotation
+local dir2rot = vector.dir_to_rotation
 
 -- Entities --
 
@@ -29,7 +20,7 @@ minetest.register_entity("animalia:lasso_entity", {
 		self.object:set_armor_groups({immortal = 1})
 	end,
 	_scale = 1,
-	on_step = function(self, dtime)
+	on_step = function(self)
 		local pos, parent = self.object:get_pos(), (self.object:get_attach() or self._attached)
 		local pointed_ent = self._point_to and self._point_to:get_luaentity()
 		local point_to = self._point_to and self._point_to:get_pos()
@@ -126,10 +117,10 @@ local function add_lasso(self, origin)
 	if not ent then return end
 	-- Attachment point of entity
 	ent._attached = origin
-	if type(origin) == "string" then
+	if type(origin) ~= "string" then
 		--local player = minetest.get_player_by_name(origin)
 		--object:set_attach(player)
-	else
+	--else
 		object:set_pos(origin)
 	end
 	self._lassod_to = origin

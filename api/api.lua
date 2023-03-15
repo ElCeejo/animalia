@@ -2,18 +2,6 @@
 -- API --
 ---------
 
-animalia.walkable_nodes = {}
-
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_nodes) do
-		if name ~= "air" and name ~= "ignore" then
-			if minetest.registered_nodes[name].walkable then
-				table.insert(animalia.walkable_nodes, name)
-			end
-		end
-	end
-end)
-
 -- Math --
 
 local abs = math.abs
@@ -65,12 +53,6 @@ local vec_len = vector.length
 local dir2yaw = minetest.dir_to_yaw
 local yaw2dir = minetest.yaw_to_dir
 
---------------
--- Settings --
---------------
-
-local creative = minetest.settings:get_bool("creative_mode")
-
 ------------
 -- Common --
 ------------
@@ -87,8 +69,6 @@ function animalia.correct_name(str)
 		return (string.gsub(" " .. str, "%W%l", string.upper):sub(2):gsub("_", " "))
 	end
 end
-
-local correct_name = animalia.correct_name
 
 ---------------------
 -- Local Utilities --
@@ -109,7 +89,7 @@ if minetest.get_modpath("default")
 and minetest.get_modpath("player_api") then
 	animate_player = player_api.set_animation
 elseif minetest.get_modpath("mcl_player") then
-	animate_player = mcl_player.set_animation
+	animate_player = mcl_player.player_set_animation
 end
 
 -----------------------
@@ -269,16 +249,8 @@ end
 
 function animalia.particle_spawner(pos, texture, type, min_pos, max_pos)
 	type = type or "float"
-	min_pos = min_pos or {
-		x = pos.x - 2,
-		y = pos.y - 2,
-		z = pos.z - 2,
-	}
-	max_pos = max_pos or {
-		x = pos.x + 2,
-		y = pos.y + 2,
-		z = pos.z + 2,
-	}
+	min_pos = min_pos or vec_sub(pos, 2)
+	max_pos = max_pos or vec_add(pos, 2)
 	if type == "float" then
 		minetest.add_particlespawner({
 			amount = 16,
@@ -312,14 +284,52 @@ function animalia.particle_spawner(pos, texture, type, min_pos, max_pos)
 	end
 end
 
+function animalia.add_food_particle(self, item_name)
+	local pos, yaw = self.object:get_pos(), self.object:get_yaw()
+	if not pos then return end
+	local head = self.head_data
+	local offset_h = (head and head.pivot_h) or self.width
+	local offset_v = (head and head.pivot_v) or self.height
+	local head_pos = {
+		x = pos.x + sin(yaw) * -offset_h,
+		y = pos.y + offset_v,
+		z = pos.z + cos(yaw) * offset_h
+	}
+	local def = minetest.registered_items[item_name]
+	local image = def.inventory_image
+	if def.tiles then
+		image = def.tiles[1].name or def.tiles[1]
+	end
+	if image then
+		local crop = "^[sheet:4x4:" .. random(4) .. "," .. random(4)
+		minetest.add_particlespawner({
+			pos = head_pos,
+			time = 0.5,
+			amount = 12,
+			collisiondetection = true,
+			collision_removal = true,
+			vel = {min = {x = -1, y = 1, z = -1}, max = {x = 1, y = 2, z = 1}},
+			acc = {x = 0, y = -9.8, z = 0},
+			size = {min = 1, max = 2},
+			texture = image .. crop
+		})
+	end
+end
+
 ----------
 -- Mobs --
 ----------
 
-function animalia.get_dropped_food(self, item)
+function animalia.death_func(self)
+	if self:get_utility() ~= "animalia:die" then
+		self:initiate_utility("animalia:die", self)
+	end
+end
+
+function animalia.get_dropped_food(self, item, radius)
 	local pos = self.object:get_pos()
 	if not pos then return end
-	local objects = minetest.get_objects_inside_radius(pos, self.tracking_range)
+	local objects = minetest.get_objects_inside_radius(pos, radius or self.tracking_range)
 	for _, object in ipairs(objects) do
 		local ent = object:get_luaentity()
 		if ent
@@ -335,6 +345,19 @@ end
 function animalia.protect_from_despawn(self)
 	self._despawn = self:memorize("_despawn", false)
 	self.despawn_after = self:memorize("despawn_after", false)
+end
+
+function animalia.despawn_inactive_mob(self)
+	local os_time = os.time()
+	self._last_active = self:recall("_last_active")
+	if self._last_active
+	and self.despawn_after then
+		local last_active = self._last_active
+		if os_time - last_active > self.despawn_after then
+			self.object:remove()
+			return true
+		end
+	end
 end
 
 function animalia.set_nametag(self, clicker)
@@ -391,7 +414,12 @@ function animalia.initialize_api(self)
 			self.texture_no = random(#textures)
 		end
 		self:set_texture(self.texture_no, textures)
-		return
+	end
+	if self.growth_scale < 0.8
+	and self.child_mesh then
+		self.object:set_properties({
+			mesh = self.child_mesh
+		})
 	end
 end
 
@@ -406,6 +434,7 @@ function animalia.step_timers(self)
 	end
 	self:memorize("breeding_cooldown", self.breeding_cooldown)
 	self:memorize("trust_cooldown", self.trust_cooldown)
+	self:memorize("_last_active", os.time())
 end
 
 function animalia.do_growth(self, interval)
@@ -422,6 +451,7 @@ function animalia.do_growth(self, interval)
 				end
 				self:set_texture(tex_no, self.child_textures)
 			elseif self.growth_scale == 0.8 then
+				if self.child_mesh then self:set_mesh() end
 				if self.male_textures
 				and self.female_textures then
 					if #self.child_textures == 1 then
@@ -433,6 +463,9 @@ function animalia.do_growth(self, interval)
 						self.texture_no = random(#self.textures)
 					end
 					self:set_texture(self.texture_no, self.textures)
+				end
+				if self.on_grown then
+					self:on_grown()
 				end
 			end
 			self:memorize("growth_scale", self.growth_scale)
@@ -448,6 +481,7 @@ function animalia.random_sound(self)
 end
 
 function animalia.add_trust(self, player, amount)
+	if self.trust_cooldown > 0 then return end
 	self.trust_cooldown = 60
 	local plyr_name = player:get_player_name()
 	local trust = self.trust[plyr_name] or 0
@@ -513,7 +547,7 @@ function animalia.feed(self, clicker, tame, breed)
                 if self.breeding_cooldown <= 0 then
                     self.breeding = true
                     self.breeding_cooldown = 60
-                    animalia.particle_spawner(pos, "heart.png", "float", minp, maxp)
+                    animalia.particle_spawner(pos, "heart.png", "float")
                 end
 			end
 			self._despawn = self:memorize("_despawn", false)
@@ -573,6 +607,26 @@ function animalia.punch(self, puncher, ...)
 	and (self:get_utility() or "") ~= "animalia:flee_from_target" then
 		self:clear_utility()
 	end
+end
+
+function animalia.find_crop(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local nodes = minetest.find_nodes_in_area(vec_sub(pos, 6), vec_add(pos, 6), "group:crop") or {}
+	if #nodes < 1 then return end
+	return nodes[math.random(#nodes)]
+end
+
+function animalia.eat_crop(self, pos)
+	local node_name = minetest.get_node(pos).name
+	local new_name = node_name:sub(1, #node_name - 1) .. (tonumber(node_name:sub(-1)) or 2) - 1
+	local new_def = minetest.registered_nodes[new_name]
+	if not new_def then return false end
+	local p2 = new_def.place_param2 or 1
+	minetest.set_node(pos, {name = new_name, param2 = p2})
+	animalia.add_food_particle(self, new_name)
+	return true
 end
 
 --------------
