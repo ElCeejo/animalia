@@ -76,6 +76,7 @@ creatura.register_mob("animalia:wolf", {
 	follow = follow,
 
 	-- Animalia Props
+	skittish_wander = true,
 	assist_owner = true,
 	flee_puncher = false,
 	catch_with_net = true,
@@ -91,7 +92,7 @@ creatura.register_mob("animalia:wolf", {
 	-- Functions
 	utility_stack = {
 		{
-			utility = "animalia:wander_skittish",
+			utility = "animalia:wander",
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}

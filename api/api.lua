@@ -595,12 +595,13 @@ function animalia.mount(self, player, params)
 	player:set_attach(self.object, "Torso", params.pos, params.rot)
 	player:set_eye_offset({x = 0, y = 25, z = 0}, {x = 0, y = 15, z = 15})
 	self:clear_utility()
-	minetest.after(0.3, function()
+	minetest.after(0.4, function()
 		animate_player(player, "sit" , 30)
 	end)
 end
 
 function animalia.punch(self, puncher, ...)
+	if self.hp <= 0 then return end
 	creatura.basic_punch_func(self, puncher, ...)
 	self._puncher = puncher
 	if self.flee_puncher

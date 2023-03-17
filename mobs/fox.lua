@@ -2,7 +2,7 @@
 -- Fox --
 ---------
 
-local vec_dir, vec_dist = vector.direction, vector.direction
+local vec_dir, vec_dist = vector.direction, vector.distance
 local dir2yaw = minetest.dir_to_yaw
 
 local function get_food_pos(self)

@@ -132,6 +132,7 @@ creatura.register_mob("animalia:horse", {
 	fancy_collide = false,
 
 	-- Animalia Props
+	group_wander = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	consumable_nodes = {
@@ -147,7 +148,7 @@ creatura.register_mob("animalia:horse", {
 	},
 	utility_stack = {
 		{
-			utility = "animalia:wander_group",
+			utility = "animalia:wander",
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
