@@ -888,7 +888,7 @@ creatura.register_utility("animalia:wander", function(self)
 				if vec_dist(pos, center) > _self.tracking_range / 3 then
 					speed, anim = 0.75, "run"
 				end
-				animalia.action_wander_walk(_self, 3, dir, speed, anim)
+				animalia.action_wander_walk(_self, 3, vec_add(pos, vec_multi(dir, 3)), speed, anim)
 			else
 				creatura.action_idle(_self, random(idle_max), "stand")
 			end
