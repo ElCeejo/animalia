@@ -136,13 +136,13 @@ local function add_eat_particle(self, item_name)
 end
 
 local function get_group_positions(self)
-    local objects = creatura.get_nearby_objects(self, self.name)
-    local group = {}
+	local objects = creatura.get_nearby_objects(self, self.name)
+	local group = {}
 	for _, object in ipairs(objects) do
 		local obj_pos = object and object:get_pos()
 		if obj_pos then table.insert(group, obj_pos) end
 	end
-    return group
+	return group
 end
 
 local function reset_attack_vals(self)
@@ -888,7 +888,7 @@ creatura.register_utility("animalia:wander", function(self)
 				if vec_dist(pos, center) > _self.tracking_range / 3 then
 					speed, anim = 0.75, "run"
 				end
-				animalia.action_wander_walk(_self, 3, vec_add(pos, vec_multi(dir, 3)), speed, anim)
+				animalia.action_wander_walk(_self, 3, dir and vec_add(pos, vec_multi(dir, 3)), speed, anim)
 			else
 				creatura.action_idle(_self, random(idle_max), "stand")
 			end
