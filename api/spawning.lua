@@ -11,7 +11,7 @@ local function is_value_in_table(tbl, val)
 	return false
 end
 
-local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 20000
+local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 30000
 
 local ambient_spawn_chance = tonumber(minetest.settings:get("animalia_ambient_chance")) or 6000
 

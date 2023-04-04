@@ -169,4 +169,4 @@ if convert_mobs_redo then
 	minetest.register_alias_force("mobs:nametag", "animalia:nametag")
 end
 
-minetest.log("action", "[MOD] Animalia [0.4] loaded")
+minetest.log("action", "[MOD] Animalia [0.6] loaded")
