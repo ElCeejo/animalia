@@ -19,7 +19,8 @@ local function get_home_pos(self)
 		if not home_dist
 		or dist < home_dist then
 			n_pos.y = n_pos.y - 1
-			if creatura.get_node_def(n_pos).name == "air" then
+			if creatura.get_node_def(n_pos).name == "air" and
+			minetest.get_node_light(n_pos) < 8 then
 				home_dist = dist
 				new_home = n_pos
 			end
@@ -183,8 +184,8 @@ creatura.register_mob("animalia:bat", {
 				center = creatura.get_ground_level(center, 8)
 				if center.y < pos.y then
 					local under = {x = center.x, y = center.y - 1, z = center.z}
-					if creatura.get_node_def(under).walkable
-					and not minetest.is_protected(center, "") then
+					if creatura.get_node_def(under).walkable and
+					minetest.get_node_light(center, nil) < 6 then
 						minetest.set_node(center, {name = "animalia:guano"})
 					end
 				end
