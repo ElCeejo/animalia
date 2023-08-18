@@ -527,9 +527,9 @@ function animalia.action_wander_walk(self, timer, pos2, speed, anim)
 	local check_timer = 0.25
 	timer = timer or 2
 	pos2 = pos2 or {
-		x = pos.x + random(width, -width),
+		x = pos.x + random(-width, width),
 		y = pos.y,
-		z = pos.z + random(width, -width)
+		z = pos.z + random(-width, width)
 	}
 	local function func(_self)
 		pos = _self.object:get_pos()
@@ -573,9 +573,9 @@ function animalia.action_wander_fly(self, timer, pos2)
 	local check_timer = 0.25
 	timer = timer or 2
 	pos2 = pos2 or {
-		x = pos.x + random(width, -width),
-		y = pos.y + random(width, -width),
-		z = pos.z + random(width, -width)
+		x = pos.x + random(-width, width),
+		y = pos.y + random(-width, width),
+		z = pos.z + random(-width, width)
 	}
 	local function func(_self)
 		pos = _self.object:get_pos()

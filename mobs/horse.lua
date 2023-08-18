@@ -3,6 +3,10 @@
 -----------
 
 local random = math.random
+-- Like `random`, but swaps `from` and `to` if needed.
+local function randint(from, to)
+	return random(math.min(from, to), math.max(from, to))
+end
 
 local follows = {}
 
@@ -266,9 +270,9 @@ creatura.register_mob("animalia:horse", {
 			tex_no = mate_ent.texture_no
 		end
 		ent:memorize("texture_no", tex_no)
-		ent:memorize("speed", random(mate_ent.speed, self.speed))
-		ent:memorize("jump_power", random(mate_ent.jump_power, self.jump_power))
-		ent:memorize("max_health", random(mate_ent.max_health, self.max_health))
+		ent:memorize("speed", randint(mate_ent.speed, self.speed))
+		ent:memorize("jump_power", randint(mate_ent.jump_power, self.jump_power))
+		ent:memorize("max_health", randint(mate_ent.max_health, self.max_health))
 		ent.speed = ent:recall("speed")
 		ent.jump_power = ent:recall("jump_power")
 		ent.max_health = ent:recall("max_health")
