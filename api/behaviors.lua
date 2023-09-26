@@ -56,8 +56,8 @@ if farming_enabled then
 			if farming.registered_plants[item_string]
 			or farming.registered_plants[item_name] then
 				def.groups.crop = growth_stage
+				minetest.override_item(name, {groups = def.groups})
 			end
-			minetest.register_node(":" .. name, def)
 		end
 	end)
 end
