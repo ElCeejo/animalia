@@ -446,6 +446,7 @@ iterate_libri_images()
 minetest.register_craftitem("animalia:libri_animalia", {
 	description = "Libri Animalia",
 	inventory_image = "animalia_libri_animalia.png",
+	groups = {book = 1},
 	stack_max = 1,
 	on_place = function(itemstack, player)
 		local meta = itemstack:get_meta()
