@@ -14,7 +14,18 @@ local pi = math.pi
 local pi2 = pi * 2
 local sin = math.sin
 local rad = math.rad
-local random = math.random
+
+-- fix for negative coordinates
+local function random(a,b)
+	if b == nil then
+		return math.random(a)
+	elseif a < b then
+		return math.random(a,b)
+	else
+		return math.random(b,a)
+	end
+end
+
 
 local function diff(a, b) -- Get difference between 2 angles
 	return atan2(sin(b - a), cos(b - a))
