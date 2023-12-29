@@ -4,17 +4,109 @@
 
 local random = math.random
 
-local follows = {}
+-- Horse Inventory
 
-minetest.register_on_mods_loaded(function()
-	for name in pairs(minetest.registered_items) do
-		if (name:match(":wheat")
-		or minetest.get_item_group(name, "food_wheat") > 0)
-		and not name:find("seed") then
-			table.insert(follows, name)
+local form_obj = {}
+
+local function create_horse_inventory(self)
+	if not self.owner then return end
+	local inv_name = "animalia:horse_" .. self.owner
+	local inv = minetest.create_detached_inventory(inv_name, {
+		allow_move = function(_, _, _, _, _, count)
+			return count
+		end,
+		allow_put = function(_, _, _, stack)
+			return stack:get_count()
+		end,
+		allow_take = function(_, _, _, stack)
+			return stack:get_count()
+		end
+	})
+	inv:set_size("main", 12)
+	inv:set_width("main", 4)
+	return inv
+end
+
+local function serialize_horse_inventory(self)
+	if not self.owner then return end
+	local inv_name = "animalia:horse_" .. self.owner
+	local inv = minetest.get_inventory({type = "detached", name = inv_name})
+	if not inv then return end
+	local list = inv:get_list("main")
+	local stored = {}
+	for k, item in ipairs(list) do
+		local itemstr = item:to_string()
+		if itemstr ~= "" then
+			stored[k] = itemstr
+		end
+	end
+	self._inventory = self:memorize("_inventory", minetest.serialize(stored))
+end
+
+local function get_form(self, player_name)
+	local inv = create_horse_inventory(self)
+	if inv
+	and self._inventory then
+		inv:set_list("main", minetest.deserialize(self._inventory))
+	end
+
+	local frame_range = self.animations["stand"].range
+	local frame_loop = frame_range.x .. "," ..  frame_range.y
+	local texture = self:get_props().textures[1]
+	local form = {
+		"formspec_version[3]",
+		"size[10.5,10]",
+		"image[0,0;10.5,5.25;animalia_form_horse_bg.png]",
+		"model[0,0.5;5,3.5;mob_mesh;animalia_horse.b3d;" .. texture .. ";-10,-130;false;false;" .. frame_loop .. ";15]",
+		"list[detached:animalia:horse_" .. player_name .. ";main;5.4,0.5;4,3;]",
+		"list[current_player;main;0.4,4.9;8,4;]",
+		"listring[current_player;main]"
+	}
+
+	return table.concat(form, "")
+end
+
+local function close_form(player)
+	local name = player:get_player_name()
+
+	if form_obj[name] then
+		form_obj[name] = nil
+		minetest.remove_detached_inventory("animalia:horse_" .. name)
+	end
+end
+
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+	local name = player:get_player_name()
+	if not form_obj[name] or not form_obj[name]:get_yaw() then
+		return
+	end
+	local obj = form_obj[name]
+	if formname == "animalia:horse_forms" then
+		local ent = obj and obj:get_luaentity()
+		if not ent then return end
+
+		if fields.quit or fields.key_enter then
+			form_obj[name] = nil
+			serialize_horse_inventory(ent)
+			minetest.remove_detached_inventory("animlaia:horse_" .. name)
+		end
+	end
+
+	if formname == "animalia:horse_inv" then
+		local ent = obj and obj:get_luaentity()
+		if not ent then return end
+
+		if fields.quit or fields.key_enter then
+			form_obj[name] = nil
+			serialize_horse_inventory(ent)
+			minetest.remove_detached_inventory("animalia:horse_" .. name)
 		end
 	end
 end)
+
+minetest.register_on_leaveplayer(close_form)
+
+-- Pattern
 
 local patterns = {
 	"animalia_horse_pattern_1.png",
@@ -26,11 +118,11 @@ local avlbl_colors = {
 	[1] = {
 		"animalia_horse_2.png",
 		"animalia_horse_3.png",
-		"animalia_horse_6.png"
+		"animalia_horse_5.png"
 	},
 	[2] = {
 		"animalia_horse_1.png",
-		"animalia_horse_6.png"
+		"animalia_horse_5.png"
 	},
 	[3] = {
 		"animalia_horse_2.png",
@@ -41,10 +133,6 @@ local avlbl_colors = {
 		"animalia_horse_1.png"
 	},
 	[5] = {
-		"animalia_horse_2.png",
-		"animalia_horse_1.png"
-	},
-	[6] = {
 		"animalia_horse_2.png",
 		"animalia_horse_1.png"
 	}
@@ -71,6 +159,8 @@ local function set_pattern(self)
 	})
 end
 
+-- Definition
+
 creatura.register_mob("animalia:horse", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
@@ -80,8 +170,7 @@ creatura.register_mob("animalia:horse", {
 		"animalia_horse_2.png",
 		"animalia_horse_3.png",
 		"animalia_horse_4.png",
-		"animalia_horse_5.png",
-		"animalia_horse_6.png"
+		"animalia_horse_5.png"
 	},
 	makes_footstep_sound = true,
 
@@ -119,20 +208,23 @@ creatura.register_mob("animalia:horse", {
 	},
 	animations = {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 71, y = 89}, speed = 25, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 70, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
 		run = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
-		punch_aoe = {range = {x = 161, y = 180}, speed = 30, frame_blend = 0.2, loop = false},
-		rear = {range = {x = 131, y = 150}, speed = 20, frame_blend = 0.2, loop = false},
-		eat = {range = {x = 191, y = 220}, speed = 30, frame_blend = 0.3, loop = false}
+		punch_aoe = {range = {x = 170, y = 205}, speed = 30, frame_blend = 0.2, loop = false},
+		rear = {range = {x = 130, y = 160}, speed = 20, frame_blend = 0.2, loop = false},
+		eat = {range = {x = 210, y = 240}, speed = 30, frame_blend = 0.3, loop = false}
 	},
-	follow = follows,
+	follow = animalia.food_wheat,
 	drops = {
 		{name = "animalia:leather", min = 1, max = 4, chance = 2}
 	},
 	fancy_collide = false,
 
+	-- Behavior Parameters
+	is_grazing_mob = true,
+	is_herding_mob = true,
+
 	-- Animalia Props
-	group_wander = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
 	consumable_nodes = {
@@ -141,8 +233,8 @@ creatura.register_mob("animalia:horse", {
 	},
 	head_data = {
 		bone = "Neck.CTRL",
-		offset = {x = 0, y = 1.05, z = 0.0},
-		pitch_correction = 35,
+		offset = {x = 0, y = 1.4, z = 0.0},
+		pitch_correction = 15,
 		pivot_h = 1,
 		pivot_v = 1.75
 	},
@@ -152,16 +244,6 @@ creatura.register_mob("animalia:horse", {
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:eat_turf",
-			step_delay = 0.25,
-			get_score = function(self)
-				if random(64) < 2 then
-					return 0.2, {self}
-				end
-				return 0
 			end
 		},
 		{
@@ -187,19 +269,19 @@ creatura.register_mob("animalia:horse", {
 			end
 		},
 		{
-			utility = "animalia:flee_from_target_defend",
+			utility = "animalia:flee_from_target",
 			get_score = function(self)
 				local puncher = self._puncher
 				if puncher
 				and puncher:get_pos() then
-					return 0.6, {self, puncher}
+					return 0.6, {self, puncher, true}
 				end
 				self._puncher = nil
 				return 0
 			end
 		},
 		{
-			utility = "animalia:tame_horse",
+			utility = "animalia:horse_taming",
 			get_score = function(self)
 				local rider = not self.owner and self.rider
 				if rider
@@ -212,6 +294,7 @@ creatura.register_mob("animalia:horse", {
 		{
 			utility = "animalia:mount_horse",
 			get_score = function(self)
+				if not self.owner then return 0 end
 				local owner = self.owner and minetest.get_player_by_name(self.owner)
 				local rider = owner == self.rider and self.rider
 				if rider
@@ -280,7 +363,13 @@ creatura.register_mob("animalia:horse", {
 		animalia.initialize_api(self)
 		animalia.initialize_lasso(self)
 		set_pattern(self)
+
 		self.owner = self:recall("owner") or nil
+
+		if self.owner then
+			self._inventory = self:recall("_inventory")
+		end
+
 		self.rider = nil
 		self.saddled = self:recall("saddled") or false
 		self.max_health = self:recall("max_health") or random(30, 45)
@@ -300,6 +389,11 @@ creatura.register_mob("animalia:horse", {
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 		animalia.random_sound(self)
+
+		if self.owner
+		and animalia.bound_horse[self.owner] then
+			animalia.bound_horse[self.owner].last_pos = self.object:get_pos()
+		end
 	end,
 
 	death_func = function(self)
@@ -315,22 +409,31 @@ creatura.register_mob("animalia:horse", {
 		if animalia.feed(self, clicker, false, true) then
 			return
 		end
+
 		local owner = self.owner
 		local name = clicker and clicker:get_player_name()
 		if owner and name ~= owner then return end
+
 		if animalia.set_nametag(self, clicker) then
 			return
 		end
+
 		local wielded_name = clicker:get_wielded_item():get_name()
-		if wielded_name == "" then
-			animalia.mount(self, clicker, {rot = {x = -75, y = 180, z = 0}, pos = {x = 0, y = 0.6, z = 0.5}})
+
+		if wielded_name == "animalia:saddle" then
+			self:set_saddle(true)
+			return
+		end
+
+		if clicker:get_player_control().sneak
+		and owner then
+			minetest.show_formspec(name, "animalia:horse_forms", get_form(self, name))
+			form_obj[name] = self.object
+		elseif wielded_name == "" then
+			animalia.mount(self, clicker, {rot = {x = -65, y = 180, z = 0}, pos = {x = 0, y = 0.75, z = 0.6}})
 			if self.saddled then
 				self:initiate_utility("animalia:mount", self, clicker)
 			end
-			return
-		end
-		if wielded_name == "animalia:saddle" then
-			self:set_saddle(true)
 		end
 	end,
 
@@ -344,6 +447,16 @@ creatura.register_mob("animalia:horse", {
 			return
 		end
 		animalia.punch(self, puncher, ...)
+	end,
+
+	on_detach_child = function(self, child)
+		if child
+		and self.rider == child then
+			self.rider = nil
+			child:set_eye_offset({x = 0, y = 0, z = 0}, {x = 0, y = 0, z = 0})
+			child:set_properties({visual_size = {x = 1, y = 1}})
+			animalia.animate_player(child, "stand", 30)
+		end
 	end
 })
 

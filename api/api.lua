@@ -83,13 +83,13 @@ local function activate_nametag(self)
 	})
 end
 
-local animate_player = {}
+animalia.animate_player = {}
 
 if minetest.get_modpath("default")
 and minetest.get_modpath("player_api") then
-	animate_player = player_api.set_animation
+	animalia.animate_player = player_api.set_animation
 elseif minetest.get_modpath("mcl_player") then
-	animate_player = mcl_player.player_set_animation
+	animalia.animate_player = mcl_player.player_set_animation
 end
 
 -----------------------
@@ -100,7 +100,7 @@ function animalia.rotate_to_pitch(self)
 	local rot = self.object:get_rotation()
 	if self._anim == "fly" then
 		local vel = vec_normal(self.object:get_velocity())
-		local step = math.min(self.dtime * 5, abs(diff(rot.x, vel.y)) % (pi2))
+		local step = min(self.dtime * 5, abs(diff(rot.x, vel.y)) % (pi2))
 		local n_rot = interp_angle(rot.x, vel.y, step)
 		self.object:set_rotation({
 			x = clamp(n_rot, -0.75, 0.75),
@@ -249,8 +249,8 @@ end
 
 function animalia.particle_spawner(pos, texture, type, min_pos, max_pos)
 	type = type or "float"
-	min_pos = min_pos or vec_sub(pos, 2)
-	max_pos = max_pos or vec_add(pos, 2)
+	min_pos = min_pos or vec_sub(pos, 1)
+	max_pos = max_pos or vec_add(pos, 1)
 	if type == "float" then
 		minetest.add_particlespawner({
 			amount = 16,
@@ -384,6 +384,7 @@ function animalia.set_nametag(self, clicker)
 end
 
 function animalia.initialize_api(self)
+	-- Set Gender
 	self.gender = self:recall("gender") or nil
 	if not self.gender then
 		local genders = {"male", "female"}
@@ -391,10 +392,14 @@ function animalia.initialize_api(self)
 		-- Reset Texture ID
 		self.texture_no = nil
 	end
+
+	-- Taming/Breeding
 	self.food = self:recall("food") or 0
 	self.gotten = self:recall("gotten") or false
 	self.breeding = false
 	self.breeding_cooldown = self:recall("breeding_cooldown") or 0
+
+	-- Textures/Scale
 	activate_nametag(self)
 	if self.growth_scale then
 		self:memorize("growth_scale", self.growth_scale) -- This is for spawning children
@@ -580,12 +585,11 @@ function animalia.mount(self, player, params)
 		})
 		player:set_eye_offset()
 		if minetest.get_modpath("player_api") then
-			animate_player(player, "stand", 30)
+			animalia.animate_player(player, "stand", 30)
 			if player_api.player_attached then
 				player_api.player_attached[plyr_name] = false
 			end
 		end
-		self.rider = nil
 		return
 	end
 	if minetest.get_modpath("player_api") then
@@ -593,10 +597,10 @@ function animalia.mount(self, player, params)
 	end
 	self.rider = player
 	player:set_attach(self.object, "Torso", params.pos, params.rot)
-	player:set_eye_offset({x = 0, y = 25, z = 0}, {x = 0, y = 15, z = 15})
+	player:set_eye_offset({x = 0, y = 20, z = 5}, {x = 0, y = 15, z = 15})
 	self:clear_utility()
 	minetest.after(0.4, function()
-		animate_player(player, "sit" , 30)
+		animalia.animate_player(player, "sit" , 30)
 	end)
 end
 
@@ -628,6 +632,18 @@ function animalia.eat_crop(self, pos)
 	minetest.set_node(pos, {name = new_name, param2 = p2})
 	animalia.add_food_particle(self, new_name)
 	return true
+end
+
+function animalia.eat_turf(mob, pos)
+	for name, sub_name in pairs(mob.consumable_nodes) do
+		if minetest.get_node(pos).name == name then
+			--add_break_particle(turf_pos)
+			minetest.set_node(pos, {name = sub_name})
+			mob.collected = mob:memorize("collected", false)
+			--creatura.action_idle(mob, 1, "eat")
+			return true
+		end
+	end
 end
 
 --------------

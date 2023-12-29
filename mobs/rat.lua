@@ -75,6 +75,9 @@ creatura.register_mob("animalia:rat", {
 		{name = "animalia:rat_raw", min = 1, max = 1, chance = 1}
 	},
 
+	-- Behavior Parameters
+	is_skittish_mob = true,
+
 	-- Animalia Props
 	flee_puncher = true,
 	catch_with_net = true,

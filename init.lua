@@ -6,6 +6,7 @@ local storage = dofile(path .. "/api/storage.lua")
 
 animalia.spawn_points = storage.spawn_points
 animalia.libri_font_size = storage.libri_font_size
+animalia.bound_horse = storage.bound_horse
 
 animalia.pets = {}
 
@@ -79,12 +80,10 @@ minetest.register_on_mods_loaded(function()
 		or minetest.get_item_group(name, "food_wheat") > 0)
 		and not name:find("seed") then
 			table.insert(animalia.food_wheat, name)
-			return
 		end
 		if name:match(":seed_")
 		or name:match("_seed") then
 			table.insert(animalia.food_seeds, name)
-			return
 		end
 	end
 end)
@@ -105,6 +104,7 @@ animalia.animals = {
 	"animalia:fox",
 	"animalia:frog",
 	"animalia:horse",
+	"animalia:opossum",
 	"animalia:owl",
 	"animalia:pig",
 	"animalia:rat",

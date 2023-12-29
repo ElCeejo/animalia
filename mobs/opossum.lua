@@ -41,17 +41,17 @@ local function eat_dropped_food(self)
 end
 
 
-creatura.register_mob("animalia:fox", {
+creatura.register_mob("animalia:opossum", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
-	mesh = "animalia_fox.b3d",
+	mesh = "animalia_opossum.b3d",
 	textures = {
-		"animalia_fox_1.png"
+		"animalia_opossum.png"
 	},
 	makes_footstep_sound = false,
 
 	-- Creatura Props
-	max_health = 10,
+	max_health = 5,
 	armor_groups = {fleshy = 100},
 	damage = 2,
 	speed = 4,
@@ -61,15 +61,17 @@ creatura.register_mob("animalia:fox", {
 	stepheight = 1.1,
 	sound = {},
 	hitbox = {
-		width = 0.35,
-		height = 0.5
+		width = 0.25,
+		height = 0.4
 	},
 	animations = {
-		stand = {range = {x = 1, y = 39}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 41, y = 59}, speed = 30, frame_blend = 0.3, loop = true},
-		run = {range = {x = 41, y = 59}, speed = 45, frame_blend = 0.3, loop = true},
+		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 70, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
+		run = {range = {x = 100, y = 119}, speed = 45, frame_blend = 0.3, loop = true},
+		feint = {range = {x = 130, y = 130}, speed = 45, frame_blend = 0.3, loop = false}
 	},
 	follow = {
+		"animalia:song_bird_egg",
 		"animalia:rat_raw",
 		"animalia:mutton_raw",
 		"animalia:beef_raw",
@@ -113,7 +115,7 @@ creatura.register_mob("animalia:fox", {
 		{
 			utility = "animalia:attack_target",
 			get_score = function(self)
-				local target = self._target or creatura.get_nearby_object(self, {"animalia:rat", "animalia:chicken"})
+				local target = self._target or creatura.get_nearby_object(self, {"animalia:rat"})
 				local tgt_pos = target and target:get_pos()
 				if tgt_pos
 				and self:is_pos_safe(tgt_pos) then
@@ -123,7 +125,7 @@ creatura.register_mob("animalia:fox", {
 			end
 		},
 		{
-			utility = "animalia:flee_from_target",
+			utility = "animalia:idle",
 			get_score = function(self)
 				local target = self._puncher or creatura.get_nearby_player(self)
 				local pos, tgt_pos = self.object:get_pos(), target and target:get_pos()
@@ -134,7 +136,7 @@ creatura.register_mob("animalia:fox", {
 					local dist = vec_dist(pos, tgt_pos)
 					local score = (self.tracking_range - dist) / self.tracking_range
 					self._puncher = target
-					return score / 2, {self, target}
+					return score / 3, {self, 5, "feint"}
 				end
 				self._puncher = nil
 				return 0
@@ -204,7 +206,7 @@ creatura.register_mob("animalia:fox", {
 	on_punch = animalia.punch
 })
 
-creatura.register_spawn_item("animalia:fox", {
+creatura.register_spawn_item("animalia:opossum", {
 	col1 = "d0602d",
 	col2 = "c9c9c9"
 })

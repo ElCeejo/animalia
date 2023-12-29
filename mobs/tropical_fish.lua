@@ -29,7 +29,7 @@ creatura.register_mob("animalia:tropical_fish", {
 	max_boids = 6,
 	boid_seperation = 0.3,
 	despawn_after = 200,
-	max_fall = 3,
+	max_fall = 0,
 	stepheight = 1.1,
 	hitbox = {
 		width = 0.15,
@@ -39,7 +39,11 @@ creatura.register_mob("animalia:tropical_fish", {
 		swim = {range = {x = 1, y = 20}, speed = 20, frame_blend = 0.3, loop = true},
 		flop = {range = {x = 30, y = 40}, speed = 20, frame_blend = 0.3, loop = true},
 	},
-	bouyancy_multiplier = 0,
+	liquid_submergence = 1,
+	liquid_drag = 0,
+
+	-- Animalia Behaviors
+	is_aquatic_mob = true,
 
 	-- Animalia Props
 	flee_puncher = false,
@@ -54,18 +58,7 @@ creatura.register_mob("animalia:tropical_fish", {
 			get_score = function(self)
 				return 0.1, {self}
 			end
-		},
-		{
-			utility = "animalia:flop",
-			step_delay = 0.25,
-			get_score = function(self)
-				if not self.in_liquid then
-					self:hurt(1)
-					return 1, {self}
-				end
-				return 0
-			end
-		},
+		}
 	},
 
 	activate_func = function(self)

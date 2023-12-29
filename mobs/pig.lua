@@ -61,6 +61,9 @@ creatura.register_mob("animalia:pig", {
 		{name = "animalia:porkchop_raw", min = 1, max = 3, chance = 1}
 	},
 
+	-- Behavior Parameters
+	is_herding_mob = true,
+
 	-- Animalia Props
 	flee_puncher = true,
 	catch_with_net = true,

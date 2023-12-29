@@ -66,8 +66,8 @@ creatura.register_mob("animalia:sheep", {
 	},
 	animations = {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 70, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
-		run = {range = {x = 100, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 70, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
+		run = {range = {x = 100, y = 119}, speed = 30, frame_blend = 0.3, loop = true},
 		eat = {range = {x = 130, y = 150}, speed = 20, frame_blend = 0.3, loop = false}
 	},
 	follow = animalia.food_wheat,
@@ -76,8 +76,11 @@ creatura.register_mob("animalia:sheep", {
 		minetest.get_modpath("wool") and {name = "wool:white", min = 1, max = 3, chance = 2} or nil
 	},
 
+	-- Behavior Parameters
+	is_grazing_mob = true,
+	is_herding_mob = true,
+
 	-- Animalia Props
-	group_wander = true,
 	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
@@ -99,16 +102,6 @@ creatura.register_mob("animalia:sheep", {
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:eat_turf",
-			step_delay = 0.25,
-			get_score = function(self)
-				if random(64) < 2 then
-					return 0.2, {self}
-				end
-				return 0
 			end
 		},
 		{
@@ -177,7 +170,7 @@ creatura.register_mob("animalia:sheep", {
 
 		local tool = clicker:get_wielded_item()
 		local tool_name = tool:get_name()
-		local creative = minetest.is_creative_enabled(clicker)
+		local creative = minetest.is_creative_enabled(clicker:get_player_name())
 
 		if tool_name == "animalia:shears" then
 			if not minetest.get_modpath("wool") then

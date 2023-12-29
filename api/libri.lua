@@ -447,6 +447,8 @@ minetest.register_craftitem("animalia:libri_animalia", {
 	description = "Libri Animalia",
 	inventory_image = "animalia_libri_animalia.png",
 	stack_max = 1,
+	groups = {book = 1},
+
 	on_place = function(itemstack, player)
 		local meta = itemstack:get_meta()
 		if meta:get_string("pages") ~= "" then meta:set_string("pages", "") end

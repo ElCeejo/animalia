@@ -5,8 +5,78 @@
 local random = math.random
 
 local vec_add = vector.add
+local vec_dir = vector.direction
 local vec_dist = vector.distance
 local vec_sub = vector.subtract
+
+local dir2yaw = minetest.dir_to_yaw
+
+local function get_food_pos(self)
+	local _, pos = animalia.get_dropped_food(self)
+
+	return pos
+end
+
+local function eat_dropped_food(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local food = animalia.get_dropped_food(self, nil, self.width + 1)
+
+	local food_ent = food and food:get_luaentity()
+	if food_ent then
+		local food_pos = food:get_pos()
+
+		local stack = ItemStack(food_ent.itemstring)
+		if stack
+		and stack:get_count() > 1 then
+			stack:take_item()
+			food_ent.itemstring = stack:to_string()
+		else
+			food:remove()
+		end
+
+		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
+		animalia.add_food_particle(self, stack:get_name())
+
+		if self.on_eat_drop then
+			self:on_eat_drop()
+		end
+		return true
+	end
+end
+
+local function get_bug_pos(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local food = minetest.find_nodes_in_area(
+		vec_sub(pos, 3),
+		vec_add(pos, 3),
+		self.follow
+	) or {}
+
+	return #food > 0 and food[1]
+end
+
+local function eat_bug(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local bug = get_bug_pos(self)
+	if not bug then return end
+
+	local dir = vec_dir(pos, bug)
+	local dist = vec_dist(pos, bug)
+	local frame = math.floor(dist * 10)
+
+	self.object:set_yaw(dir2yaw(dir))
+	animalia.move_head(self, dir2yaw(dir), dir.y)
+	creatura.action_idle(self, 0.4, "tongue_" .. frame)
+
+	minetest.remove_node(bug)
+	return true
+end
 
 local function poison_effect(object)
 	object:punch(object, 1.0, {
@@ -67,15 +137,10 @@ local utility_stacks = {
 			end
 		},
 		{
-			utility = "animalia:eat_bug",
+			utility = "animalia:walk_to_pos_and_interact",
 			get_score = function(self)
-				local pos = self.object:get_pos()
-				if not pos then return end
-				if random(12) < 2 then
-					local food = minetest.find_nodes_in_area(vec_sub(pos, 1.5), vec_add(pos, 1.5), self.follow)
-					if food[1] then
-						return 0.3, {self, food[1]}
-					end
+				if math.random(2) < 2 then
+					return 0.3, {self, get_bug_pos, eat_bug, nil, 0}
 				end
 				return 0
 			end
@@ -158,22 +223,16 @@ local utility_stacks = {
 			end
 		},
 		{
-			utility = "animalia:walk_to_food",
+			utility = "animalia:walk_to_pos_and_interact",
 			get_score = function(self)
-				local cooldown = self.eat_cooldown or 0
-				if cooldown > 0 then
-					self.eat_cooldown = cooldown - 1
-					return 0
-				end
-				local food_item = animalia.get_dropped_food(self)
-				if food_item then
-					return 0.3, {self, food_item}
+				if math.random(8) < 2 then
+					return 0.3, {self, get_food_pos, eat_dropped_food, nil, 12}
 				end
 				return 0
 			end
 		},
 		{
-			utility = "animalia:warn_attack_target",
+			utility = "animalia:attack_target",
 			get_score = function(self)
 				local target = creatura.get_nearby_player(self) or creatura.get_nearby_object(self, "animalia:rat")
 				if target then
@@ -330,6 +389,18 @@ local head_data = {
 	}
 }
 
+local follow = {
+	{
+		"butterflies:butterfly_white",
+		"butterflies:butterfly_violet",
+		"butterflies:butterfly_red"
+	},
+	{
+		"animalia:rat_raw"
+	},
+	{}
+}
+
 creatura.register_mob("animalia:frog", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
@@ -374,9 +445,7 @@ creatura.register_mob("animalia:frog", {
 		height = 0.3
 	},
 	animations = {},
-	follow = {
-		"animalia:rat_raw"
-	},
+	follow = {},
 	drops = {},
 	fancy_collide = false,
 	bouyancy_multiplier = 0,
@@ -431,6 +500,7 @@ creatura.register_mob("animalia:frog", {
 			end
 		elseif mesh_no == 2 then
 			self.object:set_armor_groups({fleshy = 50})
+			self.warn_before_attack = true
 		end
 	end,
 
@@ -440,6 +510,10 @@ creatura.register_mob("animalia:frog", {
 		animalia.do_growth(self, 60)
 		if self:timer(random(5, 15)) then
 			self:play_sound("random")
+		end
+
+		if not self.mesh_vars_set then
+			self.follow = follow[self.mesh_no]
 		end
 	end,
 

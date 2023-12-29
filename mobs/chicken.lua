@@ -63,8 +63,10 @@ creatura.register_mob("animalia:chicken", {
 		{name = "animalia:feather", min = 1, max = 3, chance = 2}
 	},
 
+	-- Behavior Parameters
+	is_herding_mob = true,
+
 	-- Animalia Props
-	group_wander = true,
 	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,

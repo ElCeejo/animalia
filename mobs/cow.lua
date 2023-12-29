@@ -2,9 +2,6 @@
 -- Cow --
 ---------
 
-local random = math.random
-
-
 creatura.register_mob("animalia:cow", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
@@ -65,7 +62,7 @@ creatura.register_mob("animalia:cow", {
 	},
 	animations = {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
-		walk = {range = {x = 71, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
+		walk = {range = {x = 71, y = 89}, speed = 15, frame_blend = 0.3, loop = true},
 		run = {range = {x = 71, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
 	},
 	follow = animalia.food_wheat,
@@ -74,6 +71,10 @@ creatura.register_mob("animalia:cow", {
 		{name = "animalia:leather", min = 1, max = 3, chance = 2}
 	},
 	fancy_collide = false,
+
+	-- Behavior Parameters
+	is_grazing_mob = true,
+	is_herding_mob = true,
 
 	-- Animalia Props
 	flee_puncher = true,
@@ -98,16 +99,6 @@ creatura.register_mob("animalia:cow", {
 			step_delay = 0.25,
 			get_score = function(self)
 				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:eat_turf",
-			step_delay = 0.25,
-			get_score = function(self)
-				if random(64) < 2 then
-					return 0.2, {self}
-				end
-				return 0
 			end
 		},
 		{
@@ -183,7 +174,7 @@ creatura.register_mob("animalia:cow", {
 			if inv:room_for_item("main", {name = "animalia:bucket_milk"}) then
 				clicker:get_inventory():add_item("main", "animalia:bucket_milk")
 			else
-				local pos = self:get_pos("floor")
+				local pos = self.object:get_pos()
 				pos.y = pos.y + 0.5
 				minetest.add_item(pos, {name = "animalia:bucket_milk"})
 			end

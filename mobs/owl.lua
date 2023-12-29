@@ -4,7 +4,45 @@
 
 local abs = math.abs
 
+local vec_dir = vector.direction
 local vec_dist = vector.distance
+
+local dir2yaw = minetest.dir_to_yaw
+
+local function get_food_pos(self)
+	local _, pos = animalia.get_dropped_food(self)
+
+	return pos
+end
+
+local function eat_dropped_food(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local food = animalia.get_dropped_food(self, nil, self.width + 1)
+
+	local food_ent = food and food:get_luaentity()
+	if food_ent then
+		local food_pos = food:get_pos()
+
+		local stack = ItemStack(food_ent.itemstring)
+		if stack
+		and stack:get_count() > 1 then
+			stack:take_item()
+			food_ent.itemstring = stack:to_string()
+		else
+			food:remove()
+		end
+
+		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
+		animalia.add_food_particle(self, stack:get_name())
+
+		if self.on_eat_drop then
+			self:on_eat_drop()
+		end
+		return true
+	end
+end
 
 local function get_home_pos(self)
 	local pos = self.object:get_pos()
@@ -128,16 +166,10 @@ creatura.register_mob("animalia:owl", {
 			end
 		},
 		{
-			utility = "animalia:fly_to_food",
+			utility = "animalia:fly_to_pos_and_interact",
 			get_score = function(self)
-				local cooldown = self.eat_cooldown or 0
-				if cooldown > 0 then
-					self.eat_cooldown = cooldown - 1
-					return 0
-				end
-				local food_item = animalia.get_dropped_food(self, "animalia:rat_raw")
-				if food_item then
-					return 0.3, {self, food_item}
+				if math.random(1) < 2 then
+					return 0.3, {self, get_food_pos, eat_dropped_food, nil, 12}
 				end
 				return 0
 			end

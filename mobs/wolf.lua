@@ -75,8 +75,11 @@ creatura.register_mob("animalia:wolf", {
 	},
 	follow = follow,
 
+	-- Behavior Parameters
+	is_skittish_mob = true,
+	is_herding_mob = true,
+
 	-- Animalia Props
-	skittish_wander = true,
 	assist_owner = true,
 	flee_puncher = false,
 	catch_with_net = true,
