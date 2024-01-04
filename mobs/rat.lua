@@ -2,47 +2,6 @@
 -- Mice --
 ----------
 
-local vec_add, vec_sub = vector.add, vector.subtract
-
-local function find_chest(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local nodes = minetest.find_nodes_with_meta(vec_sub(pos, 6), vec_add(pos, 6)) or {}
-	local pos2
-	for _, node_pos in ipairs(nodes) do
-		local meta = minetest.get_meta(node_pos)
-		if meta:get_string("owner") == "" then
-			local inv = minetest.get_inventory({type = "node", pos = node_pos})
-			if inv
-			and inv:get_list("main") then
-				pos2 = node_pos
-			end
-		end
-	end
-	return pos2
-end
-
-
-local function take_food_from_chest(self, pos)
-	local inv = minetest.get_inventory({type = "node", pos = pos})
-	if inv
-	and inv:get_list("main") then
-		for i, stack in ipairs(inv:get_list("main")) do
-			local item_name = stack:get_name()
-			local def = minetest.registered_items[item_name]
-			for group in pairs(def.groups) do
-				if group:match("food_") then
-					stack:take_item()
-					inv:set_stack("main", i, stack)
-					animalia.add_food_particle(self, item_name)
-					return true
-				end
-			end
-		end
-	end
-end
-
 creatura.register_mob("animalia:rat", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
@@ -85,53 +44,11 @@ creatura.register_mob("animalia:rat", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			get_score = function(self)
-				-- Eat Crops
-				if math.random(6) < 2
-				or self:get_utility() == "animalia:walk_to_pos_and_interact" then
-					return 0.2, {self, animalia.find_crop, animalia.eat_crop, "eat"}
-				end
-				-- Steal From Chest
-				if math.random(12) < 2
-				or self:get_utility() == "animalia:walk_to_pos_and_interact" then
-					return 0.3, {self, find_chest, take_food_from_chest, "eat"}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				local target = creatura.get_nearby_object(self, {"animalia:fox", "animalia:cat"})
-				if not target then
-					target = creatura.get_nearby_player(self)
-				end
-				if target
-				and target:get_pos() then
-					return 0.6, {self, target}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.basic_seek_crop,
+		animalia.mob_ai.rat_seek_chest,
+		animalia.mob_ai.basic_flee
 	},
 
 	activate_func = function(self)

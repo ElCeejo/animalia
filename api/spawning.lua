@@ -127,6 +127,17 @@ creatura.register_abm_spawn("animalia:owl", {
 	nodes = {"group:leaves"}
 })
 
+creatura.register_abm_spawn("animalia:opossum", {
+	chance = predator_spawn_chance,
+	interval = 60,
+	min_height = -1,
+	max_height = 1024,
+	min_group = 1,
+	max_group = 2,
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:soil", "group:leaves"}
+})
+
 creatura.register_abm_spawn("animalia:pig", {
 	chance = common_spawn_chance,
 	chance_on_load = 64,

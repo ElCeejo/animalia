@@ -34,6 +34,7 @@ local generate_mobs = {
 	["animalia:cat"] = "Cat",
 	["animalia:chicken"] = "Chicken",
 	["animalia:cow"] = "Cow",
+	["animalia:opossum"] = "Opossum",
 	["animalia:owl"] = "Owl",
 	["animalia:tropical_fish"] = "Tropical Fish",
 	["animalia:fox"] = "Fox",
@@ -54,6 +55,7 @@ local spawn_biomes = {
 	["animalia:cat"] = "urban",
 	["animalia:chicken"] = "tropical",
 	["animalia:cow"] = "grassland",
+	["animalia:opossum"] = "temperate",
 	["animalia:owl"] = "temperate",
 	["animalia:tropical_fish"] = "ocean",
 	["animalia:fox"] = "boreal",
@@ -109,6 +111,7 @@ local biome_cubes = {}
 local function generate_page(mob)
 	local name = mob:split(":")[2]
 	local def = minetest.registered_entities[mob]
+	if not def then return end
 	local page = {
 		{ -- Info
 			element_type = "label",

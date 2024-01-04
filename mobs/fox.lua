@@ -2,45 +2,6 @@
 -- Fox --
 ---------
 
-local vec_dir, vec_dist = vector.direction, vector.distance
-local dir2yaw = minetest.dir_to_yaw
-
-local function get_food_pos(self)
-	local _, pos = animalia.get_dropped_food(self)
-
-	return pos
-end
-
-local function eat_dropped_food(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local food = animalia.get_dropped_food(self, nil, self.width + 1)
-
-	local food_ent = food and food:get_luaentity()
-	if food_ent then
-		local food_pos = food:get_pos()
-
-		local stack = ItemStack(food_ent.itemstring)
-		if stack
-		and stack:get_count() > 1 then
-			stack:take_item()
-			food_ent.itemstring = stack:to_string()
-		else
-			food:remove()
-		end
-
-		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
-		animalia.add_food_particle(self, stack:get_name())
-
-		if self.on_eat_drop then
-			self:on_eat_drop()
-		end
-		return true
-	end
-end
-
-
 creatura.register_mob("animalia:fox", {
 	-- Engine Props
 	visual_size = {x = 10, y = 10},
@@ -79,6 +40,10 @@ creatura.register_mob("animalia:fox", {
 
 	-- Behavior Parameters
 	is_skittish_mob = true,
+	attack_list = {
+		"animalia:chicken",
+		"animalia:rat"
+	},
 
 	-- Animalia Props
 	flee_puncher = true,
@@ -93,85 +58,13 @@ creatura.register_mob("animalia:fox", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:attack_target",
-			get_score = function(self)
-				local target = self._target or creatura.get_nearby_object(self, {"animalia:rat", "animalia:chicken"})
-				local tgt_pos = target and target:get_pos()
-				if tgt_pos
-				and self:is_pos_safe(tgt_pos) then
-					return 0.4, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				local target = self._puncher or creatura.get_nearby_player(self)
-				local pos, tgt_pos = self.object:get_pos(), target and target:get_pos()
-				if not pos then return end
-				if not tgt_pos then self._puncher = nil return 0 end
-				local sneaking = target:get_player_control().sneak
-				if not sneaking then
-					local dist = vec_dist(pos, tgt_pos)
-					local score = (self.tracking_range - dist) / self.tracking_range
-					self._puncher = target
-					return score / 2, {self, target}
-				end
-				self._puncher = nil
-				return 0
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			get_score = function(self)
-				if math.random(14) < 2 then
-					return 0.7, {self, get_food_pos, eat_dropped_food, nil, 12}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso_tgt = self._lassod_to
-				local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
-				if lasso
-				and lasso:get_pos() then
-					return 0.6, {self, lasso, true}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.7, {self}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.basic_attack,
+		animalia.mob_ai.fox_flee,
+		animalia.mob_ai.basic_seek_food,
+		animalia.mob_ai.tamed_follow_owner,
+		animalia.mob_ai.basic_breed
 	},
 
 	on_eat_drop = function(self)

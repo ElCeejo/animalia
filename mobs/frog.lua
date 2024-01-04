@@ -4,80 +4,6 @@
 
 local random = math.random
 
-local vec_add = vector.add
-local vec_dir = vector.direction
-local vec_dist = vector.distance
-local vec_sub = vector.subtract
-
-local dir2yaw = minetest.dir_to_yaw
-
-local function get_food_pos(self)
-	local _, pos = animalia.get_dropped_food(self)
-
-	return pos
-end
-
-local function eat_dropped_food(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local food = animalia.get_dropped_food(self, nil, self.width + 1)
-
-	local food_ent = food and food:get_luaentity()
-	if food_ent then
-		local food_pos = food:get_pos()
-
-		local stack = ItemStack(food_ent.itemstring)
-		if stack
-		and stack:get_count() > 1 then
-			stack:take_item()
-			food_ent.itemstring = stack:to_string()
-		else
-			food:remove()
-		end
-
-		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
-		animalia.add_food_particle(self, stack:get_name())
-
-		if self.on_eat_drop then
-			self:on_eat_drop()
-		end
-		return true
-	end
-end
-
-local function get_bug_pos(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local food = minetest.find_nodes_in_area(
-		vec_sub(pos, 3),
-		vec_add(pos, 3),
-		self.follow
-	) or {}
-
-	return #food > 0 and food[1]
-end
-
-local function eat_bug(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local bug = get_bug_pos(self)
-	if not bug then return end
-
-	local dir = vec_dir(pos, bug)
-	local dist = vec_dist(pos, bug)
-	local frame = math.floor(dist * 10)
-
-	self.object:set_yaw(dir2yaw(dir))
-	animalia.move_head(self, dir2yaw(dir), dir.y)
-	creatura.action_idle(self, 0.4, "tongue_" .. frame)
-
-	minetest.remove_node(bug)
-	return true
-end
-
 local function poison_effect(object)
 	object:punch(object, 1.0, {
 		full_punch_interval = 1.0,
@@ -119,252 +45,30 @@ local animations = {
 
 local utility_stacks = {
 	{ -- Tree Frog
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:aquatic_wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.2, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			get_score = function(self)
-				if math.random(2) < 2 then
-					return 0.3, {self, get_bug_pos, eat_bug, nil, 0}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name)
-				and self.in_liquid then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flop",
-			step_delay = 0.25,
-			get_score = function(self)
-				if not self.in_liquid
-				and self.growth_scale < 0.8 then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				if self.in_liquid then return 0 end
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local target = self._puncher or self._target or creatura.get_nearby_player(self)
-				local tgt_pos = target and target:get_pos()
-				local plyr_name = (target and target:is_player() and target:get_player_name()) or ""
-				if tgt_pos then
-					local trust = self.trust[plyr_name] or 0
-					self._target = target -- stored to memory to avoid calling get_nearby_player again
-					return (10 - (vec_dist(pos, tgt_pos) + trust)) * 0.1, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:run_to_pos",
-			get_score = function(self)
-				if self.in_liquid then return 0 end
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local water = minetest.find_nodes_in_area(vec_sub(pos, 1.5), vec_add(pos, 1.5), {"group:water"})
-				if not water[1] then return 0 end
-				local player = self._target
-				local plyr_name = player and player:is_player() and player:get_player_name()
-				if plyr_name then
-					local plyr_pos = player and player:get_pos()
-					local trust = self.trust[plyr_name] or 0
-					return (10 - (vec_dist(pos, plyr_pos) + trust)) * 0.1, {self, water[1]}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_wander,
+		animalia.mob_ai.frog_seek_bug,
+		animalia.mob_ai.frog_breed,
+		animalia.mob_ai.basic_flee,
+		animalia.mob_ai.frog_flop,
+		animalia.mob_ai.frog_seek_water
 	},
 	{ -- Bull Frog
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:aquatic_wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.2, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			get_score = function(self)
-				if math.random(8) < 2 then
-					return 0.3, {self, get_food_pos, eat_dropped_food, nil, 12}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:attack_target",
-			get_score = function(self)
-				local target = creatura.get_nearby_player(self) or creatura.get_nearby_object(self, "animalia:rat")
-				if target then
-					if target:is_player() then
-						local trust = self.trust[target:get_player_name()] or 0
-						if trust > 5 then
-							return 0
-						end
-					end
-					return 0.4, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name)
-				and self.in_liquid then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flop",
-			step_delay = 0.25,
-			get_score = function(self)
-				if not self.in_liquid
-				and self.growth_scale < 0.8 then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:run_to_pos",
-			get_score = function(self)
-				if self.in_liquid then return 0 end
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local water = minetest.find_nodes_in_area(vec_sub(pos, 1.5), vec_add(pos, 1.5), {"group:water"})
-				if not water[1] then return 0 end
-				local player = self._target
-				local plyr_name = player and player:is_player() and player:get_player_name()
-				if plyr_name then
-					local plyr_pos = player and player:get_pos()
-					local trust = self.trust[plyr_name] or 0
-					return (10 - (vec_dist(pos, plyr_pos) + trust)) * 0.1, {self, water[1]}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_wander,
+		animalia.mob_ai.basic_seek_food,
+		animalia.mob_ai.basic_attack,
+		animalia.mob_ai.frog_breed,
+		animalia.mob_ai.frog_flop,
+		animalia.mob_ai.frog_seek_water
 	},
-	{
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:aquatic_wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.2, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name)
-				and self.in_liquid then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flop",
-			step_delay = 0.25,
-			get_score = function(self)
-				if not self.in_liquid
-				and self.growth_scale < 0.8 then
-					return 1, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				if self.in_liquid then return 0 end
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local target = self._puncher or self._target or creatura.get_nearby_player(self)
-				local tgt_pos = target and target:get_pos()
-				local plyr_name = (target and target:is_player() and target:get_player_name()) or ""
-				if tgt_pos then
-					local trust = self.trust[plyr_name] or 0
-					self._target = target -- stored to memory to avoid calling get_nearby_player again
-					return (10 - (vec_dist(pos, tgt_pos) + trust)) * 0.1, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:run_to_pos",
-			get_score = function(self)
-				if self.in_liquid then return 0 end
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local water = minetest.find_nodes_in_area(vec_sub(pos, 1.5), vec_add(pos, 1.5), {"group:water"})
-				if not water[1] then return 0 end
-				local player = self._target
-				local plyr_name = player and player:is_player() and player:get_player_name()
-				if plyr_name then
-					local plyr_pos = player and player:get_pos()
-					local trust = self.trust[plyr_name] or 0
-					return (10 - (vec_dist(pos, plyr_pos) + trust)) * 0.1, {self, water[1]}
-				end
-				return 0
-			end
-		}
+	{ -- Poison Dart Frog
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_wander,
+		animalia.mob_ai.frog_breed,
+		animalia.mob_ai.basic_flee,
+		animalia.mob_ai.frog_flop,
+		animalia.mob_ai.frog_seek_water
 	}
 }
 

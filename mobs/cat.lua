@@ -2,10 +2,6 @@
 -- Cat --
 ---------
 
-local random = math.random
-
-local vec_dist, vec_add, vec_sub = vector.distance, vector.add, vector.subtract
-
 local follow = {
 	"animalia:poultry_raw"
 }
@@ -15,24 +11,6 @@ if minetest.registered_items["ethereal:fish_raw"] then
 		"ethereal:fish_raw",
 		"animalia:poultry_raw"
 	}
-end
-
-local function find_glass_vessel(self)
-	local pos = self.object:get_pos()
-	if not pos then return end
-
-	local nodes = minetest.find_nodes_in_area(vec_sub(pos, 6), vec_add(pos, 6),
-												{"vessels:glass_bottle", "vessels:drinking_glass"}) or {}
-	if #nodes < 1 then return end
-	return nodes[math.random(#nodes)]
-end
-
-local function destroy_glass_vessel(self, pos)
-	if not minetest.is_protected(pos, "") then
-		minetest.remove_node(pos)
-		minetest.add_item(pos, "vessels:glass_fragments")
-		return true
-	end
 end
 
 creatura.register_mob("animalia:cat", {
@@ -101,6 +79,9 @@ creatura.register_mob("animalia:cat", {
 	follow = follow,
 	drops = {},
 
+	-- Behavior Parameters
+	is_skittish_mob = true,
+
 	-- Animalia Props
 	flee_puncher = true,
 	catch_with_net = true,
@@ -111,119 +92,17 @@ creatura.register_mob("animalia:cat", {
 		pivot_h = 0.4,
 		pivot_v = 0.4
 	},
-	skittish_wander = true,
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			step_delay = 0.25,
-			get_score = function(self)
-				if random(2) < 2 then
-					return 0.2, {self, find_glass_vessel, destroy_glass_vessel, nil, 10}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:bother_player",
-			step_delay = 0.25,
-			get_score = function(self)
-				if random(24) > 1 then return 0 end
-				local owner = self.owner and minetest.get_player_by_name(self.owner)
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local trust = self.trust[self.owner] or 0
-				if trust > 3
-				and owner
-				and vec_dist(pos, owner:get_pos()) < self.tracking_range then
-					return 0.2, {self, owner}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:stay",
-			step_delay = 0.25,
-			get_score = function(self)
-				local trust = (self.owner and self.trust[self.owner]) or 0
-				if trust < 5 then return 0 end
-				local order = self.order or "wander"
-				if order == "sit" then
-					return 0.5, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:play_with_player",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.trust_cooldown > 0 then return 0 end
-				local owner = self.owner and minetest.get_player_by_name(self.owner)
-				if owner
-				and owner:get_wielded_item():get_name() == "animalia:cat_toy" then
-					return 0.6, {self, owner}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso_tgt = self._lassod_to
-				local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
-				local trust = (self.owner and self.trust[self.owner]) or 0
-				local owner = self.owner and self.order == "follow" and trust > 4 and minetest.get_player_by_name(self.owner)
-				local force = (lasso and lasso ~= false) or (owner and owner ~= false)
-				local player = (force and (owner or lasso)) or creatura.get_nearby_player(self)
-				if player
-				and self:follow_wielded_item(player) then
-					return 0.6, {self, player, force}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:attack_target",
-			get_score = function(self)
-				local target = self._target or creatura.get_nearby_object(self, "animalia:rat")
-				local tgt_pos = target and target:get_pos()
-				if tgt_pos
-				and self:is_pos_safe(tgt_pos) then
-					return 0.7, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.8, {self}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.cat_seek_vessel,
+		animalia.mob_ai.cat_stay,
+		--animalia.mob_ai.cat_play
+		animalia.mob_ai.cat_follow_owner,
+		animalia.mob_ai.basic_attack,
+		animalia.mob_ai.basic_breed
 	},
 
 	activate_func = function(self)

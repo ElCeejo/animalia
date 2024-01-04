@@ -8,7 +8,8 @@ globals = {
 	"animalia",
 	"farming",
 	"mcl_player",
-	"player_api"
+	"player_api",
+	"armor"
 }
 
 read_globals = {

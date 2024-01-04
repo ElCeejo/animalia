@@ -42,13 +42,9 @@ end
 
 -- Vector Math --
 
-local vec_dir = vector.direction
-local vec_add = vector.add
-local vec_sub = vector.subtract
-local vec_multi = vector.multiply
-local vec_normal = vector.normalize
-local vec_divide = vector.divide
-local vec_len = vector.length
+local vec_add, vec_dir, vec_dist, vec_divide, vec_len, vec_multi, vec_normal,
+	vec_round, vec_sub = vector.add, vector.direction, vector.distance, vector.divide,
+	vector.length, vector.multiply, vector.normalize, vector.round, vector.subtract
 
 local dir2yaw = minetest.dir_to_yaw
 local yaw2dir = minetest.yaw_to_dir
@@ -203,6 +199,56 @@ end
 -- Environment Access --
 ------------------------
 
+function animalia.has_shared_owner(obj1, obj2)
+	local ent1 = obj1 and obj1:get_luaentity()
+	local ent2 = obj2 and obj2:get_luaentity()
+	if ent1
+	and ent2 then
+		return ent1.owner and ent2.owner and ent1.owner == ent2.owner
+	end
+	return false
+end
+
+function animalia.get_attack_score(entity, attack_list)
+	local pos = entity.stand_pos
+	if not pos then return end
+
+	local order = entity.order or "wander"
+	if order ~= "wander" then return 0 end
+
+	local target = entity._target or (entity.attacks_players and creatura.get_nearby_player(entity))
+	local tgt_pos = target and target:get_pos()
+
+	if not tgt_pos
+	or not entity:is_pos_safe(tgt_pos)
+	or (target:is_player()
+	and minetest.is_creative_enabled(target:get_player_name())) then
+		target = creatura.get_nearby_object(entity, attack_list)
+		tgt_pos = target and target:get_pos()
+	end
+
+	if not tgt_pos then entity._target = nil return 0 end
+
+	if target == entity.object then entity._target = nil return 0 end
+
+	if animalia.has_shared_owner(entity.object, target) then entity._target = nil return 0 end
+
+	local dist = vec_dist(pos, tgt_pos)
+	local score = (entity.tracking_range - dist) / entity.tracking_range
+
+	if entity.trust
+	and target:is_player()
+	and entity.trust[target:get_player_name()] then
+		local trust = entity.trust[target:get_player_name()]
+		local trust_score = ((entity.max_trust or 10) - trust) / (entity.max_trust or 10)
+
+		score = score - trust_score
+	end
+
+	entity._target = target
+	return score * 0.5, {entity, target}
+end
+
 function animalia.get_nearby_mate(self)
 	local pos = self.object:get_pos()
 	if not pos then return end
@@ -316,6 +362,38 @@ function animalia.add_food_particle(self, item_name)
 	end
 end
 
+function animalia.add_break_particle(pos)
+	pos = vec_round(pos)
+	local def = creatura.get_node_def(pos)
+	local texture = (def.tiles and def.tiles[1]) or def.inventory_image
+	texture = texture .. "^[resize:8x8"
+	minetest.add_particlespawner({
+		amount = 6,
+		time = 0.1,
+		minpos = {
+			x = pos.x,
+			y = pos.y - 0.49,
+			z = pos.z
+		},
+		maxpos = {
+			x = pos.x,
+			y = pos.y - 0.49,
+			z = pos.z
+		},
+		minvel = {x=-1, y=1, z=-1},
+		maxvel = {x=1, y=2, z=1},
+		minacc = {x=0, y=-5, z=0},
+		maxacc = {x=0, y=-9, z=0},
+		minexptime = 1,
+		maxexptime = 1.5,
+		minsize = 1,
+		maxsize = 2,
+		collisiondetection = true,
+		vertical = false,
+		texture = texture,
+	})
+end
+
 ----------
 -- Mobs --
 ----------
@@ -329,6 +407,7 @@ end
 function animalia.get_dropped_food(self, item, radius)
 	local pos = self.object:get_pos()
 	if not pos then return end
+
 	local objects = minetest.get_objects_inside_radius(pos, radius or self.tracking_range)
 	for _, object in ipairs(objects) do
 		local ent = object:get_luaentity()
@@ -339,6 +418,35 @@ function animalia.get_dropped_food(self, item, radius)
 		or self:follow_item(ItemStack(ent.itemstring))) then
 			return object, object:get_pos()
 		end
+	end
+end
+
+function animalia.eat_dropped_item(self, item)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local food = item or animalia.get_dropped_food(self, nil, self.width + 1)
+
+	local food_ent = food and food:get_luaentity()
+	if food_ent then
+		local food_pos = food:get_pos()
+
+		local stack = ItemStack(food_ent.itemstring)
+		if stack
+		and stack:get_count() > 1 then
+			stack:take_item()
+			food_ent.itemstring = stack:to_string()
+		else
+			food:remove()
+		end
+
+		self.object:set_yaw(dir2yaw(vec_dir(pos, food_pos)))
+		animalia.add_food_particle(self, stack:get_name())
+
+		if self.on_eat_drop then
+			self:on_eat_drop()
+		end
+		return true
 	end
 end
 
@@ -569,7 +677,8 @@ function animalia.feed(self, clicker, tame, breed)
 end
 
 function animalia.mount(self, player, params)
-	if not creatura.is_alive(player) then
+	if not creatura.is_alive(player)
+	or player:get_attach() then
 		return
 	end
 	local plyr_name = player:get_player_name()

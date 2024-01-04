@@ -70,36 +70,11 @@ creatura.register_mob("animalia:turkey", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.5, {self}
-				end
-				return 0
-			end
-		},
-		animalia.global_utils.basic_follow,
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.4, {self}
-				end
-				return 0
-			end
-		},
-		animalia.global_utils.basic_flee
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.tamed_follow_owner,
+		animalia.mob_ai.basic_breed,
+		animalia.mob_ai.basic_flee
 	},
 
 	add_child = function(self)

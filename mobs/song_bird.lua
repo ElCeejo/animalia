@@ -54,6 +54,9 @@ creatura.register_mob("animalia:song_bird", {
 		{name = "animalia:feather", min = 1, max = 1, chance = 2}
 	},
 
+	-- Behavior Parameters
+	uses_boids = true,
+
 	-- Animalia Props
 	flee_puncher = true,
 	catch_with_net = true,
@@ -63,41 +66,9 @@ creatura.register_mob("animalia:song_bird", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self, true}
-			end
-		},
-		{
-			utility = "animalia:aerial_wander",
-			get_score = function(self)
-				if self.is_landed then
-					local player = creatura.get_nearby_player(self)
-					if player then
-						self.is_landed = self:memorize("is_landed", false)
-					end
-				end
-				if not self.is_landed
-				or self.in_liquid then
-					return 0.2, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:fly_to_land",
-			get_score = function(self)
-				if self.is_landed
-				and not self.touching_ground
-				and not self.in_liquid
-				and creatura.sensor_floor(self, 3, true) > 2 then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.fly_landing_wander,
+		animalia.mob_ai.fly_seek_land
 	},
 
 	activate_func = function(self)

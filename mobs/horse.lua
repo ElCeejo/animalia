@@ -239,49 +239,13 @@ creatura.register_mob("animalia:horse", {
 		pivot_v = 1.75
 	},
 	utility_stack = {
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.tamed_follow_owner,
+		animalia.mob_ai.basic_breed,
+		animalia.mob_ai.basic_flee,
 		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		animalia.global_utils.basic_follow,
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.5, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:flee_from_target",
-			get_score = function(self)
-				local puncher = self._puncher
-				if puncher
-				and puncher:get_pos() then
-					return 0.6, {self, puncher, true}
-				end
-				self._puncher = nil
-				return 0
-			end
-		},
-		{
-			utility = "animalia:horse_taming",
+			utility = "animalia:horse_tame",
 			get_score = function(self)
 				local rider = not self.owner and self.rider
 				if rider
@@ -292,7 +256,7 @@ creatura.register_mob("animalia:horse", {
 			end
 		},
 		{
-			utility = "animalia:mount_horse",
+			utility = "animalia:horse_ride",
 			get_score = function(self)
 				if not self.owner then return 0 end
 				local owner = self.owner and minetest.get_player_by_name(self.owner)
@@ -389,11 +353,6 @@ creatura.register_mob("animalia:horse", {
 		animalia.do_growth(self, 60)
 		animalia.update_lasso_effects(self)
 		animalia.random_sound(self)
-
-		if self.owner
-		and animalia.bound_horse[self.owner] then
-			animalia.bound_horse[self.owner].last_pos = self.object:get_pos()
-		end
 	end,
 
 	death_func = function(self)

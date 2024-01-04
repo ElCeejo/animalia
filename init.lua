@@ -6,7 +6,6 @@ local storage = dofile(path .. "/api/storage.lua")
 
 animalia.spawn_points = storage.spawn_points
 animalia.libri_font_size = storage.libri_font_size
-animalia.bound_horse = storage.bound_horse
 
 animalia.pets = {}
 
@@ -90,8 +89,16 @@ end)
 
 -- Load Files
 
+local function load_file(filepath, filename)
+    if io.open(filepath .. "/" .. filename, "r") then
+        dofile(filepath .. "/" .. filename)
+    else
+        minetest.log("action", "[Creatura] The file " .. filename .. " could not be loaded.")
+    end
+end
+
 dofile(path.."/api/api.lua")
-dofile(path.."/api/behaviors.lua")
+dofile(path.."/api/mob_ai.lua")
 dofile(path.."/api/lasso.lua")
 dofile(path.."/craftitems.lua")
 
@@ -115,10 +122,25 @@ animalia.animals = {
 	"animalia:wolf",
 }
 
-for i = 1, #animalia.animals do
-	local name = animalia.animals[i]:split(":")[2]
-	dofile(path.."/mobs/" .. name .. ".lua")
-end
+dofile(path.."/api/api.lua")
+
+load_file(path .. "/mobs", "bat.lua")
+load_file(path .. "/mobs", "cat.lua")
+load_file(path .. "/mobs", "chicken.lua")
+load_file(path .. "/mobs", "cow.lua")
+load_file(path .. "/mobs", "fox.lua")
+load_file(path .. "/mobs", "frog.lua")
+load_file(path .. "/mobs", "horse.lua")
+load_file(path .. "/mobs", "opossum.lua")
+load_file(path .. "/mobs", "owl.lua")
+load_file(path .. "/mobs", "pig.lua")
+load_file(path .. "/mobs", "rat.lua")
+load_file(path .. "/mobs", "reindeer.lua")
+load_file(path .. "/mobs", "sheep.lua")
+load_file(path .. "/mobs", "song_bird.lua")
+load_file(path .. "/mobs", "turkey.lua")
+load_file(path .. "/mobs", "tropical_fish.lua")
+load_file(path .. "/mobs", "wolf.lua")
 
 if minetest.settings:get_bool("spawn_mobs", true) then
 	dofile(path.."/api/spawning.lua")

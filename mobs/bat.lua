@@ -81,48 +81,9 @@ creatura.register_mob("animalia:bat", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:aerial_wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local player = creatura.get_nearby_player(self)
-				local plyr_pos = player and not player:get_player_control().sneak and player:get_pos()
-				if plyr_pos then
-					local dist = vec_dist(pos, plyr_pos)
-					self._target = player
-					self.is_landed = false
-					return (self.tracking_range - dist) / self.tracking_range, {self}
-				end
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:fly_to_roost",
-			get_score = function(self)
-				local pos = self.object:get_pos()
-				if not pos then return end
-				local home = animalia.is_day and self.home_position
-				if (home
-				and home.x
-				and vec_dist(pos, home) < 8)
-				or self.is_landed then
-					return 0.6, {self}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.fly_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.bat_seek_home
 	},
 
 	is_home = function(pos, home_pos)

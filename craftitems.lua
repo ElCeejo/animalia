@@ -168,6 +168,12 @@ minetest.register_craftitem("animalia:feather", {
 	groups = {flammable = 2, feather = 1},
 })
 
+minetest.register_craftitem("animalia:pelt_bear", {
+	description = "Bear Pelt",
+	inventory_image = "animalia_pelt_bear.png",
+	groups = {flammable = 2, pelt = 1},
+})
+
 -- Meat --
 
 minetest.register_craftitem("animalia:beef_raw", {

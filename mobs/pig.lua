@@ -78,46 +78,12 @@ creatura.register_mob("animalia:pig", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self, true}
-			end
-		},
-		{
-			utility = "animalia:walk_to_pos_and_interact",
-			get_score = function(self)
-				if math.random(6) < 2
-				or self:get_utility() == "animalia:walk_to_pos_and_interact" then
-					return 0.2, {self, animalia.find_crop, animalia.eat_crop}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		animalia.global_utils.basic_follow,
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.5, {self}
-				end
-				return 0
-			end
-		},
-		animalia.global_utils.basic_flee
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.basic_seek_crop,
+		animalia.mob_ai.tamed_follow_owner,
+		animalia.mob_ai.basic_breed,
+		animalia.mob_ai.basic_flee
 	},
 
 	activate_func = function(self)

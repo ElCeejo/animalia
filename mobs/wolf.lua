@@ -2,20 +2,7 @@
 -- Wolf --
 ----------
 
-local function shared_owner(obj1, obj2)
-	if not obj1 or not obj2 then return false end
-	obj1 = creatura.is_valid(obj1)
-	obj2 = creatura.is_valid(obj2)
-	if obj1
-	and obj2
-	and obj1:get_luaentity()
-	and obj2:get_luaentity() then
-		obj1 = obj1:get_luaentity()
-		obj2 = obj2:get_luaentity()
-		return obj1.owner and obj2.owner and obj1.owner == obj2.owner
-	end
-	return false
-end
+
 
 local follow = {
 	"animalia:mutton_raw",
@@ -94,74 +81,12 @@ creatura.register_mob("animalia:wolf", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:wander",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		},
-		{
-			utility = "animalia:swim_to_land",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.in_liquid then
-					return 0.3, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:attack_target",
-			get_score = function(self)
-				local order = self.order or "wander"
-				if order ~= "wander" then return 0 end
-				local target = self._target or creatura.get_nearby_object(self, "animalia:sheep")
-				if target
-				and not shared_owner(self, target) then
-					return 0.4, {self, target}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:stay",
-			step_delay = 0.25,
-			get_score = function(self)
-				local order = self.order or "wander"
-				if order == "sit" then
-					return 0.5, {self}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:follow_player",
-			get_score = function(self)
-				local lasso_tgt = self._lassod_to
-				local lasso = type(lasso_tgt) == "string" and minetest.get_player_by_name(lasso_tgt)
-				local owner = self.owner and self.order == "follow" and minetest.get_player_by_name(self.owner)
-				local force = (lasso and lasso ~= false) or owner
-				local player = (force and (owner or lasso)) or creatura.get_nearby_player(self)
-				if player
-				and (self:follow_wielded_item(player)
-				or force) then
-					return 0.6, {self, player, force}
-				end
-				return 0
-			end
-		},
-		{
-			utility = "animalia:breed",
-			step_delay = 0.25,
-			get_score = function(self)
-				if self.breeding
-				and animalia.get_nearby_mate(self, self.name) then
-					return 0.7, {self}
-				end
-				return 0
-			end
-		}
+		animalia.mob_ai.basic_wander,
+		animalia.mob_ai.swim_seek_land,
+		animalia.mob_ai.tamed_stay,
+		animalia.mob_ai.tamed_follow_owner,
+		animalia.mob_ai.basic_attack,
+		animalia.mob_ai.basic_breed
 	},
 
 	activate_func = function(self)

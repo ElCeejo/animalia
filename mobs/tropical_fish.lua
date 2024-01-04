@@ -52,13 +52,7 @@ creatura.register_mob("animalia:tropical_fish", {
 
 	-- Functions
 	utility_stack = {
-		{
-			utility = "animalia:aquatic_wander_school",
-			step_delay = 0.25,
-			get_score = function(self)
-				return 0.1, {self}
-			end
-		}
+		animalia.mob_ai.swim_wander
 	},
 
 	activate_func = function(self)
