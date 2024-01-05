@@ -98,6 +98,6 @@ creatura.register_mob("animalia:opossum", {
 })
 
 creatura.register_spawn_item("animalia:opossum", {
-	col1 = "d0602d",
-	col2 = "c9c9c9"
+	col1 = "75665f",
+	col2 = "ccbfb8"
 })

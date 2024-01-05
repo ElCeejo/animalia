@@ -1282,7 +1282,7 @@ creatura.register_utility("animalia:cat_follow_owner", function(self, player)
 				if random(attack_chance) < 2 then
 					animalia.action_melee(mob, owner)
 				else
-					creatura.action_idle(mob)
+					creatura.action_idle(mob, 1)
 				end
 			end
 		end
@@ -1425,7 +1425,7 @@ creatura.register_utility("animalia:tamed_idle", function(self)
 		if not mob.owner or mob.order ~= "stay" then return true end
 
 		if not mob:get_action() then
-			creatura.action_idle(mob)
+			creatura.action_idle(mob, 1)
 		end
 	end
 	self:set_utility(func)
@@ -1445,7 +1445,7 @@ creatura.register_utility("animalia:tamed_follow_owner", function(self, player)
 			if dist > mob.width + 1 then
 				animalia.action_pursue(mob, owner)
 			else
-				creatura.action_idle(mob)
+				creatura.action_idle(mob, 1)
 			end
 		end
 	end
