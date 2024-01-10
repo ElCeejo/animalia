@@ -59,16 +59,7 @@ creatura.register_mob("animalia:reindeer", {
 	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = true,
-	consumable_nodes = {
-		{
-			name = "default:dirt_with_grass",
-			replacement = "default:dirt"
-		},
-		{
-			name = "default:dry_dirt_with_dry_grass",
-			replacement = "default:dry_dirt"
-		}
-	},
+	consumable_nodes = animalia.consumable_grass,
 	head_data = {
 		offset = {x = 0, y = 0.55, z = 0},
 		pitch_correction = -45,

@@ -775,7 +775,7 @@ local function assign_biome_group(name)
 	local y_max = def.y_max
 	for group, params in pairs(animalia.registered_biome_groups) do -- k, v in pairs
 		if name:find(params.name_kw or "")
-		and turf and turf:find(params.turf_kw or "")
+		and turf and ((turf:find(params.turf_kw or "")) or (params.turf_in and params.turf_in[turf] or false))
 		and heat >= params.min_heat
 		and heat <= params.max_heat
 		and humidity >= params.min_humidity
@@ -796,6 +796,7 @@ end)
 animalia.register_biome_group("temperate", {
 	name_kw = "",
 	turf_kw = "grass",
+	turf_in = animalia.consumable_grass,
 	min_heat = 45,
 	max_heat = 70,
 	min_humidity = 0,
@@ -805,6 +806,7 @@ animalia.register_biome_group("temperate", {
 animalia.register_biome_group("urban", {
 	name_kw = "",
 	turf_kw = "grass",
+	turf_in = animalia.consumable_grass,
 	min_heat = 0,
 	max_heat = 100,
 	min_humidity = 0,
@@ -814,6 +816,7 @@ animalia.register_biome_group("urban", {
 animalia.register_biome_group("grassland", {
 	name_kw = "",
 	turf_kw = "grass",
+	turf_in = animalia.consumable_grass,
 	min_heat = 45,
 	max_heat = 90,
 	min_humidity = 0,
