@@ -44,6 +44,16 @@ minetest.register_on_mods_loaded(function()
 	insert_all(frog_biomes, animalia.registered_biome_groups["tropical"].biomes)
 end)
 
+creatura.register_abm_spawn("animalia:grizzly_bear", {
+	chance = predator_spawn_chance,
+	min_height = -1,
+	max_height = 1024,
+	min_group = 1,
+	max_group = 1,
+	biomes = animalia.registered_biome_groups["boreal"].biomes,
+	nodes = {"group:sand"},
+})
+
 creatura.register_abm_spawn("animalia:chicken", {
 	chance = common_spawn_chance,
 	chance_on_load = 64,

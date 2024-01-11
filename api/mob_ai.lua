@@ -98,7 +98,7 @@ local function calc_altitude(self, pos2)
 	return ((calc_pos.y + altitude) - center_y) / range * 2
 end
 
-local function calc_steering_and_lift(self, pos, pos2, dir, steer_method)
+--[[local function calc_steering_and_lift(self, pos, pos2, dir, steer_method)
 	local steer_to = creatura.calc_steering(self, pos2, steer_method or creatura.get_context_small)
 	pos2 = vec_add(pos, steer_to)
 	local lift = creatura.get_avoidance_lift(self, pos2, 2)
@@ -111,7 +111,7 @@ local function calc_steering_and_lift_aquatic(self, pos, pos2, dir, steer_method
 	local lift = creatura.get_avoidance_lift_aquatic(self, vec_add(pos, steer_to), 2)
 	steer_to.y = (lift ~= 0 and lift) or dir.y
 	return steer_to
-end
+end]]
 
 local function get_obstacle(pos, water)
 	local pos2 = {x = pos.x, y = pos.y, z = pos.z}
@@ -482,6 +482,60 @@ end
 --  if self.animations["latch_ceiling"] then latch to ceiling end
 -- 	if self.animations["latch_wall"] then latch to wall end
 
+local latch_ceil_offset = {x = 0, y = 1, z = 0}
+local latch_wall_offset = {
+	{x = 1, y = 0, z = 0},
+	{x = 0, y = 0, z = 1},
+	{x = -1, y = 0, z = 0},
+	{x = 0, y = 0, z = -1}
+}
+
+
+function animalia.action_latch(self)
+	local pos = self.object:get_pos()
+	if not pos then return end
+
+	local ceiling
+	if self.animations["latch_ceiling"] then
+		ceiling = vec_add(pos, latch_ceil_offset)
+
+		if not creatura.get_node_def(ceiling).walkable then
+			ceiling = nil
+		end
+	end
+
+	local wall
+	if self.animations["latch_wall"] then
+		for n = 1, 4 do
+			wall = vec_add(self.stand_pos, latch_wall_offset[n])
+
+			if creatura.get_node_def(wall).walkable then
+				break
+			else
+				wall = nil
+			end
+		end
+	end
+	local function func(mob)
+		mob:set_gravity(0)
+
+		if ceiling then
+			mob:animate("latch_ceiling")
+			mob:set_vertical_velocity(1)
+			mob:set_forward_velocity(0)
+			return
+		end
+
+		if wall then
+			mob:animate("latch_wall")
+			mob.object:set_yaw(minetest.dir_to_yaw(vec_dir(pos, wall)))
+			mob:set_vertical_velocity(0)
+			mob:set_forward_velocity(1)
+		end
+	end
+	self:set_action(func)
+end
+
 function animalia.action_pursue(self, target, timeout, method, speed_factor, anim)
 	local timer = timeout or 4
 	local goal
@@ -559,6 +613,46 @@ function animalia.action_melee(self, target)
 	self:set_action(func)
 end
 
+function animalia.action_play(self, target)
+	local stage = 1
+	local is_animated = self.animations["play"] ~= nil
+	local timeout = 1
+
+	local function func(mob)
+		local target_pos = target and target:get_pos()
+		if not target_pos then return true end
+
+		local pos = mob.stand_pos
+		local dist = vec_dist(pos, target_pos)
+		local dir = vec_dir(pos, target_pos)
+
+		local anim = is_animated and mob:animate("play", "stand")
+
+		if stage == 1 then
+			mob.object:add_velocity({x = dir.x * 3, y = 2, z = dir.z * 3})
+
+			stage = 2
+		end
+
+		if stage == 2
+		and dist < mob.width + 1 then
+			animalia.add_trust(mob, target, 1)
+
+			stage = 3
+		end
+
+		if stage == 3
+		and (not is_animated
+		or anim == "stand") then
+			return true
+		end
+
+		timeout = timeout - mob.dtime
+		if timeout <= 0 then return true end
+	end
+	self:set_action(func)
+end
+
 function animalia.action_float(self, time, anim)
 	local timer = time
 	local function func(_self)
@@ -612,6 +706,48 @@ function animalia.action_dive_attack(self, target, timeout)
 end
 
 -- Behaviors
+
+creatura.register_utility("animalia:die", function(self)
+	local timer = 1.5
+	local init = false
+	local function func(_self)
+		if not init then
+			_self:play_sound("death")
+			creatura.action_fallover(_self)
+			init = true
+		end
+		timer = timer - _self.dtime
+		if timer <= 0 then
+			local pos = _self.object:get_pos()
+			if not pos then return end
+			minetest.add_particlespawner({
+				amount = 8,
+				time = 0.25,
+				minpos = {x = pos.x - 0.1, y = pos.y, z = pos.z - 0.1},
+				maxpos = {x = pos.x + 0.1, y = pos.y + 0.1, z = pos.z + 0.1},
+				minacc = {x = 0, y = 2, z = 0},
+				maxacc = {x = 0, y = 3, z = 0},
+				minvel = {x = random(-1, 1), y = -0.25, z = random(-1, 1)},
+				maxvel = {x = random(-2, 2), y = -0.25, z = random(-2, 2)},
+				minexptime = 0.75,
+				maxexptime = 1,
+				minsize = 4,
+				maxsize = 4,
+				texture = "creatura_smoke_particle.png",
+				animation = {
+					type = 'vertical_frames',
+					aspect_w = 4,
+					aspect_h = 4,
+					length = 1,
+				},
+				glow = 1
+			})
+			creatura.drop_items(_self)
+			_self.object:remove()
+		end
+	end
+	self:set_utility(func)
+end)
 
 -- Basic --
 
@@ -832,12 +968,11 @@ creatura.register_utility("animalia:basic_attack", function(self, target)
 end)
 
 creatura.register_utility("animalia:basic_breed", function(self)
-	local mate
+	local mate = animalia.get_nearby_mate(self, self.name)
 
 	local timer = 0
 	local function func(mob)
-		mate = mate or animalia.get_nearby_mate(mob, mob.name)
-		if not mate then return true end
+		if not mob.breeding then return true end
 
 		local pos, target_pos = mob.object:get_pos(), mate and mate:get_pos()
 		if not pos or not target_pos then return true end
@@ -850,8 +985,8 @@ creatura.register_utility("animalia:basic_breed", function(self)
 
 			mob.breeding = mob:memorize("breeding", false)
 			mob.breeding_cooldown = mob:memorize("breeding_cooldown", 300)
-			mate_entity.breeding = mate:memorize("breeding", false)
-			mate_entity.breeding_cooldown = mate:memorize("breeding_cooldown", 300)
+			mate_entity.breeding = mate_entity:memorize("breeding", false)
+			mate_entity.breeding_cooldown = mate_entity:memorize("breeding_cooldown", 300)
 
 			animalia.particle_spawner(pos, "heart.png", "float")
 
@@ -866,6 +1001,7 @@ creatura.register_utility("animalia:basic_breed", function(self)
 					animalia.protect_from_despawn(ent)
 				end
 			end
+			return true, 60
 		end
 
 		if not mob:get_action() then
@@ -1120,7 +1256,13 @@ creatura.register_utility("animalia:horse_ride", function(self, player)
 		local tyaw = player:get_look_horizontal()
 		local control = player:get_player_control()
 		local vel = _self.object:get_velocity()
-		if not tyaw then return end
+		if not tyaw then return true end
+
+		if control.sneak
+		or not _self.rider then
+			animalia.mount(_self, player)
+			return true
+		end
 
 		animate_player(player, "sit", 30)
 
@@ -1176,12 +1318,6 @@ creatura.register_utility("animalia:horse_ride", function(self, player)
 
 		_self:set_forward_velocity(_self.speed * speed_x)
 		_self:animate(anim)
-
-		if control.sneak
-		or not _self.rider then
-			animalia.mount(_self, player)
-			return true
-		end
 	end
 	self:set_utility(func)
 end)
@@ -1295,6 +1431,44 @@ creatura.register_utility("animalia:cat_follow_owner", function(self, player)
 	self:set_utility(func)
 end)
 
+creatura.register_utility("animalia:cat_play_with_owner", function(self)
+	local timeout = 6
+	--local attack_chance = 6
+
+	local has_played = false
+
+	local function func(mob)
+		local owner = mob.owner and minetest.get_player_by_name(mob.owner)
+		if not owner then return true end
+
+		local item = owner:get_wielded_item()
+		local item_name = item and item:get_name()
+
+		if item_name ~= "animalia:cat_toy" then return true, 5 end
+
+		local pos, target_pos = mob.object:get_pos(), owner:get_pos()
+		if not pos or not target_pos then return true end
+
+		if not mob:get_action() then
+			if has_played then return true, 20 end
+			local dist = vec_dist(pos, target_pos)
+
+			if dist > mob.width + 0.5 then
+				animalia.action_pursue(mob, owner)
+			else
+				animalia.action_play(mob, owner)
+				has_played = true
+			end
+		end
+
+		timeout = timeout - mob.dtime
+		if timeout <= 0 then
+			return true
+		end
+	end
+	self:set_utility(func)
+end)
+
 -- Frog --
 
 local function get_bug_pos(self)
@@ -1337,6 +1511,51 @@ creatura.register_utility("animalia:frog_seek_bug", function(self)
 		if not mob:get_action() then
 			if bug_reached then return true, 10 end
 			animalia.action_walk(mob, 2, 0.5, "walk", bug)
+		end
+
+		timeout = timeout - mob.dtime
+		if timeout <= 0 then
+			return true
+		end
+	end
+	self:set_utility(func)
+end)
+
+-- Opossum
+
+local function grow_crop(crop)
+	local crop_name = minetest.get_node(crop).name
+	local growth_stage = tonumber(crop_name:sub(-1)) or 1
+	local new_name = crop_name:sub(1, #crop_name - 1) .. (growth_stage + 1)
+	local new_def = minetest.registered_nodes[new_name]
+
+	if new_def then
+		local p2 = new_def.place_param2 or 1
+		minetest.set_node(crop, {name = new_name, param2 = p2})
+	end
+end
+
+creatura.register_utility("animalia:opossum_seek_crop", function(self)
+	local timeout = 12
+
+	local crop = animalia.find_crop(self)
+	local crop_reached = false
+	local function func(mob)
+		local pos = mob.object:get_pos()
+		if not pos or not crop then return true, 30 end
+
+		local dist = vec_dist(pos, crop)
+		if dist < mob.width + 0.5
+		and not crop_reached then
+			crop_reached = true
+
+			creatura.action_idle(mob, 1, "clean_crop")
+			grow_crop(crop)
+		end
+
+		if not mob:get_action() then
+			if crop_reached then return true, 10 end
+			animalia.action_walk(mob, 2, 0.5, "walk", crop)
 		end
 
 		timeout = timeout - mob.dtime
@@ -1481,7 +1700,6 @@ animalia.mob_ai.basic_flee = {
 
 animalia.mob_ai.basic_breed = {
 	utility = "animalia:basic_breed",
-	step_delay = 0.25,
 	get_score = function(self)
 		if self.breeding
 		and animalia.get_nearby_mate(self, self.name) then
@@ -1689,6 +1907,20 @@ animalia.mob_ai.cat_stay = {
 	end
 }
 
+animalia.mob_ai.cat_play_with_owner = {
+	utility = "animalia:cat_play_with_owner",
+	get_score = function(self)
+		local trust = (self.owner and self.trust[self.owner]) or 0
+
+		if trust
+		and trust > 1
+		and random(4) < 2 then
+			return 0.3, {self}
+		end
+		return 0
+	end
+}
+
 -- Eagle
 
 animalia.mob_ai.eagle_attack = {
@@ -1804,6 +2036,17 @@ animalia.mob_ai.opossum_feint = {
 			return score / 3, {self, 5, "feint"}
 		end
 		self._puncher = nil
+		return 0
+	end
+}
+
+animalia.mob_ai.opossum_seek_crop = {
+	utility = "animalia:opossum_seek_crop",
+	step_delay = 0.25,
+	get_score = function(self)
+		if random(8) < 2 then
+			return 0.4, {self}
+		end
 		return 0
 	end
 }

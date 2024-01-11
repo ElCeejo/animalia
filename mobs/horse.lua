@@ -211,7 +211,7 @@ creatura.register_mob("animalia:horse", {
 		walk = {range = {x = 70, y = 89}, speed = 20, frame_blend = 0.3, loop = true},
 		run = {range = {x = 101, y = 119}, speed = 40, frame_blend = 0.3, loop = true},
 		punch_aoe = {range = {x = 170, y = 205}, speed = 30, frame_blend = 0.2, loop = false},
-		rear = {range = {x = 130, y = 160}, speed = 20, frame_blend = 0.2, loop = false},
+		rear = {range = {x = 130, y = 160}, speed = 20, frame_blend = 0.1, loop = false},
 		eat = {range = {x = 210, y = 240}, speed = 30, frame_blend = 0.3, loop = false}
 	},
 	follow = animalia.food_wheat,
@@ -371,7 +371,7 @@ creatura.register_mob("animalia:horse", {
 
 		local owner = self.owner
 		local name = clicker and clicker:get_player_name()
-		if owner and name ~= owner then return end
+		if not owner or name ~= owner then return end
 
 		if animalia.set_nametag(self, clicker) then
 			return

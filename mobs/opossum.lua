@@ -30,7 +30,8 @@ creatura.register_mob("animalia:opossum", {
 		stand = {range = {x = 1, y = 59}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 70, y = 89}, speed = 30, frame_blend = 0.3, loop = true},
 		run = {range = {x = 100, y = 119}, speed = 45, frame_blend = 0.3, loop = true},
-		feint = {range = {x = 130, y = 130}, speed = 45, frame_blend = 0.3, loop = false}
+		feint = {range = {x = 130, y = 130}, speed = 45, frame_blend = 0.3, loop = false},
+		clean_crop = {range = {x = 171, y = 200}, speed = 15, frame_blend = 0.2, loop = false}
 	},
 	follow = {
 		"animalia:song_bird_egg",
@@ -62,6 +63,7 @@ creatura.register_mob("animalia:opossum", {
 		animalia.mob_ai.swim_seek_land,
 		animalia.mob_ai.basic_attack,
 		animalia.mob_ai.opossum_feint,
+		animalia.mob_ai.opossum_seek_crop,
 		animalia.mob_ai.basic_seek_food,
 		animalia.mob_ai.tamed_follow_owner,
 		animalia.mob_ai.basic_breed

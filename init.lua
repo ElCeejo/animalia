@@ -110,6 +110,7 @@ animalia.animals = {
 	"animalia:cow",
 	"animalia:fox",
 	"animalia:frog",
+	"animalia:grizzly_bear",
 	"animalia:horse",
 	"animalia:opossum",
 	"animalia:owl",
@@ -125,6 +126,7 @@ animalia.animals = {
 dofile(path.."/api/api.lua")
 
 load_file(path .. "/mobs", "bat.lua")
+load_file(path .. "/mobs", "bear.lua")
 load_file(path .. "/mobs", "cat.lua")
 load_file(path .. "/mobs", "chicken.lua")
 load_file(path .. "/mobs", "cow.lua")

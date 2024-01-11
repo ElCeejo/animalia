@@ -257,6 +257,7 @@ function animalia.get_nearby_mate(self)
 		local obj_pos = object and object:get_pos()
 		local ent = obj_pos and object:get_luaentity()
 		if obj_pos
+		and ent.growth_scale == 1
 		and ent.gender ~= self.gender
 		and ent.breeding then
 			return object
@@ -678,7 +679,8 @@ end
 
 function animalia.mount(self, player, params)
 	if not creatura.is_alive(player)
-	or player:get_attach() then
+	or (player:get_attach()
+	and player:get_attach() ~= self.object) then
 		return
 	end
 	local plyr_name = player:get_player_name()

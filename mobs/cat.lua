@@ -99,7 +99,7 @@ creatura.register_mob("animalia:cat", {
 		animalia.mob_ai.swim_seek_land,
 		animalia.mob_ai.cat_seek_vessel,
 		animalia.mob_ai.cat_stay,
-		--animalia.mob_ai.cat_play
+		animalia.mob_ai.cat_play_with_owner,
 		animalia.mob_ai.cat_follow_owner,
 		animalia.mob_ai.basic_attack,
 		animalia.mob_ai.basic_breed

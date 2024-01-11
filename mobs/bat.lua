@@ -65,7 +65,7 @@ creatura.register_mob("animalia:bat", {
 		stand = {range = {x = 1, y = 40}, speed = 10, frame_blend = 0.3, loop = true},
 		walk = {range = {x = 51, y = 69}, speed = 30, frame_blend = 0.3, loop = true},
 		fly = {range = {x = 81, y = 99}, speed = 80, frame_blend = 0.3, loop = true},
-		cling = {range = {x = 110, y = 110}, speed = 1, frame_blend = 0, loop = false}
+		latch_ceiling = {range = {x = 110, y = 110}, speed = 1, frame_blend = 0, loop = false}
 	},
 	follow = {
 		"butterflies:butterfly_red",
@@ -77,7 +77,7 @@ creatura.register_mob("animalia:bat", {
 	flee_puncher = true,
 	catch_with_net = true,
 	catch_with_lasso = false,
-	roost_action = animalia.action_cling,
+	roost_action = animalia.action_latch,
 
 	-- Functions
 	utility_stack = {
