@@ -47,10 +47,7 @@ creatura.register_mob("animalia:grizzly_bear", {
 		run = {range = {x = 81, y = 99}, speed = 20, frame_blend = 0.3, loop = true},
 		melee = {range = {x = 101, y = 120}, speed = 30, frame_blend = 0.3, loop = false}
 	},
-	follow = {
-		"group:food_berry",
-		"group:food_fish"
-	},
+	follow = animalia.food_bear,
 	drops = {
 		{name = "animalia:pelt_bear", min = 1, max = 3, chance = 1}
 	},

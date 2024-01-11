@@ -64,6 +64,7 @@ end
 animalia.food_wheat = {}
 animalia.food_seeds = {}
 animalia.food_crops = {}
+animalia.food_bear = {}
 
 minetest.register_on_mods_loaded(function()
 	if minetest.get_modpath("farming")
@@ -83,6 +84,11 @@ minetest.register_on_mods_loaded(function()
 		if name:match(":seed_")
 		or name:match("_seed") then
 			table.insert(animalia.food_seeds, name)
+		end
+		if (minetest.get_item_group(name, "food_berry") > 0
+		and not name:find("seed"))
+		or minetest.get_item_group(name, "food_fish") > 0 then
+			table.insert(animalia.food_bear, name)
 		end
 	end
 end)
