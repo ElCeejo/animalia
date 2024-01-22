@@ -512,35 +512,39 @@ minetest.register_craftitem("animalia:net", {
 -----------
 
 if minetest.get_modpath("3d_armor") then
-	table.insert(armor.attributes, "heavy_pelt")
-
-	armor:register_armor("animalia:coat_bear_pelt", {
-		description = "Bear Pelt Coat",
-		inventory_image = "animalia_inv_coat_bear_pelt.png",
-		groups = {armor_torso = 1, armor_heal = 0, armor_heavy_pelt = 1, armor_use = 1000},
-		armor_groups = {fleshy = 5}
-	})
-
-	minetest.register_on_punchplayer(function(player, hitter, _, _, _, damage)
-		local name = player:get_player_name()
-		if name
-		and (armor.def[name].heavy_pelt or 0) > 0 then
-			local hit_ip = hitter:is_player()
-			if hit_ip and minetest.is_protected(player:get_pos(), "") then
-				return
-			else
-				local player_pos = player:get_pos()
-				if not player_pos then return end
-
-				local biome_data = minetest.get_biome_data(player_pos)
-
-				if biome_data.heat < 50 then
-					player:set_hp(player:get_hp() - (damage / 1.5))
-					return true
+	if amor ~= nil then
+		table.insert(armor.attributes, "heavy_pelt")
+	
+		armor:register_armor("animalia:coat_bear_pelt", {
+			description = "Bear Pelt Coat",
+			inventory_image = "animalia_inv_coat_bear_pelt.png",
+			groups = {armor_torso = 1, armor_heal = 0, armor_heavy_pelt = 1, armor_use = 1000},
+			armor_groups = {fleshy = 5}
+		})
+	
+		minetest.register_on_punchplayer(function(player, hitter, _, _, _, damage)
+			local name = player:get_player_name()
+			if name
+			and (armor.def[name].heavy_pelt or 0) > 0 then
+				local hit_ip = hitter:is_player()
+				if hit_ip and minetest.is_protected(player:get_pos(), "") then
+					return
+				else
+					local player_pos = player:get_pos()
+					if not player_pos then return end
+	
+					local biome_data = minetest.get_biome_data(player_pos)
+	
+					if biome_data.heat < 50 then
+						player:set_hp(player:get_hp() - (damage / 1.5))
+						return true
+					end
 				end
 			end
-		end
-	end)
+		end)
+	else
+		minetest.log("warning", "Animalia: Conflicts with other mods, couldnt properly integrate with 3D_armor")
+	end
 end
 
 -----------
