@@ -371,7 +371,7 @@ creatura.register_mob("animalia:horse", {
 
 		local owner = self.owner
 		local name = clicker and clicker:get_player_name()
-		if not owner or name ~= owner then return end
+		if owner and name ~= owner then return end
 
 		if animalia.set_nametag(self, clicker) then
 			return

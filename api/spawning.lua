@@ -13,7 +13,7 @@ local function table_contains(tbl, val)
 	return false
 end
 
-local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 45000
+local common_spawn_chance = tonumber(minetest.settings:get("animalia_common_chance")) or 60000
 
 local ambient_spawn_chance = tonumber(minetest.settings:get("animalia_ambient_chance")) or 9000
 
@@ -56,13 +56,12 @@ creatura.register_abm_spawn("animalia:grizzly_bear", {
 
 creatura.register_abm_spawn("animalia:chicken", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
 	max_group = 5,
+	spawn_cap = 3,
 	biomes = chicken_biomes,
 	nodes = {"group:soil"},
 })
@@ -79,13 +78,12 @@ creatura.register_abm_spawn("animalia:cat", {
 
 creatura.register_abm_spawn("animalia:cow", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
 	max_group = 4,
+	spawn_cap = 3,
 	biomes = animalia.registered_biome_groups["grassland"].biomes,
 	nodes = {"group:soil"},
 	neighbors = {"air", "group:grass", "group:flora"}
@@ -103,13 +101,12 @@ creatura.register_abm_spawn("animalia:fox", {
 
 creatura.register_abm_spawn("animalia:horse", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
 	max_group = 4,
+	spawn_cap = 3,
 	biomes = animalia.registered_biome_groups["grassland"].biomes,
 	nodes = {"group:soil"},
 	neighbors = {"air", "group:grass", "group:flora"}
@@ -150,39 +147,36 @@ creatura.register_abm_spawn("animalia:opossum", {
 
 creatura.register_abm_spawn("animalia:pig", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 2,
 	max_group = 3,
+	spawn_cap = 3,
 	biomes = pig_biomes,
 	nodes = {"group:soil"},
 })
 
 creatura.register_abm_spawn("animalia:reindeer", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 6,
 	max_group = 8,
+	spawn_cap = 3,
 	biomes = animalia.registered_biome_groups["boreal"].biomes,
 	nodes = {"group:soil"},
 })
 
 creatura.register_abm_spawn("animalia:sheep", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
 	max_group = 6,
+	spawn_cap = 3,
 	biomes = animalia.registered_biome_groups["grassland"].biomes,
 	nodes = {"group:soil"},
 	neighbors = {"air", "group:grass", "group:flora"}
@@ -190,13 +184,12 @@ creatura.register_abm_spawn("animalia:sheep", {
 
 creatura.register_abm_spawn("animalia:turkey", {
 	chance = common_spawn_chance,
-	chance_on_load = 64,
 	spawn_active = true,
-	spawn_on_load = true,
 	min_height = 0,
 	max_height = 1024,
 	min_group = 3,
 	max_group = 4,
+	spawn_cap = 3,
 	biomes = animalia.registered_biome_groups["boreal"].biomes,
 	nodes = {"group:soil"},
 })
@@ -345,7 +338,7 @@ minetest.register_abm({
 	action = function(pos, _, active_object_count)
 		minetest.remove_node(pos)
 
-		if active_object_count > 8 then return end
+		if active_object_count > 4 then return end
 
 		local spawnable_mobs = {}
 
