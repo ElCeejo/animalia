@@ -756,7 +756,7 @@ creatura.register_utility("animalia:basic_idle", function(self, timeout, anim)
 	local init = false
 	local function func(mob)
 		if not init then
-			creatura.action_idle(mob, timeout, anim)
+			creatura.action_idle(mob, timer, anim)
 		end
 		timer = timer - mob.dtime
 		if timer <= 0 then
