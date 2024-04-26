@@ -347,7 +347,7 @@ function animalia.add_food_particle(self, item_name)
 	if def.tiles then
 		image = def.tiles[1].name or def.tiles[1]
 	end
-	if image then
+	if image and image ~= "" then
 		local crop = "^[sheet:4x4:" .. random(4) .. "," .. random(4)
 		minetest.add_particlespawner({
 			pos = head_pos,
