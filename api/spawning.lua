@@ -304,7 +304,11 @@ minetest.register_node("animalia:spawner", {
 	walkable = false,
 	pointable = false,
 	sunlight_propagates = true,
-	groups = {oddly_breakable_by_hand = 1, not_in_creative_inventory = 1}
+	drop = "",
+	diggable = false,
+	floodable = true,
+	buildable_to = true,
+	groups = {not_in_creative_inventory = 1}
 })
 
 minetest.register_decoration({
