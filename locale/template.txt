@@ -16,6 +16,7 @@ Feather=
 Female=
 Fried @1=
 Guano=
+Lasso=
 Leather=
 Male=
 Nametag=
