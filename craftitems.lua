@@ -139,10 +139,11 @@ local function mob_storage_use(itemstack, player, pointed)
 			meta:set_string("staticdata", ent:get_staticdata())
 			local ent_name = correct_name(ent.name)
 			local ent_gender = correct_name(ent.gender)
-			desc = desc .. " \n" .. color("#a9a9a9", ent_name) .. "\n" .. color("#a9a9a9", ent_gender)
+			-- desc is already translated
+			desc = desc .. " \n" .. color("#a9a9a9", S(ent_name)) .. "\n" .. color("#a9a9a9", S(ent_gender))
 			if ent.trust
 			and ent.trust[plyr_name] then
-				desc = desc .. "\n Trust: " .. color("#a9a9a9", ent.trust[plyr_name])
+				desc = desc .. "\n " .. S("Trust") .. ": " .. color("#a9a9a9", ent.trust[plyr_name])
 			end
 			meta:set_string("description", desc)
 			player:set_wielded_item(itemstack)
@@ -150,7 +151,8 @@ local function mob_storage_use(itemstack, player, pointed)
 			return itemstack
 		else
 			minetest.chat_send_player(plyr_name,
-				"This " .. desc .. " already contains a " .. correct_name(mob))
+				-- desc is already translated
+				S("This @1 already contains a @2", desc, S(correct_name(mob))))
 		end
 	end
 end
@@ -502,7 +504,7 @@ minetest.register_craftitem("animalia:net", {
 					minetest.add_entity(pos, mob, staticdata)
 					itemstack:get_meta():set_string("mob", nil)
 					itemstack:get_meta():set_string("staticdata", nil)
-					itemstack:get_meta():set_string("description", "Animal Net")
+					itemstack:get_meta():set_string("description", S("Animal Net"))
 				end
 			end
 		end
@@ -618,7 +620,7 @@ minetest.register_node("animalia:crate", {
 		if mob ~= "" then
 			local nmeta = minetest.get_meta(pos)
 			nmeta:set_string("mob", mob)
-			nmeta:set_string("infotext", "Contains a " .. correct_name((mob)))
+			nmeta:set_string("infotext", S("Contains a @1", S(correct_name((mob)))))
 			nmeta:set_string("staticdata", meta:get_string("staticdata"))
 			nmeta:set_string("description", meta:get_string("description"))
 			itemstack:take_item()
@@ -645,7 +647,7 @@ minetest.register_node("animalia:crate", {
 			meta:set_string("mob", nil)
 			meta:set_string("infotext", nil)
 			meta:set_string("staticdata", nil)
-			meta:set_string("description", "Animal Crate")
+			meta:set_string("description", S("Animal Crate"))
 		end
 	end
 })
