@@ -2,6 +2,9 @@
 -- Libri --
 -----------
 
+-- Load support for MT game translation.
+local S = minetest.get_translator("animalia")
+
 local libri = {}
 
 local path = minetest.get_modpath(minetest.get_current_modname())
@@ -281,7 +284,7 @@ function libri.generate_list(meta, offset, start_iter)
 		if i > start_iter then
 			local mob_name = mob:split(":")[2]
 			local offset_txt = offset_x .. "," .. offset_y
-			local element = "button[" .. offset_txt .. ";4,1;btn_" .. mob_name .. ";" .. correct_string(mob_name) .. "]"
+			local element = "button[" .. offset_txt .. ";4,1;btn_" .. mob_name .. ";" .. S(correct_string(mob_name)) .. "]"
 			elements = elements .. element
 			offset_y = offset_y + 2
 			if offset_y > 7.5 then
@@ -310,9 +313,22 @@ function libri.render_element(def, meta, playername)
 		local font_size_x = (animalia.libri_font_size[playername] or 1)
 		local font_size = (def.font_size or 16) * font_size_x
 		if def.file then
-			local filename = path .. "/libri/" .. def.file
-			local file = io.open(filename)
+			local filename
+			local file
+			-- We try to find localized content first and fall back to default content.
+			local player_information = core.get_player_information(playername)
+			if player_information and player_information.lang_code then
+				local lang_code = player_information.lang_code
+				filename = path .. "/locale/libri/" .. lang_code .. "/" .. def.file
+				file = io.open(filename)
+			end
+			if not file then
+				-- No localized content available. So we try the default content
+				filename = path .. "/libri/" .. def.file
+				file = io.open(filename)
+			end
 			if file then
+				-- Some content was found, so we load and display it.
 				local text = ""
 				for line in file:lines() do
 					text = text .. line .. "\n"
@@ -427,7 +443,7 @@ local function iterate_libri_images()
 					if info.element_type == "image" then
 						info.text = biome_cubes[spawn_biome]
 					else
-						info.text = correct_string(spawn_biome)
+						info.text = S(correct_string(spawn_biome))
 					end
 				end
 			end
