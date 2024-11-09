@@ -7,6 +7,9 @@ local abs = math.abs
 local vec_add, vec_dir, vec_dist, vec_len = vector.add, vector.direction, vector.distance, vector.length
 local dir2rot = vector.dir_to_rotation
 
+-- Load support for MT game translation.
+local S = minetest.get_translator("animalia")
+
 -- Entities --
 
 local using_lasso = {}
@@ -202,7 +205,7 @@ end
 -- Item
 
 minetest.register_craftitem("animalia:lasso", {
-	description = "Lasso",
+	description = S("Lasso"),
 	inventory_image = "animalia_lasso.png",
 	on_secondary_use = function(_, placer, pointed)
 		local ent = pointed.ref and pointed.ref:get_luaentity()
