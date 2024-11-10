@@ -69,6 +69,9 @@ creatura.register_mob("animalia:owl", {
 	catch_with_net = true,
 	catch_with_lasso = false,
 	roost_action = animalia.action_roost,
+	attack_list = {
+		"animalia:rat"
+	},
 
 	-- Functions
 	on_eat_drop = function(self)

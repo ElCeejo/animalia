@@ -81,6 +81,9 @@ creatura.register_mob("animalia:cat", {
 
 	-- Behavior Parameters
 	is_skittish_mob = true,
+	attack_list = {
+		"animalia:rat"
+	},
 
 	-- Animalia Props
 	flee_puncher = true,
