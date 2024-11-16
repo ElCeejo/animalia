@@ -114,6 +114,7 @@ creatura.register_mob("animalia:sheep", {
 			self.object:set_properties({
 				textures = {"animalia_sheep.png"},
 			})
+			self:undrop_wool()
 		elseif self.dye_color ~= "white" then
 			self.object:set_properties({
 				textures = {"animalia_sheep.png^(animalia_sheep_wool.png^[multiply:" .. palette[self.dye_color][2] .. ")"},
@@ -164,6 +165,8 @@ creatura.register_mob("animalia:sheep", {
 				textures = {"animalia_sheep.png"},
 			})
 
+			self:undrop_wool()
+
 			if not creative then
 				tool:add_wear(650)
 				clicker:set_wielded_item(tool)
@@ -189,7 +192,16 @@ creatura.register_mob("animalia:sheep", {
 		end
 	end,
 
-	on_punch = animalia.punch
+	on_punch = animalia.punch,
+
+	undrop_wool = function(self)
+		for i = 1, #self.drops do
+			drop_def = self.drops[i]
+			if drop_def and drop_def.name == "wool:white" then
+				self.drops[i] = nil
+			end
+		end
+	end,
 })
 
 creatura.register_spawn_item("animalia:sheep", {
