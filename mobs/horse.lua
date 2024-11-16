@@ -377,9 +377,14 @@ creatura.register_mob("animalia:horse", {
 			return
 		end
 
-		local wielded_name = clicker:get_wielded_item():get_name()
+		local wielded_item = clicker:get_wielded_item()
+		local wielded_name = wielded_item:get_name()
 
 		if wielded_name == "animalia:saddle" then
+			if not minetest.is_creative_enabled(name) then
+				wielded_item:take_item()
+				clicker:set_wielded_item(wielded_item)
+			end
 			self:set_saddle(true)
 			return
 		end
