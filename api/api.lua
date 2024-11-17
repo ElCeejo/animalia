@@ -594,12 +594,12 @@ function animalia.random_sound(self)
 	end
 end
 
-function animalia.add_trust(self, player, amount)
+function animalia.add_trust(self, player, amount, max)
 	if self.trust_cooldown > 0 then return end
 	self.trust_cooldown = 60
 	local plyr_name = player:get_player_name()
 	local trust = self.trust[plyr_name] or 0
-	if trust > 4 then return end
+	if trust >= (max or 5) then return end
 	self.trust[plyr_name] = trust + (amount or 1)
 	self:memorize("trust", self.trust)
 end
