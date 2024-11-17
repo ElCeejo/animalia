@@ -636,7 +636,7 @@ function animalia.action_play(self, target)
 
 		if stage == 2
 		and dist < mob.width + 1 then
-			animalia.add_trust(mob, target, 1)
+			animalia.add_trust(mob, target, 1, 10)
 
 			stage = 3
 		end
