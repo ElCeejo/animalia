@@ -65,6 +65,14 @@ animalia.food_wheat = {}
 animalia.food_seeds = {}
 animalia.food_crops = {}
 animalia.food_bear = {}
+animalia.consumable_grass = {
+	["default:dirt_with_grass"] = "default:dirt",
+	["ethereal:bamboo_dirt"] = "default:dirt",
+	["ethereal:grove_dirt"] = "default:dirt",
+	["ethereal:cold_dirt"] = "default:dirt",
+	["ethereal:prairie_dirt"] = "default:dirt",
+	["default:dry_dirt_with_dry_grass"] = "default:dry_dirt",
+}
 
 minetest.register_on_mods_loaded(function()
 	if minetest.get_modpath("farming")
