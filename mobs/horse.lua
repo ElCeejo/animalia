@@ -227,10 +227,7 @@ creatura.register_mob("animalia:horse", {
 	-- Animalia Props
 	catch_with_net = true,
 	catch_with_lasso = true,
-	consumable_nodes = {
-		["default:dirt_with_grass"] = "default:dirt",
-		["default:dry_dirt_with_dry_grass"] = "default:dry_dirt"
-	},
+	consumable_nodes = animalia.consumable_grass,
 	head_data = {
 		bone = "Neck.CTRL",
 		offset = {x = 0, y = 1.4, z = 0.0},

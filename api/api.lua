@@ -777,7 +777,7 @@ local function assign_biome_group(name)
 	local y_max = def.y_max
 	for group, params in pairs(animalia.registered_biome_groups) do -- k, v in pairs
 		if name:find(params.name_kw or "")
-		and turf and turf:find(params.turf_kw or "")
+		and turf and ((turf:find(params.turf_kw or "")) or (params.turf_in and params.turf_in[turf] or false))
 		and heat >= params.min_heat
 		and heat <= params.max_heat
 		and humidity >= params.min_humidity
