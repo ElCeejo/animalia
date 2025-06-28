@@ -79,7 +79,10 @@ local function activate_nametag(self)
 	})
 end
 
-animalia.animate_player = {}
+local function animate_player_stub(arg1, arg2, arg3)
+end
+
+animalia.animate_player = animate_player_stub
 
 if minetest.get_modpath("default")
 and minetest.get_modpath("player_api") then
