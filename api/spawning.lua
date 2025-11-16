@@ -303,6 +303,7 @@ minetest.register_node("animalia:spawner", {
 	drawtype = "airlike",
 	walkable = false,
 	pointable = false,
+	paramtype = "light",
 	sunlight_propagates = true,
 	groups = {oddly_breakable_by_hand = 1, not_in_creative_inventory = 1}
 })
