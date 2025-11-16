@@ -591,12 +591,14 @@ function animalia.action_melee(self, target)
 		if stage == 2
 		and dist < mob.width + 1 then
 			mob:punch_target(target)
-			local knockback = minetest.calculate_knockback(
-				target, mob.object, 1.0,
-				{damage_groups = {fleshy = mob.damage}},
-				dir, 2.0, mob.damage
-			)
-			target:add_velocity({x = dir.x * knockback, y = dir.y * knockback, z = dir.z * knockback})
+			if target:get_pos() then -- target may have died and disappeared
+				local knockback = minetest.calculate_knockback(
+					target, mob.object, 1.0,
+					{damage_groups = {fleshy = mob.damage}},
+					dir, 2.0, mob.damage
+				)
+				target:add_velocity({x = dir.x * knockback, y = dir.y * knockback, z = dir.z * knockback})
+			end
 
 			stage = 3
 		end
@@ -756,7 +758,7 @@ creatura.register_utility("animalia:basic_idle", function(self, timeout, anim)
 	local init = false
 	local function func(mob)
 		if not init then
-			creatura.action_idle(mob, timeout, anim)
+			creatura.action_idle(mob, timer, anim)
 		end
 		timer = timer - mob.dtime
 		if timer <= 0 then
