@@ -11,9 +11,10 @@ local follow = {
 	"animalia:poultry_raw"
 }
 
-if minetest.registered_items["bonemeal:bone"] then
+if minetest.get_modpath("bonemeal")
+or minetest.get_modpath("bonified") then
 	follow = {
-		"bonemeal:bone",
+		"group:bone",
 		"animalia:beef_raw",
 		"animalia:porkchop_raw",
 		"animalia:mutton_raw",
@@ -94,7 +95,7 @@ creatura.register_mob("animalia:wolf", {
 		animalia.initialize_lasso(self)
 		self.order = self:recall("order") or "wander"
 		self.owner = self:recall("owner") or nil
-		self.enemies = self:recall("enemies") or {}
+		self.enemies = nil
 		if self.owner
 		and minetest.get_player_by_name(self.owner) then
 			if not is_value_in_table(animalia.pets[self.owner], self.object) then
@@ -124,20 +125,12 @@ creatura.register_mob("animalia:wolf", {
 				end
 			end
 		end
-		if self.enemies
-		and self.enemies[1]
-		and self.memorize then
-			self.enemies[1] = nil
-			self.enemies = self:memorize("enemies", self.enemies)
-		end
 	end,
 
 	on_rightclick = function(self, clicker)
 		if not clicker:is_player() then return end
 		local name = clicker:get_player_name()
-		local passive = true
-		if is_value_in_table(self.enemies, name) then passive = false end
-		if animalia.feed(self, clicker, passive, passive) then
+		if animalia.feed(self, clicker, true, true) then
 			return
 		end
 		if animalia.set_nametag(self, clicker) then
@@ -168,23 +161,6 @@ creatura.register_mob("animalia:wolf", {
 
 	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
 		creatura.basic_punch_func(self, puncher, time_from_last_punch, tool_capabilities, direction, damage)
-		local name = puncher:is_player() and puncher:get_player_name()
-		if name then
-			if self.owner
-			and name == self.owner then
-				return
-			elseif not is_value_in_table(self.enemies, name) then
-				table.insert(self.enemies, name)
-				if #self.enemies > 15 then
-					table.remove(self.enemies, 1)
-				end
-				self.enemies = self:memorize("enemies", self.enemies)
-			else
-				table.remove(self.enemies, 1)
-				table.insert(self.enemies, name)
-				self.enemies = self:memorize("enemies", self.enemies)
-			end
-		end
 		self._target = puncher
 	end,
 })

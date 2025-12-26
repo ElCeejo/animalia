@@ -50,11 +50,12 @@ if farming_enabled then
 			local item_string = name:sub(1, #name - 2)
 			local item_name = item_string:split(":")[2]
 			local growth_stage = tonumber(name:sub(-1)) or 1
+			local groups = def.groups or {}
 			if farming.registered_plants[item_string]
 			or farming.registered_plants[item_name] then
-				def.groups.crop = growth_stage
+				groups.crop = growth_stage
 			end
-			minetest.register_node(":" .. name, def)
+			minetest.override_item(name, {groups = groups})
 		end
 	end)
 end
@@ -1596,12 +1597,14 @@ local function take_food_from_chest(self, pos)
 		for i, stack in ipairs(inv:get_list("main")) do
 			local item_name = stack:get_name()
 			local def = minetest.registered_items[item_name]
-			for group in pairs(def.groups) do
-				if group:match("food_") then
-					stack:take_item()
-					inv:set_stack("main", i, stack)
-					animalia.add_food_particle(self, item_name)
-					return true
+			if def and def.groups then
+				for group in pairs(def.groups) do
+					if group:match("food_") then
+						stack:take_item()
+						inv:set_stack("main", i, stack)
+						animalia.add_food_particle(self, item_name)
+						return true
+					end
 				end
 			end
 		end
