@@ -2,15 +2,15 @@
 -- Cat --
 ---------
 
-local follow = {
-	"animalia:poultry_raw"
-}
+local follow = {}
 
-if minetest.registered_items["ethereal:fish_raw"] then
-	follow = {
-		"ethereal:fish_raw",
-		"animalia:poultry_raw"
-	}
+for _, item in ipairs({
+	"ethereal:fish_raw",
+	"ethereal:fish_cod",
+	"ethereal:fish_cichlid",
+	"animalia:poultry_raw",
+}) do
+	table.insert(follow, item)
 end
 
 creatura.register_mob("animalia:cat", {
